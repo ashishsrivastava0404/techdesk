@@ -8,6 +8,10 @@ import MyTickets from './pages/MyTickets.jsx';
 import Leaderboard from './pages/Leaderboard.jsx';
 import MyRequests from './pages/MyRequests.jsx';
 import MyLeads from './pages/MyLeads.jsx';
+import Earnings from './pages/Earnings.jsx';
+import CRM from './pages/CRM.jsx';
+import AdminDashboard from './pages/AdminDashboard.jsx';
+import CustomerBilling from './pages/CustomerBilling.jsx';
 
 function AppRoutes() {
   const { user, loading } = useApp();
@@ -33,6 +37,10 @@ function AppRoutes() {
         <Route path="leaderboard" element={<Leaderboard />} />
         <Route path="requests" element={<MyRequests />} />
         <Route path="leads" element={<MyLeads />} />
+        <Route path="earnings" element={<Earnings />} />
+        <Route path="billing" element={<CustomerBilling />} />
+        <Route path="crm" element={<CRM />} />
+        <Route path="admin" element={<AdminDashboard />} />
       </Route>
     </Routes>
   );

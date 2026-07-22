@@ -4,6 +4,324 @@
 
 Promote is a gamified ticketing platform where developers earn their way to production access by resolving staging and dev environment tickets. It's a meritocratic system that rewards quality work — techs build reputation through ratings, climb the promotion ladder, and unlock paid production opportunities. The experience should feel premium, dark-mode native, and subtly gamified with visual progress indicators.
 
+---
+
+## 🚀 Product Owner & Monetization Vision
+
+Promote generates revenue through a **tiered commission system**:
+- **Platform Fee**: 15% commission on all production hire transactions
+- **Subscription Tiers**: Optional premium memberships for customers
+- **Featured Techs**: Paid promotion for top-rated developers
+
+Techs earn money through:
+- **Production Hires**: Direct payment for production support requests
+- **Resolved Tickets**: Base pay per resolved staging/dev ticket
+- **Bonuses**: Performance bonuses for high ratings
+
+---
+
+## 💰 Payment Gateway Integration
+
+### Payment Flow
+1. Customer initiates production hire request
+2. Payment hold placed (escrow-style)
+3. Work completed and approved
+4. Funds released to tech (minus platform fee)
+5. Invoice generated for customer
+
+### Payment States
+- `pending` - Payment initiated
+- `held` - Funds in escrow
+- `released` - Paid to tech
+- `refunded` - Customer refunded
+- `disputed` - Under dispute resolution
+
+### Payout Methods (Tech)
+- Bank transfer (ACH)
+- PayPal
+- Stripe Connect
+
+---
+
+## 📊 CRM Features
+
+### Customer CRM
+- **Contact Management**: All customer profiles with interaction history
+- **Communication Log**: Notes, emails, meeting records
+- **Ticket History**: Complete audit trail
+- **Payment History**: All transactions with status
+- **Lifetime Value**: Total spent with platform
+
+### Tech CRM
+- **Profile Management**: Skills, availability, hourly rate
+- **Performance Analytics**: Rating trends, response time
+- **Earnings Dashboard**: Real-time income tracking
+- **Client Relationships**: Which customers they've worked with
+
+### Interactions
+- Notes/tags on profiles
+- Follow-up reminders
+- Customer satisfaction tracking
+
+---
+
+## 👨‍💼 Admin Panel
+
+### Dashboard
+- Platform revenue (daily/weekly/monthly)
+- Active users count
+- Ticket resolution rate
+- Average rating across platform
+
+### User Management
+- View all users (customers/techs/admins)
+- Suspend/ban users
+- Promote tech tiers manually
+- Reset passwords
+
+### Financial Management
+- All transactions overview
+- Commission tracking
+- Payout management
+- Dispute resolution queue
+
+### Platform Settings
+- Commission rates
+- Tier thresholds
+- Featured tech settings
+- Platform announcements
+
+### Audit Logs
+- All admin actions logged
+- User activity tracking
+- Payment audit trail
+
+---
+
+## 💵 Tech Personal Accounting
+
+### Earnings Dashboard
+- **Total Earned**: Lifetime earnings
+- **Available Balance**: Withdrawable funds
+- **Pending Payments**: Awaiting release
+- **This Month**: Current month earnings
+- **Average per Ticket**: Earnings metric
+
+### Transaction History
+- Every payment with status
+- Filter by date range
+- Export to CSV/PDF
+
+### Payouts
+- Request payout
+- Payout history
+- Connected payment methods
+- Minimum payout threshold ($25)
+
+### Tax Documents
+- Annual earnings summary
+- 1099 generation (US)
+- Invoice downloads
+
+---
+
+## 🧾 Customer Billing
+
+### Invoices
+- Auto-generated on production hire completion
+- Line-item breakdown
+- Platform fee visible
+- PDF download
+
+### Payment Methods
+- Add/remove cards
+- Set default payment method
+- Billing address
+
+### Billing History
+- All charges
+- Invoice downloads
+- Monthly summary emails
+
+### Budget Tracking
+- Monthly spending limit (optional)
+- Alerts for threshold
+- Category breakdown by tech/issue type
+
+---
+
+## Database Schema Additions
+
+### payments
+```sql
+CREATE TABLE payments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  hire_request_id INT,
+  customer_name VARCHAR(255) NOT NULL,
+  tech_name VARCHAR(255) NOT NULL,
+  amount DECIMAL(10,2) NOT NULL,
+  platform_fee DECIMAL(10,2) NOT NULL,
+  tech_payout DECIMAL(10,2) NOT NULL,
+  status ENUM('pending','held','released','refunded','disputed') DEFAULT 'pending',
+  payment_method VARCHAR(50),
+  transaction_id VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  released_at TIMESTAMP NULL
+);
+```
+
+### tech_earnings
+```sql
+CREATE TABLE tech_earnings (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  tech_name VARCHAR(255) NOT NULL,
+  payment_id INT,
+  source ENUM('hire','ticket','bonus') NOT NULL,
+  amount DECIMAL(10,2) NOT NULL,
+  status ENUM('pending','available','withdrawn') DEFAULT 'pending',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### tech_payouts
+```sql
+CREATE TABLE tech_payouts (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  tech_name VARCHAR(255) NOT NULL,
+  amount DECIMAL(10,2) NOT NULL,
+  method ENUM('bank','paypal','stripe') NOT NULL,
+  payout_details JSON,
+  status ENUM('requested','processing','completed','failed') DEFAULT 'requested',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  completed_at TIMESTAMP NULL
+);
+```
+
+### customer_invoices
+```sql
+CREATE TABLE customer_invoices (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  customer_name VARCHAR(255) NOT NULL,
+  payment_id INT,
+  amount DECIMAL(10,2) NOT NULL,
+  status ENUM('draft','sent','paid','overdue','cancelled') DEFAULT 'draft',
+  due_date DATE,
+  paid_at TIMESTAMP NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### crm_contacts
+```sql
+CREATE TABLE crm_contacts (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_name VARCHAR(255) NOT NULL,
+  user_type ENUM('customer','tech') NOT NULL,
+  company VARCHAR(255),
+  email VARCHAR(255),
+  phone VARCHAR(50),
+  address TEXT,
+  tags JSON,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+```
+
+### crm_interactions
+```sql
+CREATE TABLE crm_interactions (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  contact_id INT NOT NULL,
+  type ENUM('note','call','email','meeting') NOT NULL,
+  subject VARCHAR(255),
+  content TEXT,
+  created_by VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### admin_logs
+```sql
+CREATE TABLE admin_logs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  admin_name VARCHAR(255) NOT NULL,
+  action VARCHAR(255) NOT NULL,
+  target_type VARCHAR(50),
+  target_id INT,
+  details JSON,
+  ip_address VARCHAR(45),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+---
+
+## API Endpoints Additions
+
+### Payments
+- `POST /api/payments` - Initiate payment
+- `GET /api/payments` - List payments (admin)
+- `PATCH /api/payments/:id/release` - Release payment to tech
+- `PATCH /api/payments/:id/refund` - Process refund
+
+### Earnings
+- `GET /api/earnings/:techName` - Get tech earnings summary
+- `GET /api/earnings/:techName/transactions` - Transaction history
+- `POST /api/payouts` - Request payout
+- `GET /api/payouts/:techName` - Payout history
+
+### Invoices
+- `GET /api/invoices/:customerName` - Customer invoices
+- `GET /api/invoices/:id/download` - Download PDF
+
+### CRM
+- `GET /api/crm/contacts` - List contacts
+- `POST /api/crm/contacts` - Create contact
+- `PATCH /api/crm/contacts/:id` - Update contact
+- `GET /api/crm/contacts/:id/interactions` - Contact interactions
+- `POST /api/crm/interactions` - Log interaction
+
+### Admin
+- `GET /api/admin/dashboard` - Platform stats
+- `GET /api/admin/users` - All users
+- `PATCH /api/admin/users/:id` - Update user (role, status)
+- `GET /api/admin/payments` - All payments
+- `GET /api/admin/logs` - Audit logs
+- `PATCH /api/admin/settings` - Update platform settings
+
+---
+
+## Component Inventory Additions
+
+### Payment Components
+- `PaymentModal` - Initiate/confirm payment
+- `PaymentStatusBadge` - Visual payment state
+- `EarningsCard` - Stats display card
+- `PayoutModal` - Request payout flow
+- `PaymentMethodCard` - Saved payment methods
+
+### CRM Components
+- `ContactList` - Filterable contact table
+- `ContactCard` - Contact detail view
+- `InteractionTimeline` - Communication history
+- `TagInput` - Tag management
+- `NoteEditor` - Rich text notes
+
+### Admin Components
+- `AdminSidebar` - Navigation
+- `StatsCard` - Metric display
+- `DataTable` - Sortable/filterable table
+- `UserActionsMenu` - Suspend, promote, etc.
+- `AuditLogList` - Activity feed
+- `SettingsForm` - Platform configuration
+
+### Accounting Components
+- `EarningsChart` - Visual earnings over time
+- `TransactionList` - Detailed history
+- `InvoiceRow` - Invoice display
+- `BalanceDisplay` - Available vs pending
+- `PayoutHistory` - Past payouts
+
 ## Design Language
 
 ### Aesthetic Direction
