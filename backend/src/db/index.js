@@ -49,6 +49,7 @@ export async function initDatabase() {
       role ENUM('customer', 'tech', 'admin') DEFAULT 'customer',
       status ENUM('active', 'suspended', 'banned') DEFAULT 'active',
       email VARCHAR(255),
+      google_id VARCHAR(255),
       avatar_url VARCHAR(500),
       skills TEXT,
       hourly_rate DECIMAL(10,2) DEFAULT 50.00,
@@ -126,9 +127,11 @@ export async function initDatabase() {
       amount DECIMAL(10,2) NOT NULL,
       platform_fee DECIMAL(10,2) NOT NULL,
       tech_payout DECIMAL(10,2) NOT NULL,
-      status ENUM('pending', 'held', 'released', 'refunded', 'disputed') DEFAULT 'pending',
+      status ENUM('pending', 'held', 'released', 'refunded', 'disputed', 'failed') DEFAULT 'pending',
       payment_method VARCHAR(50),
       transaction_id VARCHAR(255),
+      stripe_payment_intent_id VARCHAR(255),
+      stripe_customer_id VARCHAR(255),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       released_at TIMESTAMP NULL DEFAULT NULL
     )

@@ -525,6 +525,60 @@ CREATE TABLE platform_settings (
 
 ---
 
+
+
+### ticket_attachments
+File attachments for tickets.
+
+```sql
+CREATE TABLE ticket_attachments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  ticket_id INT NOT NULL,
+  uploader_name VARCHAR(255) NOT NULL,
+  file_name VARCHAR(255) NOT NULL,
+  file_type VARCHAR(100),
+  file_size INT,
+  file_url VARCHAR(500),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
+);
+```
+
+**Indexes:**
+- `ticket_id`
+- `created_at`
+
+**Foreign Keys:**
+- `ticket_id` → `tickets(id)` (ON DELETE CASCADE)
+
+---
+
+### help_articles
+Knowledge base articles for the help center.
+
+```sql
+CREATE TABLE help_articles (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  slug VARCHAR(255) UNIQUE NOT NULL,
+  content TEXT NOT NULL,
+  category VARCHAR(100),
+  tags JSON,
+  view_count INT DEFAULT 0,
+  helpful_count INT DEFAULT 0,
+  not_helpful_count INT DEFAULT 0,
+  is_published BOOLEAN DEFAULT TRUE,
+  author VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+```
+
+**Indexes:**
+- `slug` (UNIQUE)
+- `category`
+- `is_published`
+
 ## Migration Guide
 
 ### Adding a New Table

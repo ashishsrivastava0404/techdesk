@@ -3,6 +3,7 @@
   --bg-alt: #0A1415;
   --panel: #142526;
   --panel-2: #1B2E30;
+  --surface-2: #1B2E30;
   --line: #23393B;
   --text: #E9F3F1;
   --muted: #8FADA9;
@@ -390,6 +391,11 @@ textarea {
   color: var(--green);
 }
 
+.badge-status-in_progress {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--blue);
+}
+
 .badge-status-closed {
   background: #26302F;
   color: var(--muted);
@@ -420,6 +426,21 @@ textarea {
 
 /* Additional status badges */
 .badge-admin {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+}
+
+.badge-customer {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--blue);
+}
+
+.badge-tech {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--green);
+}
+
+.badge-dev {
   background: rgba(168, 85, 247, 0.15);
   color: #c084fc;
 }

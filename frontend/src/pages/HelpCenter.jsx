@@ -20,8 +20,8 @@ export default function HelpCenter() {
       const data = await response.json();
       setArticles(data);
       
-      // Extract unique categories
-      const cats = [...new Set(data.map(a => a.keywords?.[0]).filter(Boolean)];
+      // Extract unique categories from keywords
+      const cats = [...new Set(data.map(a => a.keywords?.[0]).filter(Boolean))];
       setCategories(cats);
     } catch (error) {
       console.error('Error loading articles:', error);

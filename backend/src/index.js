@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { initDatabase } from './db/index.js';
 import usersRouter from './routes/users.js';
+import authRouter from './routes/auth.js';
 import ticketsRouter from './routes/tickets.js';
 import ratingsRouter from './routes/ratings.js';
 import hireRequestsRouter from './routes/hireRequests.js';
@@ -17,16 +18,37 @@ import notificationsRouter from './routes/notifications.js';
 import ticketHistoryRouter from './routes/ticketHistory.js';
 import surveysRouter from './routes/surveys.js';
 import chatbotRouter from './routes/chatbot.js';
+import uploadsRouter from './routes/uploads.js';
+import { errorHandler } from './middleware/errorHandler.js';
+
+// Initialize Sentry if configured
+if (process.env.SENTRY_DSN) {
+  import('./services/sentry.js').then(({ initSentry, sentryMiddleware }) => {
+    initSentry(app);
+    app.use(sentryMiddleware);
+  }).catch(() => {});
+}
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors());
-app.use(express.json());
+// CORS configuration
+const corsOptions = {
+  origin: process.env.CORS_ORIGINS?.split(',') || '*',
+  credentials: true,
+  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
 
+app.use(cors(corsOptions));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// API Routes
 app.use('/api/users', usersRouter);
+app.use('/api/auth', authRouter);
 app.use('/api/tickets', ticketsRouter);
 app.use('/api/ratings', ratingsRouter);
 app.use('/api/hire-requests', hireRequestsRouter);
@@ -41,9 +63,18 @@ app.use('/api/notifications', notificationsRouter);
 app.use('/api/ticket-history', ticketHistoryRouter);
 app.use('/api/surveys', surveysRouter);
 app.use('/api/chatbot', chatbotRouter);
+app.use('/api/uploads', uploadsRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
+});
+
+// Error handling middleware
+app.use(errorHandler);
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ error: 'Endpoint not found' });
 });
 
 async function start() {
