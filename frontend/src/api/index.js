@@ -159,5 +159,68 @@ export const api = {
       body: JSON.stringify(settings)
     }),
     getRevenueChart: (months) => fetchJSON(`/admin/revenue-chart?months=${months || 12}`)
+  },
+
+  // Discussions
+  discussions: {
+    get: (ticketId, userName, userRole) => fetchJSON(`/discussions/${ticketId}?user_name=${encodeURIComponent(userName)}&user_role=${userRole}`),
+    send: (data) => fetchJSON('/discussions', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    addSystem: (data) => fetchJSON('/discussions/system', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  },
+
+  // Categories & Templates
+  categories: {
+    list: () => fetchJSON('/categories'),
+    getTemplates: (category) => {
+      const query = category ? `?category=${encodeURIComponent(category)}` : '';
+      return fetchJSON(`/categories/templates${query}`);
+    },
+    getTemplate: (id) => fetchJSON(`/categories/templates/${id}`),
+    useTemplate: (id) => fetchJSON(`/categories/templates/${id}/use`, { method: 'POST' })
+  },
+
+  // Notifications
+  notifications: {
+    get: (userName, params = {}) => {
+      const query = new URLSearchParams(params).toString();
+      return fetchJSON(`/notifications/${encodeURIComponent(userName)}${query ? `?${query}` : ''}`);
+    },
+    getCount: (userName) => fetchJSON(`/notifications/${encodeURIComponent(userName)}/count`),
+    markRead: (id) => fetchJSON(`/notifications/${id}/read`, { method: 'PATCH' }),
+    markAllRead: (userName) => fetchJSON(`/notifications/${encodeURIComponent(userName)}/read-all`, { method: 'PATCH' })
+  },
+
+  // Ticket History
+  ticketHistory: {
+    get: (ticketId, limit = 100) => fetchJSON(`/ticket-history/${ticketId}?limit=${limit}`),
+    getUserActivity: (userName, days = 7) => fetchJSON(`/ticket-history/user/${encodeURIComponent(userName)}?days=${days}`)
+  },
+
+  // CSAT Surveys
+  surveys: {
+    get: (ticketId) => fetchJSON(`/surveys/ticket/${ticketId}`),
+    submit: (data) => fetchJSON('/surveys', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    getTechSurveys: (techName, days = 30) => fetchJSON(`/surveys/tech/${encodeURIComponent(techName)}?days=${days}`),
+    getTechStats: (techName, days = 30) => fetchJSON(`/surveys/tech/${encodeURIComponent(techName)}/stats?days=${days}`)
+  },
+
+  // Chatbot
+  chatbot: {
+    chat: (data) => fetchJSON('/chatbot/chat', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    getFaqs: () => fetchJSON('/chatbot/faqs'),
+    getTopics: () => fetchJSON('/chatbot/topics'),
+    getHistory: (sessionId) => fetchJSON(`/chatbot/history/${sessionId}`)
   }
 };

@@ -537,3 +537,181 @@ each resolved ticket adds 2 points
 **Stats:**
 - `GET /api/stats/:name` - Get user stats for dashboard
 - `GET /api/leaderboard` - Get ranked tech list
+
+---
+
+## 🎫 Ticket System Enhancements
+
+### Ticket Categories
+Pre-defined categories for better organization:
+- Bug Report
+- Feature Request  
+- Technical Support
+- Infrastructure
+- Security
+- Documentation
+- Performance
+- Integration
+- General Inquiry
+
+### Issue Templates
+Pre-built templates that help users write better tickets:
+- Bug Report Template - Steps to reproduce, expected vs actual behavior
+- Feature Request Template - Problem statement, proposed solution
+- Support Request Template - Current situation, troubleshooting steps
+
+### Encrypted Discussions
+- Private message threads between customer and assigned tech
+- Base64 encoding for message encryption
+- Only authorized parties can view messages
+- System messages for status changes
+
+### SLA Tracking
+Automatic SLA calculation based on priority:
+- Critical: 1 hour response
+- Urgent: 4 hours response
+- High: 8 hours response
+- Normal: 24 hours response
+- Low: 48 hours response
+
+### Ticket History/Audit Log
+- Complete history of all ticket changes
+- Actor tracking (who made changes)
+- Field-level change tracking
+- Metadata for context
+
+### Notifications System
+Real-time notifications for:
+- New tickets created
+- Ticket claimed
+- Ticket resolved
+- New messages
+- Rating received
+- Hire requests
+
+### CSAT Surveys
+Customer satisfaction tracking:
+- 1-5 rating scores
+- Would recommend boolean
+- Resolved on time feedback
+- Communication rating
+- Response time rating
+
+---
+
+## Database Schema Additions
+
+### ticket_categories
+```sql
+CREATE TABLE ticket_categories (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) UNIQUE NOT NULL,
+  description TEXT,
+  icon VARCHAR(50) DEFAULT 'folder',
+  color VARCHAR(20) DEFAULT '#FFB454',
+  sort_order INT DEFAULT 0,
+  is_active BOOLEAN DEFAULT TRUE
+);
+```
+
+### issue_templates
+```sql
+CREATE TABLE issue_templates (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  category VARCHAR(100),
+  template_content TEXT NOT NULL,
+  variables JSON,
+  use_count INT DEFAULT 0
+);
+```
+
+### ticket_messages (Encrypted Discussions)
+```sql
+CREATE TABLE ticket_messages (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  ticket_id INT NOT NULL,
+  sender_name VARCHAR(255) NOT NULL,
+  sender_role ENUM('customer','tech','admin') NOT NULL,
+  content TEXT NOT NULL,
+  message_type ENUM('text','file','system','status_change'),
+  encrypted BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### ticket_history
+```sql
+CREATE TABLE ticket_history (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  ticket_id INT NOT NULL,
+  action VARCHAR(100) NOT NULL,
+  actor_name VARCHAR(255) NOT NULL,
+  actor_role ENUM('customer','tech','admin') NOT NULL,
+  field_changed VARCHAR(100),
+  old_value TEXT,
+  new_value TEXT,
+  metadata JSON
+);
+```
+
+### notifications
+```sql
+CREATE TABLE notifications (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_name VARCHAR(255) NOT NULL,
+  type VARCHAR(50) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  message TEXT,
+  related_ticket_id INT,
+  related_user VARCHAR(255),
+  is_read BOOLEAN DEFAULT FALSE
+);
+```
+
+### csat_surveys
+```sql
+CREATE TABLE csat_surveys (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  ticket_id INT NOT NULL,
+  customer_name VARCHAR(255) NOT NULL,
+  tech_name VARCHAR(255),
+  score INT CHECK (score >= 1 AND score <= 5),
+  feedback TEXT,
+  would_recommend BOOLEAN,
+  resolved_on_time BOOLEAN,
+  communication_rating INT,
+  response_time_rating INT
+);
+```
+
+---
+
+## API Endpoints Additions
+
+### Discussions
+- `GET /api/discussions/:ticketId` - Get messages (authorized users only)
+- `POST /api/discussions` - Send message
+- `POST /api/discussions/system` - Add system message
+
+### Categories & Templates
+- `GET /api/categories` - List all categories
+- `GET /api/categories/templates` - List templates (optional: by category)
+- `GET /api/categories/templates/:id` - Get template
+- `POST /api/categories/templates/:id/use` - Use template (increment count)
+
+### Notifications
+- `GET /api/notifications/:userName` - Get user notifications
+- `GET /api/notifications/:userName/count` - Get unread count
+- `PATCH /api/notifications/:id/read` - Mark as read
+- `PATCH /api/notifications/:userName/read-all` - Mark all as read
+
+### Ticket History
+- `GET /api/ticket-history/:ticketId` - Get ticket history
+- `GET /api/ticket-history/user/:userName` - Get user activity
+
+### CSAT Surveys
+- `GET /api/surveys/ticket/:ticketId` - Get survey for ticket
+- `POST /api/surveys` - Submit survey
+- `GET /api/surveys/tech/:techName` - Get tech surveys
+- `GET /api/surveys/tech/:techName/stats` - Get CSAT stats

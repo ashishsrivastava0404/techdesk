@@ -12,6 +12,10 @@ import Earnings from './pages/Earnings.jsx';
 import CRM from './pages/CRM.jsx';
 import AdminDashboard from './pages/AdminDashboard.jsx';
 import CustomerBilling from './pages/CustomerBilling.jsx';
+import Notifications from './pages/Notifications.jsx';
+import TicketDetail from './pages/TicketDetail.jsx';
+import HelpCenter from './pages/HelpCenter.jsx';
+import ChatBot from './components/ChatBot.jsx';
 
 function AppRoutes() {
   const { user, loading } = useApp();
@@ -27,22 +31,28 @@ function AppRoutes() {
   const defaultTab = user?.role === 'tech' ? 'available' : 'submit';
 
   return (
-    <Routes>
-      <Route path="/" element={<Layout />}>
-        <Route index element={<Navigate to={`/${defaultTab}`} replace />} />
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="submit" element={<SubmitTicket />} />
-        <Route path="available" element={<AvailableTickets />} />
-        <Route path="mytickets" element={<MyTickets />} />
-        <Route path="leaderboard" element={<Leaderboard />} />
-        <Route path="requests" element={<MyRequests />} />
-        <Route path="leads" element={<MyLeads />} />
-        <Route path="earnings" element={<Earnings />} />
-        <Route path="billing" element={<CustomerBilling />} />
-        <Route path="crm" element={<CRM />} />
-        <Route path="admin" element={<AdminDashboard />} />
-      </Route>
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Navigate to={`/${defaultTab}`} replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="submit" element={<SubmitTicket />} />
+          <Route path="available" element={<AvailableTickets />} />
+          <Route path="mytickets" element={<MyTickets />} />
+          <Route path="leaderboard" element={<Leaderboard />} />
+          <Route path="requests" element={<MyRequests />} />
+          <Route path="leads" element={<MyLeads />} />
+          <Route path="earnings" element={<Earnings />} />
+          <Route path="billing" element={<CustomerBilling />} />
+          <Route path="crm" element={<CRM />} />
+          <Route path="notifications" element={<Notifications />} />
+          <Route path="admin" element={<AdminDashboard />} />
+          <Route path="ticket/:id" element={<TicketDetail />} />
+          <Route path="help" element={<HelpCenter />} />
+        </Route>
+      </Routes>
+      <ChatBot />
+    </>
   );
 }
 

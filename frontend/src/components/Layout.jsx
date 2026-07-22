@@ -96,6 +96,18 @@ export default function Layout() {
             {tab.label}
           </NavLink>
         ))}
+        <NavLink
+          to="/notifications"
+          className={({ isActive }) => `tab-btn ${isActive ? 'active' : ''}`}
+        >
+          🔔 Notifications
+        </NavLink>
+        <NavLink
+          to="/help"
+          className={({ isActive }) => `tab-btn ${isActive ? 'active' : ''}`}
+        >
+          ❓ Help
+        </NavLink>
       </nav>
 
       <main>

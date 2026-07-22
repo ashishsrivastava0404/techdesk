@@ -11,6 +11,12 @@ import paymentsRouter from './routes/payments.js';
 import earningsRouter from './routes/earnings.js';
 import crmRouter from './routes/crm.js';
 import adminRouter from './routes/admin.js';
+import discussionsRouter from './routes/discussions.js';
+import categoriesRouter from './routes/categories.js';
+import notificationsRouter from './routes/notifications.js';
+import ticketHistoryRouter from './routes/ticketHistory.js';
+import surveysRouter from './routes/surveys.js';
+import chatbotRouter from './routes/chatbot.js';
 
 dotenv.config();
 
@@ -29,6 +35,12 @@ app.use('/api/payments', paymentsRouter);
 app.use('/api/earnings', earningsRouter);
 app.use('/api/crm', crmRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/discussions', discussionsRouter);
+app.use('/api/categories', categoriesRouter);
+app.use('/api/notifications', notificationsRouter);
+app.use('/api/ticket-history', ticketHistoryRouter);
+app.use('/api/surveys', surveysRouter);
+app.use('/api/chatbot', chatbotRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
