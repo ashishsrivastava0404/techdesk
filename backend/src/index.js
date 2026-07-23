@@ -21,6 +21,7 @@ import chatbotRouter from './routes/chatbot.js';
 import uploadsRouter from './routes/uploads.js';
 import topicsRouter from './routes/topics.js';
 import agentRequestsRouter from './routes/agentRequests.js';
+import creditsRouter from './routes/credits.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 // Initialize Sentry if configured
@@ -68,6 +69,7 @@ app.use('/api/chatbot', chatbotRouter);
 app.use('/api/uploads', uploadsRouter);
 app.use('/api/topics', topicsRouter);
 app.use('/api/agents', agentRequestsRouter);
+app.use('/api/credits', creditsRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });

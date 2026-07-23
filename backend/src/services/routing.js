@@ -144,11 +144,24 @@ class RoutingService {
       subcategory,
       tags,
       title,
-      customer_name
+      customer_name,
+      priority
     } = ticket;
 
-    // Get top 10 qualified agents
-    const topAgents = await this.getTopAgents(category, subcategory, tags, 10);
+    // Determine agent limit based on priority
+    // Critical/Normal: Top 20 agents
+    // High/Urgent: Top 15 agents
+    // Low: Top 10 agents
+    const agentLimits = {
+      critical: 20,
+      normal: 20,
+      high: 15,
+      urgent: 15,
+      low: 10
+    };
+    const agentLimit = agentLimits[priority] || 10;
+
+    const topAgents = await this.getTopAgents(category, subcategory, tags, agentLimit);
 
     if (topAgents.length === 0) {
       console.log(`No qualified agents found for ticket #${ticketId}`);
@@ -162,7 +175,7 @@ class RoutingService {
         await notificationService.storeNotification({
           user_name: agent.techName,
           type: 'ticket_available',
-          title: 'New Ticket Match',
+          title: `New ${priority} Priority Ticket Match`,
           message: `A new ticket matching your expertise is available: "${title}". Category: ${category}`,
           related_ticket_id: ticketId,
           related_user: customer_name
@@ -176,7 +189,11 @@ class RoutingService {
     return {
       routed: true,
       agents: topAgents,
-      notifiedCount: notifiedAgents.length
+      notifiedCount: notifiedAgents.length,
+      priorityRouting: {
+        priority,
+        agentLimit
+      }
     };
   }
 

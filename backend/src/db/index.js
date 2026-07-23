@@ -158,6 +158,22 @@ export async function initDatabase() {
     )
   `);
 
+  // Credit transactions table
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS credit_transactions (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_name VARCHAR(255) NOT NULL,
+      type ENUM('credit', 'debit', 'transfer_in', 'transfer_out', 'refund') NOT NULL,
+      amount DECIMAL(10,2) NOT NULL,
+      balance_after DECIMAL(10,2) NOT NULL,
+      reason VARCHAR(255),
+      related_user VARCHAR(255),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_user_name (user_name),
+      INDEX idx_created_at (created_at)
+    )
+  `);
+
   // Ratings table
   await connection.query(`
     CREATE TABLE IF NOT EXISTS ratings (
