@@ -226,7 +226,15 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data)
     }),
-    getPayouts: (techName) => fetchJSON(`/earnings/payouts/${encodeURIComponent(techName)}`)
+    getPayouts: (techName) => fetchJSON(`/earnings/payouts/${encodeURIComponent(techName)}`),
+    processPayout: (payoutId, data) => fetchJSON(`/earnings/payouts/${payoutId}/process`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    }),
+    completePayout: (payoutId, data) => fetchJSON(`/earnings/payouts/${payoutId}/complete`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    })
   },
 
   // CRM

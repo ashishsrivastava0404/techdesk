@@ -205,15 +205,16 @@ class NotificationService {
 
   async storeNotification(data) {
     await pool.query(
-      `INSERT INTO notifications (user_name, type, title, message, related_ticket_id, related_user)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO notifications (user_name, type, title, message, related_ticket_id, related_user, related_payout_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         data.user_name,
         data.type,
         data.title,
         data.message,
         data.related_ticket_id || null,
-        data.related_user || null
+        data.related_user || null,
+        data.related_payout_id || null
       ]
     );
   }

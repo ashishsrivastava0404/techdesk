@@ -245,8 +245,14 @@ export async function initDatabase() {
       amount DECIMAL(10,2) NOT NULL,
       method ENUM('bank', 'paypal', 'stripe') NOT NULL,
       payout_details JSON,
-      status ENUM('requested', 'processing', 'completed', 'failed') DEFAULT 'requested',
+      status ENUM('requested', 'processing', 'completed', 'failed', 'rejected') DEFAULT 'requested',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      requested_at TIMESTAMP NULL DEFAULT NULL,
+      processed_by VARCHAR(255) DEFAULT NULL,
+      processed_at TIMESTAMP NULL DEFAULT NULL,
+      admin_notes TEXT,
+      transfer_id VARCHAR(255) DEFAULT NULL,
+      transfer_status VARCHAR(50) DEFAULT NULL,
       completed_at TIMESTAMP NULL DEFAULT NULL
     )
   `);
@@ -433,6 +439,7 @@ export async function initDatabase() {
       message TEXT,
       related_ticket_id INT,
       related_user VARCHAR(255),
+      related_payout_id INT,
       is_read BOOLEAN DEFAULT FALSE,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
