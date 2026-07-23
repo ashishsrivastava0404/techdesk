@@ -11,9 +11,6 @@ class NotificationService {
     this.twilioConfigured = () => !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN);
   }
 
-  /**
-   * Send email notification via SendGrid
-   */
   async sendEmail(to, subject, text, html = null) {
     if (!this.sendGridConfigured()) {
       console.log('SendGrid not configured, skipping email to:', to);
@@ -29,7 +26,7 @@ class NotificationService {
         },
         body: JSON.stringify({
           personalizations: [{ to: [{ email: to }] }],
-          from: { 
+          from: {
             email: process.env.SENDGRID_FROM_EMAIL || 'noreply@promote.example',
             name: process.env.SENDGRID_FROM_NAME || 'Promote Platform'
           },
@@ -54,9 +51,6 @@ class NotificationService {
     }
   }
 
-  /**
-   * Send SMS notification via Twilio
-   */
   async sendSMS(to, message) {
     if (!this.twilioConfigured()) {
       console.log('Twilio not configured, skipping SMS to:', to);
@@ -97,11 +91,7 @@ class NotificationService {
     }
   }
 
-  /**
-   * Send ticket created notification
-   */
   async notifyTicketCreated(ticket, customer) {
-    // Store in database
     await this.storeNotification({
       user_name: customer.name,
       type: 'ticket_created',
@@ -110,7 +100,6 @@ class NotificationService {
       related_ticket_id: ticket.id
     });
 
-    // Notify techs (for demo, just store notification)
     await this.notifyTechs('new_ticket', {
       title: 'New Ticket Available',
       message: `New ticket: ${ticket.title}`,
@@ -118,9 +107,6 @@ class NotificationService {
     });
   }
 
-  /**
-   * Send ticket claimed notification
-   */
   async notifyTicketClaimed(ticket, tech) {
     await this.storeNotification({
       user_name: ticket.customer_name,
@@ -132,9 +118,6 @@ class NotificationService {
     });
   }
 
-  /**
-   * Send ticket resolved notification
-   */
   async notifyTicketResolved(ticket) {
     await this.storeNotification({
       user_name: ticket.customer_name,
@@ -146,9 +129,6 @@ class NotificationService {
     });
   }
 
-  /**
-   * Send new message notification
-   */
   async notifyNewMessage(ticketId, recipientName, senderName, isTech) {
     const type = isTech ? 'tech_message' : 'customer_message';
     await this.storeNotification({
@@ -160,9 +140,6 @@ class NotificationService {
     });
   }
 
-  /**
-   * Send payout notification
-   */
   async notifyPayout(tech, amount, status) {
     await this.storeNotification({
       user_name: tech.name,
@@ -172,9 +149,34 @@ class NotificationService {
     });
   }
 
-  /**
-   * Send payment received notification to tech
-   */
+  async notifyPayoutRequest(techName, amount, method, payoutId) {
+    const [admins] = await pool.query(
+      "SELECT name FROM users WHERE role = 'admin' AND status = 'active'"
+    );
+
+    for (const admin of admins) {
+      await this.storeNotification({
+        user_name: admin.name,
+        type: 'payout_request',
+        title: 'New Payout Request',
+        message: `${techName} requested a payout of $${amount.toFixed(2)} via ${method}`,
+        related_payout_id: payoutId
+      });
+    }
+
+    const [adminUsers] = await pool.query(
+      "SELECT email FROM users WHERE role = 'admin' AND status = 'active' AND email IS NOT NULL"
+    );
+
+    for (const admin of adminUsers) {
+      await this.sendEmail(
+        admin.email,
+        `[Admin] New Payout Request - ${techName}`,
+        `A new payout request requires your approval:\n\nTech: ${techName}\nAmount: $${amount.toFixed(2)}\nMethod: ${method}\nPayout ID: ${payoutId}\n\nPlease review and process in the admin dashboard.`
+      );
+    }
+  }
+
   async notifyPaymentReceived(ticketId, techName, amount) {
     await this.storeNotification({
       user_name: techName,
@@ -185,9 +187,6 @@ class NotificationService {
     });
   }
 
-  /**
-   * Notify techs about new ticket
-   */
   async notifyTechs(type, data) {
     const [techs] = await pool.query(
       "SELECT name, phone FROM users WHERE role = 'tech' AND status = 'active'"
@@ -204,9 +203,6 @@ class NotificationService {
     }
   }
 
-  /**
-   * Store notification in database
-   */
   async storeNotification(data) {
     await pool.query(
       `INSERT INTO notifications (user_name, type, title, message, related_ticket_id, related_user)
@@ -222,9 +218,6 @@ class NotificationService {
     );
   }
 
-  /**
-   * Send bulk email (for announcements, etc.)
-   */
   async sendBulkEmail(recipients, subject, text, html = null) {
     if (!this.sendGridConfigured()) {
       console.log('SendGrid not configured, skipping bulk email');
@@ -240,7 +233,7 @@ class NotificationService {
         },
         body: JSON.stringify({
           personalizations: recipients.map(email => ({ to: [{ email }] })),
-          from: { 
+          from: {
             email: process.env.SENDGRID_FROM_EMAIL,
             name: process.env.SENDGRID_FROM_NAME
           },

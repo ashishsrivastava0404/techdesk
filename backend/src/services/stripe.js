@@ -2,13 +2,14 @@ import Stripe from 'stripe';
 
 /**
  * Stripe Payment Service
- * Handles payment processing with Stripe
+ * Handles payment processing with Stripe and Stripe Connect payouts
  */
 
 class StripeService {
   constructor() {
     this.stripe = null;
     this.configured = () => !!(process.env.STRIPE_SECRET_KEY);
+    this.platformAccountId = process.env.STRIPE_PLATFORM_ACCOUNT_ID; // For Connect
     this.init();
   }
 
@@ -190,6 +191,200 @@ class StripeService {
       sessionId: session.id,
       url: session.url
     };
+  }
+
+  // ============================================
+  // STRIPE CONNECT - For Tech Payouts
+  // ============================================
+
+  /**
+   * Create a Stripe Connect Express account for a tech
+   */
+  async createConnectAccount(email, techName, payoutMethod = 'standard') {
+    if (!this.configured()) {
+      throw new Error('Stripe is not configured');
+    }
+
+    try {
+      const account = await this.stripe.accounts.create({
+        type: 'express',
+        email,
+        capabilities: {
+          transfers: { requested: true }
+        },
+        business_type: 'individual',
+        metadata: {
+          tech_name: techName
+        }
+      });
+
+      return {
+        accountId: account.id,
+        email: account.email,
+        charges_enabled: account.charges_enabled,
+        payouts_enabled: account.payouts_enabled
+      };
+    } catch (error) {
+      console.error('Error creating Connect account:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create an account link for Stripe Connect onboarding
+   */
+  async createAccountLink(accountId, refreshUrl, returnUrl) {
+    if (!this.configured()) {
+      throw new Error('Stripe is not configured');
+    }
+
+    try {
+      const accountLink = await this.stripe.accountLinks.create({
+        account: accountId,
+        refresh_url: refreshUrl,
+        return_url: returnUrl,
+        type: 'account_onboarding'
+      });
+
+      return {
+        url: accountLink.url,
+        expiresAt: accountLink.expires_at
+      };
+    } catch (error) {
+      console.error('Error creating account link:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get Connect account status
+   */
+  async getConnectAccountStatus(accountId) {
+    if (!this.configured()) {
+      throw new Error('Stripe is not configured');
+    }
+
+    try {
+      const account = await this.stripe.accounts.retrieve(accountId);
+      return {
+        id: account.id,
+        email: account.email,
+        charges_enabled: account.charges_enabled,
+        payouts_enabled: account.payouts_enabled,
+        details_submitted: account.details_submitted,
+        requirements: account.requirements
+      };
+    } catch (error) {
+      console.error('Error getting account status:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Transfer funds to a Connect account (payout to tech)
+   */
+  async transferToConnectAccount(accountId, amount, destinationCurrency = 'usd') {
+    if (!this.configured()) {
+      throw new Error('Stripe is not configured');
+    }
+
+    try {
+      const transfer = await this.stripe.transfers.create({
+        amount: Math.round(amount * 100), // Convert to cents
+        currency: destinationCurrency,
+        destination: accountId,
+        metadata: {
+          payout_type: 'tech_earnings'
+        }
+      });
+
+      return {
+        transferId: transfer.id,
+        amount: transfer.amount / 100,
+        currency: transfer.currency,
+        status: transfer.status
+      };
+    } catch (error) {
+      console.error('Error creating transfer:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a payout to a Connect account's external bank account
+   */
+  async createPayout(accountId, amount, currency = 'usd') {
+    if (!this.configured()) {
+      throw new Error('Stripe is not configured');
+    }
+
+    try {
+      // First transfer to the connected account
+      const transfer = await this.stripe.transfers.create({
+        amount: Math.round(amount * 100),
+        currency,
+        destination: accountId,
+        transfer_group: `payout_${Date.now()}`
+      });
+
+      // Then create a payout on the connected account
+      const payout = await this.stripe.payouts.create({
+        amount: Math.round(amount * 100),
+        currency,
+      }, {
+        stripeAccount: accountId
+      });
+
+      return {
+        transferId: transfer.id,
+        payoutId: payout.id,
+        amount: payout.amount / 100,
+        status: payout.status,
+        arrivalDate: new Date(payout.arrival_date * 1000).toISOString()
+      };
+    } catch (error) {
+      console.error('Error creating payout:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * List Connect accounts
+   */
+  async listConnectAccounts(limit = 10) {
+    if (!this.configured()) {
+      throw new Error('Stripe is not configured');
+    }
+
+    try {
+      const accounts = await this.stripe.accounts.list({ limit });
+      return accounts.data.map(acc => ({
+        id: acc.id,
+        email: acc.email,
+        charges_enabled: acc.charges_enabled,
+        payouts_enabled: acc.payouts_enabled
+      }));
+    } catch (error) {
+      console.error('Error listing accounts:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a Connect account
+   */
+  async deleteConnectAccount(accountId) {
+    if (!this.configured()) {
+      throw new Error('Stripe is not configured');
+    }
+
+    try {
+      await this.stripe.accounts.delete(accountId);
+      return { deleted: true, id: accountId };
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      throw error;
+    }
   }
 }
 
