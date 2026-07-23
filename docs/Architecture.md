@@ -66,6 +66,8 @@ Promote is a full-stack ticketing platform with a React frontend, Node.js/Expres
 - **React Router 6** — Client-side routing
 - **Context API** — State management
 - **CSS Variables** — Theming (dark mode)
+- **Google Analytics** — Analytics tracking
+- **Service Worker** — PWA offline support
 
 ### Backend
 - **Node.js** — Runtime environment
@@ -76,6 +78,9 @@ Promote is a full-stack ticketing platform with a React frontend, Node.js/Expres
 - **jsonwebtoken** — JWT authentication
 - **stripe** — Payment processing
 - **@sentry/node** — Error monitoring
+- **express-rate-limit** — Rate limiting
+- **helmet** — Security headers
+- **crypto** — Password hashing (PBKDF2)
 
 ### Database
 - **MariaDB** — Relational database
@@ -91,6 +96,7 @@ Promote is a full-stack ticketing platform with a React frontend, Node.js/Expres
 - **Cloudinary** — Image CDN
 - **Google OAuth** — Authentication
 - **Sentry** — Error tracking
+- **Google Analytics** — Web analytics
 
 ## Directory Structure
 
@@ -513,4 +519,92 @@ SENTRY_DSN=https://...
 
 # Frontend
 VITE_API_URL=http://localhost:3001/api
+```
+
+---
+
+## PWA (Progressive Web App)
+
+### Service Worker Features
+- Cache static assets for offline access
+- Network-first strategy with cache fallback
+- Background cache updates
+- Push notification support
+
+### Manifest Configuration
+```json
+{
+  "name": "Promote - Earn Production Access",
+  "short_name": "Promote",
+  "display": "standalone",
+  "theme_color": "#6366f1",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "/icon-dark.svg", "purpose": "dark" },
+    { "src": "/icon-light.svg", "purpose": "light" }
+  ],
+  "shortcuts": [
+    { "name": "Submit Ticket", "url": "/submit" },
+    { "name": "View Tickets", "url": "/mytickets" },
+    { "name": "Leaderboard", "url": "/leaderboard" }
+  ]
+}
+```
+
+### Adaptive Icons
+- **icon.svg** - Default adaptive icon
+- **icon-dark.svg** - Optimized for dark mode
+- **icon-light.svg** - Optimized for light mode
+
+---
+
+## SEO Configuration
+
+### Meta Tags
+- Title and description
+- Keywords
+- Open Graph tags (6 attributes)
+- Twitter Card tags (4 attributes)
+- Canonical URL
+
+### Sitemap (sitemap.xml)
+Public pages indexed for search engines:
+| Page | Priority | Change Frequency |
+|------|----------|------------------|
+| / | 1.0 | weekly |
+| /login | 0.8 | monthly |
+| /signup | 0.8 | monthly |
+| /faq | 0.7 | monthly |
+| /pricing | 0.8 | monthly |
+| /terms | 0.5 | yearly |
+| /privacy | 0.5 | yearly |
+
+### robots.txt
+- Allows public pages (SEO pages, marketing)
+- Disallows protected pages (/admin, /dashboard, /api)
+- Sitemap directive included
+
+---
+
+## Testing
+
+### Backend Unit Tests
+Located in `backend/tests/`:
+- **errorHandler.test.js** - 12 tests for error handling middleware
+- **credits.test.js** - 29 tests for credit service logic
+
+### Running Tests
+```bash
+cd backend && npm test
+```
+
+### Test Results
+```
+Test Suites: 2 passed, 2 total
+Tests:       41 passed, 41 total
+```
+
+### Frontend Build
+```bash
+cd frontend && npm run build
 ```

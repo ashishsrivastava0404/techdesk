@@ -808,3 +808,81 @@ pm2 restart backend
 - Connection pooling enabled
 - Pool size: 10 connections
 - Queue limit: unlimited
+
+---
+
+## Database Summary
+
+### Core Tables (8)
+| Table | Purpose | Primary Key |
+|-------|---------|-------------|
+| `users` | Platform users | id |
+| `tickets` | Support tickets | id |
+| `ratings` | Tech ratings | id |
+| `hire_requests` | Direct hire requests | id |
+| `payments` | Payment transactions | id |
+| `tech_earnings` | Tech earnings ledger | id |
+| `tech_payouts` | Payout requests | id |
+| `customer_invoices` | Customer invoices | id |
+
+### Communication Tables (3)
+| Table | Purpose | Primary Key |
+|-------|---------|-------------|
+| `ticket_messages` | Encrypted ticket discussions | id |
+| `ticket_history` | Ticket audit log | id |
+| `ticket_attachments` | File attachments | id |
+
+### CRM Tables (2)
+| Table | Purpose | Primary Key |
+|-------|---------|-------------|
+| `crm_contacts` | Contact profiles | id |
+| `crm_interactions` | Interaction history | id |
+
+### Admin Tables (2)
+| Table | Purpose | Primary Key |
+|-------|---------|-------------|
+| `admin_logs` | Admin audit log | id |
+| `platform_settings` | Configuration storage | id |
+
+### V2 Enhancement Tables (5)
+| Table | Purpose | Primary Key |
+|-------|---------|-------------|
+| `credit_transactions` | Credit ledger | id |
+| `agent_expertise` | Agent skills mapping | id |
+| `agent_requests` | Agent-customer workflow | id |
+| `category_hierarchies` | Nested categories | id |
+| `topic_suggestions` | Auto-suggest topics | id |
+
+### Support Tables (2)
+| Table | Purpose | Primary Key |
+|-------|---------|-------------|
+| `ticket_categories` | Ticket categories | id |
+| `help_articles` | Knowledge base | id |
+
+### Feedback Tables (2)
+| Table | Purpose | Primary Key |
+|-------|---------|-------------|
+| `notifications` | User notifications | id |
+| `csat_surveys` | Customer satisfaction | id |
+
+---
+
+## Database Statistics
+
+### Total Tables: 24
+
+### Storage Requirements
+| Component | Estimated Size |
+|-----------|----------------|
+| User data | ~500 bytes/row |
+| Ticket data | ~2 KB/row |
+| Messages | ~500 bytes/row |
+| Transactions | ~1 KB/row |
+
+### Index Recommendations
+- `tickets.customer_name` - For customer ticket queries
+- `tickets.tech_name` - For tech ticket queries
+- `tickets.status` - For filtering active tickets
+- `tickets.priority` - For routing decisions
+- `ratings.tech_name` - For leaderboard calculations
+- `payments.status` - For financial reporting

@@ -275,26 +275,83 @@ const decrypt = (text) => {
 
 ### Rate Limiting
 
+The platform implements comprehensive rate limiting using `express-rate-limit`:
+
 ```javascript
+// backend/src/middleware/rateLimiter.js
+
 import rateLimit from 'express-rate-limit';
 
-// General rate limit
-const generalLimiter = rateLimit({
+// General API rate limiter
+// Limits requests to 100 per 15 minutes per IP
+export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100,
-  message: { error: 'Too many requests' }
+  message: { error: 'Too many requests, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
-// Strict limit for sensitive endpoints
-const authLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
+// Strict rate limiter for auth endpoints
+// Prevents brute force attacks - 5 attempts per 15 minutes
+export const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
   max: 5,
-  message: { error: 'Too many authentication attempts' }
+  message: { error: 'Too many login attempts, please try again after 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, // Don't count successful requests
 });
 
-app.use('/api', generalLimiter);
-app.use('/api/auth', authLimiter);
+// Password reset rate limiter
+// Limits to 3 requests per hour
+export const passwordResetLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 3,
+  message: { error: 'Too many password reset attempts, please try again after an hour.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Registration rate limiter
+// Limits to 5 registrations per hour per IP
+export const registrationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: { error: 'Too many registration attempts, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Payment rate limiter
+// Limits to 10 requests per minute
+export const paymentLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10,
+  message: { error: 'Too many payment requests, please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// General POST/PUT limiter for form submissions
+export const formLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 30,
+  message: { error: 'Too many form submissions, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 ```
+
+### Applied Rate Limiters
+
+| Limiter | Applied To | Limit | Window |
+|---------|-----------|-------|--------|
+| `apiLimiter` | All `/api/*` routes | 100 requests | 15 min |
+| `authLimiter` | `/api/auth` | 5 attempts | 15 min |
+| `passwordResetLimiter` | `/api/auth/forgot-password`, `/api/auth/reset-password` | 3 requests | 1 hour |
+| `registrationLimiter` | `/api/auth/register` | 5 requests | 1 hour |
+| `paymentLimiter` | `/api/payments` | 10 requests | 1 min |
 
 ### CORS Configuration
 
