@@ -84,6 +84,7 @@ CREATE TABLE users (
   role ENUM('customer', 'tech', 'admin') DEFAULT 'customer',
   status ENUM('active', 'suspended', 'banned') DEFAULT 'active',
   email VARCHAR(255),
+  google_id VARCHAR(255),
   avatar_url VARCHAR(500),
   skills TEXT,
   hourly_rate DECIMAL(10,2) DEFAULT 50.00,
@@ -99,6 +100,10 @@ CREATE TABLE users (
 - `name` (UNIQUE)
 - `role`
 - `status`
+- `google_id`
+
+**New Fields (v2):**
+- `google_id` - Google OAuth user ID
 
 ---
 
@@ -110,13 +115,17 @@ CREATE TABLE tickets (
   id INT AUTO_INCREMENT PRIMARY KEY,
   title VARCHAR(255) NOT NULL,
   description TEXT NOT NULL,
+  subject VARCHAR(255) DEFAULT NULL,
+  short_description TEXT DEFAULT NULL,
+  long_description TEXT DEFAULT NULL,
   environment ENUM('dev', 'staging') DEFAULT 'dev',
   priority ENUM('low', 'normal', 'high', 'urgent', 'critical') DEFAULT 'normal',
-  status ENUM('open', 'claimed', 'in_progress', 'resolved', 'closed', 'rejected') DEFAULT 'open',
+  status ENUM('open', 'claimed', 'in_progress', 'resolved', 'closed', 'rejected', 'pending_assignment') DEFAULT 'open',
   customer_name VARCHAR(255) NOT NULL,
   tech_name VARCHAR(255) DEFAULT NULL,
   base_pay DECIMAL(10,2) DEFAULT 25.00,
   category VARCHAR(100) DEFAULT 'general',
+  subcategory VARCHAR(100) DEFAULT NULL,
   tags JSON,
   estimated_hours DECIMAL(5,2) DEFAULT NULL,
   actual_hours DECIMAL(5,2) DEFAULT NULL,
@@ -136,11 +145,19 @@ CREATE TABLE tickets (
 - `tech_name`
 - `status`
 - `priority`
+- `category`
 - `created_at`
 
 **Foreign Keys:**
 - `customer_name` → `users(name)`
 - `tech_name` → `users(name)`
+
+**New Fields (v2):**
+- `subject` - Topic/subject line for the ticket
+- `short_description` - Brief summary (max 200 words)
+- `long_description` - Detailed description (max 1000 words)
+- `subcategory` - Hierarchical sub-category
+- `pending_assignment` - Status for tickets awaiting agent approval
 
 ---
 
@@ -257,9 +274,11 @@ CREATE TABLE payments (
   amount DECIMAL(10,2) NOT NULL,
   platform_fee DECIMAL(10,2) NOT NULL,
   tech_payout DECIMAL(10,2) NOT NULL,
-  status ENUM('pending', 'held', 'released', 'refunded', 'disputed') DEFAULT 'pending',
+  status ENUM('pending', 'held', 'released', 'refunded', 'disputed', 'failed') DEFAULT 'pending',
   payment_method VARCHAR(50),
   transaction_id VARCHAR(255),
+  stripe_payment_intent_id VARCHAR(255),
+  stripe_customer_id VARCHAR(255),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   released_at TIMESTAMP NULL DEFAULT NULL
 );
@@ -270,10 +289,16 @@ CREATE TABLE payments (
 - `tech_name`
 - `status`
 - `transaction_id` (UNIQUE)
+- `stripe_payment_intent_id`
 
 **Foreign Keys:**
 - `hire_request_id` → `hire_requests(id)`
 - `ticket_id` → `tickets(id)`
+
+**New Fields (v2):**
+- `stripe_payment_intent_id` - Stripe PaymentIntent ID
+- `stripe_customer_id` - Stripe Customer ID
+- `failed` status - Payment failed
 
 ---
 
@@ -578,6 +603,161 @@ CREATE TABLE help_articles (
 - `slug` (UNIQUE)
 - `category`
 - `is_published`
+
+---
+
+### credit_transactions (v2)
+Credit system transaction ledger.
+
+```sql
+CREATE TABLE credit_transactions (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_name VARCHAR(255) NOT NULL,
+  type ENUM('credit', 'debit', 'transfer_in', 'transfer_out', 'refund') NOT NULL,
+  amount DECIMAL(10,2) NOT NULL,
+  balance_after DECIMAL(10,2) NOT NULL,
+  reason VARCHAR(255),
+  related_user VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_user_name (user_name),
+  INDEX idx_created_at (created_at)
+);
+```
+
+**Indexes:**
+- `user_name`
+- `created_at`
+
+**Transaction Types:**
+- `credit` - Credits added (purchases, admin additions)
+- `debit` - Credits deducted (ticket payments)
+- `transfer_in` - Credits received from another user
+- `transfer_out` - Credits sent to another user
+- `refund` - Credits refunded
+
+---
+
+### agent_expertise (v2)
+Maps agents to their expertise categories for intelligent routing.
+
+```sql
+CREATE TABLE agent_expertise (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  tech_name VARCHAR(255) NOT NULL,
+  category VARCHAR(100) NOT NULL,
+  subcategory VARCHAR(100) DEFAULT NULL,
+  expertise_level ENUM('beginner', 'intermediate', 'expert') DEFAULT 'intermediate',
+  success_rate DECIMAL(5,2) DEFAULT 0,
+  total_tickets INT DEFAULT 0,
+  successful_tickets INT DEFAULT 0,
+  avg_rating DECIMAL(3,2) DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY unique_expertise (tech_name, category, subcategory)
+);
+```
+
+**Indexes:**
+- `tech_name`
+- `category`
+- `success_rate` (for routing queries)
+
+**Scoring Factors:**
+- Expertise level (0-40 points)
+- Success rate (0-40 points)
+- Average rating (0-40 points)
+- Current workload (0-20 points)
+
+---
+
+### agent_requests (v2)
+Agent-to-customer request workflow.
+
+```sql
+CREATE TABLE agent_requests (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  ticket_id INT NOT NULL,
+  tech_name VARCHAR(255) NOT NULL,
+  customer_name VARCHAR(255) NOT NULL,
+  message TEXT,
+  proposed_rate DECIMAL(10,2) DEFAULT NULL,
+  estimated_days INT DEFAULT NULL,
+  status ENUM('pending', 'approved', 'rejected', 'expired') DEFAULT 'pending',
+  response_message TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  responded_at TIMESTAMP NULL DEFAULT NULL,
+  FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
+);
+```
+
+**Indexes:**
+- `ticket_id`
+- `tech_name`
+- `customer_name`
+- `status`
+- `created_at`
+
+**Foreign Keys:**
+- `ticket_id` → `tickets(id)` (ON DELETE CASCADE)
+
+---
+
+### category_hierarchies (v2)
+Nested category/sub-category structure.
+
+```sql
+CREATE TABLE category_hierarchies (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  parent_id INT DEFAULT NULL,
+  description TEXT,
+  icon VARCHAR(50) DEFAULT 'folder',
+  color VARCHAR(20) DEFAULT '#FFB454',
+  sort_order INT DEFAULT 0,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (parent_id) REFERENCES category_hierarchies(id) ON DELETE SET NULL
+);
+```
+
+**Indexes:**
+- `parent_id` (self-referencing FK)
+
+**Example Hierarchy:**
+```
+- Technology
+  - Software
+    - Bug Reports
+    - Feature Requests
+  - Hardware
+- Billing
+  - Payments
+  - Subscriptions
+```
+
+---
+
+### topic_suggestions (v2)
+Topic auto-suggest based on historical success rates.
+
+```sql
+CREATE TABLE topic_suggestions (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  tag VARCHAR(100) NOT NULL,
+  usage_count INT DEFAULT 1,
+  success_rate DECIMAL(5,2) DEFAULT 0,
+  avg_resolution_hours DECIMAL(10,2) DEFAULT 0,
+  last_used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY unique_tag (tag)
+);
+```
+
+**Indexes:**
+- `tag` (UNIQUE)
+- `success_rate` (for suggestion queries)
+
+---
 
 ## Migration Guide
 
