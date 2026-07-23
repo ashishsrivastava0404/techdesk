@@ -177,8 +177,8 @@ export default function Landing() {
           <Link to="/signup" className="btn-primary btn-large">
             Create Free Account
           </Link>
-          <Link to="/login" className="btn-secondary btn-large">
-            Sign In
+          <Link to="/pricing" className="btn-secondary btn-large">
+            View Pricing
           </Link>
         </div>
       </section>
@@ -191,8 +191,11 @@ export default function Landing() {
             <span>Promote — Earn Production Access</span>
           </div>
           <div className="footer-links">
-            <Link to="/login">Sign In</Link>
-            <Link to="/signup">Sign Up</Link>
+            <Link to="/faq">FAQ</Link>
+            <Link to="/pricing">Pricing</Link>
+            <Link to="/help">Help</Link>
+            <Link to="/terms">Terms</Link>
+            <Link to="/privacy">Privacy</Link>
           </div>
         </div>
         <div className="footer-bottom">

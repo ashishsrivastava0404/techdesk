@@ -446,5 +446,46 @@ export const api = {
       body: JSON.stringify(data)
     }),
     getRequest: (id) => fetchJSON(`/agents/requests/${id}`)
+  },
+
+  // Password Reset
+  passwordReset: {
+    requestReset: async (email) => {
+      const response = await fetch(`${API_BASE}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to request password reset');
+      }
+      return data;
+    },
+
+    verifyToken: async (token) => {
+      const response = await fetch(`${API_BASE}/auth/verify-reset-token?token=${encodeURIComponent(token)}`);
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Invalid token');
+      }
+      return data;
+    },
+
+    resetPassword: async (token, newPassword) => {
+      const response = await fetch(`${API_BASE}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, newPassword })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to reset password');
+      }
+      return data;
+    }
   }
 };

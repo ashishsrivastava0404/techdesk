@@ -596,4 +596,145 @@ router.post('/create-admin', async (req, res) => {
   }
 });
 
+// In-memory password reset tokens (use Redis in production)
+// { token: { email, expiresAt } }
+const passwordResetTokens = new Map();
+
+// Request password reset
+router.post('/forgot-password', async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
+  try {
+    // Check if user exists
+    const [users] = await pool.query(
+      'SELECT id, name FROM users WHERE email = ?',
+      [email]
+    );
+
+    // Always return success to prevent email enumeration
+    if (users.length === 0) {
+      return res.json({ 
+        message: 'If an account exists with this email, you will receive a password reset link.' 
+      });
+    }
+
+    const user = users[0];
+
+    // Generate reset token (valid for 1 hour)
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = Date.now() + 60 * 60 * 1000; // 1 hour
+
+    // Store token
+    passwordResetTokens.set(resetToken, {
+      email,
+      userId: user.id,
+      expiresAt
+    });
+
+    // In production, send email with reset link
+    // For now, we'll include the token in the response for testing
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
+
+    // Log for development (in production, send actual email)
+    console.log(`Password reset token for ${email}: ${resetToken}`);
+    console.log(`Reset URL: ${resetUrl}`);
+
+    // Send email if SendGrid is configured
+    if (process.env.SENDGRID_API_KEY) {
+      await notificationService.sendEmail(
+        email,
+        'Password Reset Request',
+        `Hello ${user.name},\n\nYou requested a password reset. Click here to reset your password: ${resetUrl}\n\nThis link expires in 1 hour.\n\nIf you didn't request this, please ignore this email.`
+      );
+    }
+
+    res.json({ 
+      message: 'If an account exists with this email, you will receive a password reset link.',
+      // Include URL for development/testing only
+      ...(process.env.NODE_ENV === 'development' && { resetUrl })
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ error: 'Failed to process request' });
+  }
+});
+
+// Reset password with token
+router.post('/reset-password', async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  if (!token || !newPassword) {
+    return res.status(400).json({ error: 'Token and new password are required' });
+  }
+
+  if (newPassword.length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters' });
+  }
+
+  try {
+    // Validate token
+    const tokenData = passwordResetTokens.get(token);
+
+    if (!tokenData) {
+      return res.status(400).json({ error: 'Invalid or expired reset token' });
+    }
+
+    if (Date.now() > tokenData.expiresAt) {
+      passwordResetTokens.delete(token);
+      return res.status(400).json({ error: 'Reset token has expired' });
+    }
+
+    // Hash new password
+    const { hash, salt } = hashPassword(newPassword);
+
+    // Update user password
+    await pool.query(
+      'UPDATE users SET password_hash = ?, password_salt = ? WHERE id = ?',
+      [hash, salt, tokenData.userId]
+    );
+
+    // Delete used token
+    passwordResetTokens.delete(token);
+
+    // Invalidate all refresh tokens for this user
+    // (In production, use Redis to track active sessions)
+
+    res.json({ message: 'Password reset successful. Please login with your new password.' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
+// Verify reset token (for frontend validation)
+router.get('/verify-reset-token', async (req, res) => {
+  const { token } = req.query;
+
+  if (!token) {
+    return res.status(400).json({ error: 'Token is required' });
+  }
+
+  try {
+    const tokenData = passwordResetTokens.get(token);
+
+    if (!tokenData) {
+      return res.status(400).json({ valid: false, error: 'Invalid or expired reset token' });
+    }
+
+    if (Date.now() > tokenData.expiresAt) {
+      passwordResetTokens.delete(token);
+      return res.status(400).json({ valid: false, error: 'Reset token has expired' });
+    }
+
+    res.json({ valid: true });
+  } catch (error) {
+    console.error('Verify reset token error:', error);
+    res.status(500).json({ error: 'Failed to verify token' });
+  }
+});
+
 export default router;

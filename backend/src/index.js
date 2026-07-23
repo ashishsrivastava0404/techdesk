@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import { initDatabase } from './db/index.js';
 import { authenticate } from './middleware/auth.js';
+import { apiLimiter, authLimiter, paymentLimiter } from './middleware/rateLimiter.js';
 import usersRouter from './routes/users.js';
 import authRouter from './routes/auth.js';
 import ticketsRouter from './routes/tickets.js';
@@ -53,29 +54,30 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Public API Routes (no authentication required)
-app.use('/api/auth', authRouter);
+// Apply general API rate limiter to public routes
+app.use('/api/auth', apiLimiter, authRouter);
 
 // Protected API Routes (authentication required)
-// Apply authenticate middleware to all protected routes
+// Apply authenticate middleware + rate limiter to all protected routes
 app.use('/api/users', authenticate, usersRouter);
-app.use('/api/tickets', authenticate, ticketsRouter);
-app.use('/api/ratings', authenticate, ratingsRouter);
-app.use('/api/hire-requests', authenticate, hireRequestsRouter);
+app.use('/api/tickets', authenticate, apiLimiter, ticketsRouter);
+app.use('/api/ratings', authenticate, apiLimiter, ratingsRouter);
+app.use('/api/hire-requests', authenticate, apiLimiter, hireRequestsRouter);
 app.use('/api/stats', authenticate, statsRouter);
-app.use('/api/payments', authenticate, paymentsRouter);
-app.use('/api/earnings', authenticate, earningsRouter);
-app.use('/api/crm', authenticate, crmRouter);
-app.use('/api/admin', authenticate, adminRouter);
-app.use('/api/discussions', authenticate, discussionsRouter);
+app.use('/api/payments', authenticate, paymentLimiter, paymentsRouter);
+app.use('/api/earnings', authenticate, apiLimiter, earningsRouter);
+app.use('/api/crm', authenticate, apiLimiter, crmRouter);
+app.use('/api/admin', authenticate, apiLimiter, adminRouter);
+app.use('/api/discussions', authenticate, apiLimiter, discussionsRouter);
 app.use('/api/categories', authenticate, categoriesRouter);
-app.use('/api/notifications', authenticate, notificationsRouter);
+app.use('/api/notifications', authenticate, apiLimiter, notificationsRouter);
 app.use('/api/ticket-history', authenticate, ticketHistoryRouter);
-app.use('/api/surveys', authenticate, surveysRouter);
-app.use('/api/chatbot', authenticate, chatbotRouter);
-app.use('/api/uploads', authenticate, uploadsRouter);
-app.use('/api/topics', authenticate, topicsRouter);
-app.use('/api/agents', authenticate, agentRequestsRouter);
-app.use('/api/credits', authenticate, creditsRouter);
+app.use('/api/surveys', authenticate, apiLimiter, surveysRouter);
+app.use('/api/chatbot', authenticate, apiLimiter, chatbotRouter);
+app.use('/api/uploads', authenticate, apiLimiter, uploadsRouter);
+app.use('/api/topics', authenticate, apiLimiter, topicsRouter);
+app.use('/api/agents', authenticate, apiLimiter, agentRequestsRouter);
+app.use('/api/credits', authenticate, apiLimiter, creditsRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });

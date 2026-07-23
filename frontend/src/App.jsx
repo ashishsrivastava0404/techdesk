@@ -5,6 +5,12 @@ import Layout from './components/Layout.jsx';
 import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';
 import Signup from './pages/Signup.jsx';
+import ResetPassword from './pages/ResetPassword.jsx';
+import Terms from './pages/Terms.jsx';
+import Privacy from './pages/Privacy.jsx';
+import Cookies from './pages/Cookies.jsx';
+import FAQ from './pages/FAQ.jsx';
+import Pricing from './pages/Pricing.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import SubmitTicket from './pages/SubmitTicket.jsx';
 import AvailableTickets from './pages/AvailableTickets.jsx';
@@ -20,6 +26,8 @@ import Notifications from './pages/Notifications.jsx';
 import TicketDetail from './pages/TicketDetail.jsx';
 import HelpCenter from './pages/HelpCenter.jsx';
 import ChatBot from './components/ChatBot.jsx';
+import CookieConsent from './components/CookieConsent.jsx';
+import Analytics from './components/Analytics.jsx';
 
 function AppRoutes() {
   const { user, loading } = useApp();
@@ -47,6 +55,13 @@ function AppRoutes() {
         <Route path="/" element={<PublicRoute><Landing /></PublicRoute>} />
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/forgot-password" element={<ResetPassword />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/cookies" element={<Cookies />} />
+        <Route path="/faq" element={<FAQ />} />
+        <Route path="/pricing" element={<Pricing />} />
 
         {/* Protected Routes - All authenticated users */}
         <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
@@ -83,6 +98,8 @@ function AppRoutes() {
         } />
       </Routes>
       {user && <ChatBot />}
+      <CookieConsent />
+      <Analytics />
     </>
   );
 }
