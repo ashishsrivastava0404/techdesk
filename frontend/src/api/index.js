@@ -222,5 +222,68 @@ export const api = {
     getFaqs: () => fetchJSON('/chatbot/faqs'),
     getTopics: () => fetchJSON('/chatbot/topics'),
     getHistory: (sessionId) => fetchJSON(`/chatbot/history/${sessionId}`)
+  },
+
+  // Credits
+  credits: {
+    getBalance: (userName) => fetchJSON(`/credits/balance/${encodeURIComponent(userName)}`),
+    getHistory: (userName, limit = 50) => fetchJSON(`/credits/history/${encodeURIComponent(userName)}?limit=${limit}`),
+    add: (data) => fetchJSON('/credits/add', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    deduct: (data) => fetchJSON('/credits/deduct', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    transfer: (data) => fetchJSON('/credits/transfer', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    getCost: (priority, basePay) => fetchJSON(`/credits/cost?priority=${priority}&base_pay=${basePay}`),
+    check: (userName, priority, basePay) => fetchJSON(`/credits/check?user_name=${encodeURIComponent(userName)}&priority=${priority}&base_pay=${basePay}`),
+    getSettings: () => fetchJSON('/credits/settings')
+  },
+
+  // Topics (Hierarchical Categories)
+  topics: {
+    getSuggestions: (limit = 10) => fetchJSON(`/topics/suggest?limit=${limit}`),
+    addSuggestion: (data) => fetchJSON('/topics/suggest', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    getCategories: () => fetchJSON('/topics/categories'),
+    createCategory: (data) => fetchJSON('/topics/categories', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    getExpertise: (techName) => fetchJSON(`/topics/expertise/${encodeURIComponent(techName)}`),
+    addExpertise: (data) => fetchJSON('/topics/expertise', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    removeExpertise: (data) => fetchJSON('/topics/expertise', {
+      method: 'DELETE',
+      body: JSON.stringify(data)
+    })
+  },
+
+  // Agent Requests
+  agents: {
+    requestCustomer: (data) => fetchJSON('/agents/request-customer', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    getPendingRequests: (customerName) => fetchJSON(`/agents/requests/pending?customer_name=${encodeURIComponent(customerName)}`),
+    getSentRequests: (techName) => fetchJSON(`/agents/requests/sent?tech_name=${encodeURIComponent(techName)}`),
+    approveRequest: (id, data = {}) => fetchJSON(`/agents/requests/${id}/approve`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    }),
+    rejectRequest: (id, data = {}) => fetchJSON(`/agents/requests/${id}/reject`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    }),
+    getRequest: (id) => fetchJSON(`/agents/requests/${id}`)
   }
 };

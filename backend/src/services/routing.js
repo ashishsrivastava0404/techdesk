@@ -66,12 +66,13 @@ class RoutingService {
     `;
     let params = [techName, category];
 
+    // Order by subcategory match (prefer exact match if subcategory provided)
     if (subcategory) {
-      query += ` AND (subcategory = ? OR subcategory IS NULL)`;
+      query += ` ORDER BY CASE WHEN subcategory = ? THEN 0 ELSE 1 END LIMIT 1`;
       params.push(subcategory);
+    } else {
+      query += ` LIMIT 1`;
     }
-
-    query += ` ORDER BY subcategory DESC LIMIT 1`;
 
     const [rows] = await pool.query(query, params);
     return rows[0] || null;
@@ -284,7 +285,7 @@ class RoutingService {
       `INSERT INTO agent_expertise (tech_name, category, subcategory, expertise_level)
        VALUES (?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE expertise_level = ?`,
-      [techName, category, subcategory || null, level, level]
+      [techName, category, null, level, level] // subcategory not used in unique constraint
     );
   }
 

@@ -122,7 +122,7 @@ export async function initDatabase() {
       avg_rating DECIMAL(3,2) DEFAULT 0,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      UNIQUE KEY unique_expertise (tech_name, category, subcategory)
+      UNIQUE KEY unique_expertise (tech_name, category)
     )
   `);
 
