@@ -59,7 +59,7 @@ export function PublicRoute({ children }) {
     if (user.role === 'admin') {
       return <Navigate to="/admin" replace />;
     } else if (user.role === 'tech') {
-      return <Navigate to="/dashboard" replace />;
+      return <Navigate to="/available" replace />;
     } else {
       return <Navigate to="/dashboard" replace />;
     }
