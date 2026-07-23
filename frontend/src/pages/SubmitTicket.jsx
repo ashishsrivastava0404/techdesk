@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext.jsx';
 import { api } from '../api/index.js';
@@ -8,19 +8,33 @@ export default function SubmitTicket() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [topicSuggestions, setTopicSuggestions] = useState([]);
   const [templates, setTemplates] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [form, setForm] = useState({
     title: '',
+    subject: '',
+    short_description: '',
+    long_description: '',
     description: '',
     environment: 'dev',
     priority: 'normal',
     category: 'general',
+    subcategory: '',
     tags: '',
     estimated_hours: ''
   });
 
+  // Word count helpers
+  const wordCount = (text) => text ? text.trim().split(/\s+/).filter(w => w.length > 0).length : 0;
+  const shortDescWordCount = wordCount(form.short_description);
+  const longDescWordCount = wordCount(form.long_description);
+  const MAX_SHORT_DESC_WORDS = 200;
+  const MAX_LONG_DESC_WORDS = 1000;
+
   useEffect(() => {
     loadCategories();
+    loadTopicSuggestions();
   }, []);
 
   useEffect(() => {
@@ -37,6 +51,16 @@ export default function SubmitTicket() {
       setCategories(data);
     } catch (error) {
       console.error('Error loading categories:', error);
+    }
+  };
+
+  const loadTopicSuggestions = async () => {
+    try {
+      const response = await fetch('/api/topics/suggest?limit=20');
+      const data = await response.json();
+      setTopicSuggestions(data.topics || []);
+    } catch (error) {
+      console.error('Error loading topic suggestions:', error);
     }
   };
 
@@ -60,6 +84,24 @@ export default function SubmitTicket() {
     }
   };
 
+  // Filter suggestions based on input
+  const filteredSuggestions = useMemo(() => {
+    if (!form.subject.trim()) return [];
+    const search = form.subject.toLowerCase();
+    return topicSuggestions.filter(t => 
+      t.tag.toLowerCase().includes(search)
+    ).slice(0, 5);
+  }, [form.subject, topicSuggestions]);
+
+  const selectSuggestion = (tag) => {
+    const currentTags = form.tags.split(',').map(t => t.trim()).filter(Boolean);
+    if (!currentTags.includes(tag)) {
+      currentTags.push(tag);
+      setForm(f => ({ ...f, tags: currentTags.join(', ') }));
+    }
+    setShowSuggestions(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -70,16 +112,30 @@ export default function SubmitTicket() {
       return;
     }
 
+    if (shortDescWordCount > MAX_SHORT_DESC_WORDS) {
+      showToast(`Short description exceeds ${MAX_SHORT_DESC_WORDS} words`);
+      return;
+    }
+
+    if (longDescWordCount > MAX_LONG_DESC_WORDS) {
+      showToast(`Long description exceeds ${MAX_LONG_DESC_WORDS} words`);
+      return;
+    }
+
     setLoading(true);
     try {
       const tagArray = form.tags.split(',').map(t => t.trim()).filter(Boolean);
       
       await api.tickets.create({
         title: form.title,
+        subject: form.subject || null,
+        short_description: form.short_description || null,
+        long_description: form.long_description || null,
         description: form.description,
         environment: form.environment,
         priority: form.priority,
         category: form.category,
+        subcategory: form.subcategory || null,
         tags: tagArray,
         estimated_hours: form.estimated_hours ? parseFloat(form.estimated_hours) : null,
         customer_name: user.name
@@ -107,7 +163,7 @@ export default function SubmitTicket() {
       <p className="view-sub">Describe the issue or task you need help with.</p>
 
       <form onSubmit={handleSubmit}>
-        <div className="panel" style={{ maxWidth: '700px' }}>
+        <div className="panel" style={{ maxWidth: '800px' }}>
           <div className="field">
             <label>Title *</label>
             <input
@@ -117,6 +173,53 @@ export default function SubmitTicket() {
               placeholder="Brief summary of the issue"
               required
             />
+          </div>
+
+          <div className="field">
+            <label>Subject / Topic</label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type="text"
+                value={form.subject}
+                onChange={(e) => {
+                  setForm(f => ({ ...f, subject: e.target.value }));
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                placeholder="Start typing to see suggestions..."
+              />
+              {showSuggestions && filteredSuggestions.length > 0 && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  background: 'var(--surface-1)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '4px',
+                  zIndex: 10,
+                  maxHeight: '200px',
+                  overflow: 'auto'
+                }}>
+                  {filteredSuggestions.map((s, i) => (
+                    <div
+                      key={i}
+                      onClick={() => selectSuggestion(s.tag)}
+                      style={{
+                        padding: '8px 12px',
+                        cursor: 'pointer',
+                        borderBottom: '1px solid var(--border-color)'
+                      }}
+                    >
+                      <span style={{ fontWeight: 500 }}>{s.tag}</span>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginLeft: '8px' }}>
+                        {s.success_rate}% success rate
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -144,6 +247,28 @@ export default function SubmitTicket() {
                 step="0.5"
               />
             </div>
+          </div>
+
+          {/* Short Description - 200 words max */}
+          <div className="field">
+            <label>
+              Short Description 
+              <span style={{ fontWeight: 400, color: shortDescWordCount > MAX_SHORT_DESC_WORDS ? '#dc2626' : 'var(--text-muted)' }}>
+                ({shortDescWordCount}/{MAX_SHORT_DESC_WORDS} words)
+              </span>
+            </label>
+            <textarea
+              value={form.short_description}
+              onChange={(e) => {
+                const words = e.target.value.split(/\s+/).filter(w => w.length > 0);
+                if (words.length <= MAX_SHORT_DESC_WORDS) {
+                  setForm(f => ({ ...f, short_description: e.target.value }));
+                }
+              }}
+              placeholder="Brief summary (max 200 words)..."
+              rows={3}
+              style={{ borderColor: shortDescWordCount > MAX_SHORT_DESC_WORDS ? '#dc2626' : undefined }}
+            />
           </div>
 
           {/* Templates */}
@@ -177,14 +302,39 @@ export default function SubmitTicket() {
             />
           </div>
 
+          {/* Long Description - 1000 words max */}
           <div className="field">
-            <label>Tags (comma-separated)</label>
+            <label>
+              Additional Details 
+              <span style={{ fontWeight: 400, color: longDescWordCount > MAX_LONG_DESC_WORDS ? '#dc2626' : 'var(--text-muted)' }}>
+                ({longDescWordCount}/{MAX_LONG_DESC_WORDS} words, optional)
+              </span>
+            </label>
+            <textarea
+              value={form.long_description}
+              onChange={(e) => {
+                const words = e.target.value.split(/\s+/).filter(w => w.length > 0);
+                if (words.length <= MAX_LONG_DESC_WORDS) {
+                  setForm(f => ({ ...f, long_description: e.target.value }));
+                }
+              }}
+              placeholder="Additional context, steps to reproduce, expected vs actual behavior..."
+              rows={5}
+              style={{ borderColor: longDescWordCount > MAX_LONG_DESC_WORDS ? '#dc2626' : undefined }}
+            />
+          </div>
+
+          <div className="field">
+            <label>Tags</label>
             <input
               type="text"
               value={form.tags}
               onChange={(e) => setForm(f => ({ ...f, tags: e.target.value }))}
               placeholder="e.g. api, database, urgent"
             />
+            <small style={{ color: 'var(--text-muted)' }}>
+              Click suggestions above to add tags automatically
+            </small>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>

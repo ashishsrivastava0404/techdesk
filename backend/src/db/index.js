@@ -67,13 +67,17 @@ export async function initDatabase() {
       id INT AUTO_INCREMENT PRIMARY KEY,
       title VARCHAR(255) NOT NULL,
       description TEXT NOT NULL,
+      subject VARCHAR(255) DEFAULT NULL,
+      short_description TEXT DEFAULT NULL,
+      long_description TEXT DEFAULT NULL,
       environment ENUM('dev', 'staging') DEFAULT 'dev',
       priority ENUM('low', 'normal', 'high', 'urgent', 'critical') DEFAULT 'normal',
-      status ENUM('open', 'claimed', 'in_progress', 'resolved', 'closed', 'rejected') DEFAULT 'open',
+      status ENUM('open', 'claimed', 'in_progress', 'resolved', 'closed', 'rejected', 'pending_assignment') DEFAULT 'open',
       customer_name VARCHAR(255) NOT NULL,
       tech_name VARCHAR(255) DEFAULT NULL,
       base_pay DECIMAL(10,2) DEFAULT 25.00,
       category VARCHAR(100) DEFAULT 'general',
+      subcategory VARCHAR(100) DEFAULT NULL,
       tags JSON,
       estimated_hours DECIMAL(5,2) DEFAULT NULL,
       actual_hours DECIMAL(5,2) DEFAULT NULL,
@@ -85,6 +89,72 @@ export async function initDatabase() {
       satisfaction_comment TEXT DEFAULT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       resolved_at TIMESTAMP NULL DEFAULT NULL
+    )
+  `);
+
+  // Category hierarchies table (nested categories/sub-categories)
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS category_hierarchies (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(100) NOT NULL,
+      parent_id INT DEFAULT NULL,
+      description TEXT,
+      icon VARCHAR(50) DEFAULT 'folder',
+      color VARCHAR(20) DEFAULT '#FFB454',
+      sort_order INT DEFAULT 0,
+      is_active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (parent_id) REFERENCES category_hierarchies(id) ON DELETE SET NULL
+    )
+  `);
+
+  // Agent expertise table (maps agents to expertise categories)
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS agent_expertise (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      tech_name VARCHAR(255) NOT NULL,
+      category VARCHAR(100) NOT NULL,
+      subcategory VARCHAR(100) DEFAULT NULL,
+      expertise_level ENUM('beginner', 'intermediate', 'expert') DEFAULT 'intermediate',
+      success_rate DECIMAL(5,2) DEFAULT 0,
+      total_tickets INT DEFAULT 0,
+      successful_tickets INT DEFAULT 0,
+      avg_rating DECIMAL(3,2) DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY unique_expertise (tech_name, category, subcategory)
+    )
+  `);
+
+  // Agent requests table (for agent-to-customer requests)
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS agent_requests (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      ticket_id INT NOT NULL,
+      tech_name VARCHAR(255) NOT NULL,
+      customer_name VARCHAR(255) NOT NULL,
+      message TEXT,
+      proposed_rate DECIMAL(10,2) DEFAULT NULL,
+      estimated_days INT DEFAULT NULL,
+      status ENUM('pending', 'approved', 'rejected', 'expired') DEFAULT 'pending',
+      response_message TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      responded_at TIMESTAMP NULL DEFAULT NULL,
+      FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Topic suggestions table (for auto-suggest based on historical data)
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS topic_suggestions (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      tag VARCHAR(100) NOT NULL,
+      usage_count INT DEFAULT 1,
+      success_rate DECIMAL(5,2) DEFAULT 0,
+      avg_resolution_hours DECIMAL(10,2) DEFAULT 0,
+      last_used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY unique_tag (tag)
     )
   `);
 

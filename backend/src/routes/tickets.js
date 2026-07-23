@@ -1,18 +1,19 @@
 import { Router } from 'express';
 import pool from '../db/index.js';
+import { routingService } from '../services/routing.js';
 
 const router = Router();
 
 // Get tickets with filters
 router.get('/', async (req, res) => {
-  const { status, tech_name, customer_name, environment, priority, category, search } = req.query;
+  const { status, tech_name, customer_name, environment, priority, category, subcategory, search } = req.query;
   
   let query = 'SELECT * FROM tickets WHERE 1=1';
   const params = [];
   
   if (status) {
     if (status === 'open') {
-      query += " AND status IN ('open', 'claimed', 'in_progress')";
+      query += " AND status IN ('open', 'claimed', 'in_progress', 'pending_assignment')";
     } else {
       query += ' AND status = ?';
       params.push(status);
@@ -44,10 +45,15 @@ router.get('/', async (req, res) => {
     params.push(category);
   }
 
+  if (subcategory) {
+    query += ' AND subcategory = ?';
+    params.push(subcategory);
+  }
+
   if (search) {
-    query += ' AND (title LIKE ? OR description LIKE ?)';
+    query += ' AND (title LIKE ? OR description LIKE ? OR subject LIKE ?)';
     const searchTerm = `%${search}%`;
-    params.push(searchTerm, searchTerm);
+    params.push(searchTerm, searchTerm, searchTerm);
   }
   
   query += ' ORDER BY FIELD(priority, "critical", "urgent", "high", "normal", "low"), created_at DESC';
@@ -76,17 +82,40 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Create ticket
+// Create ticket with enhanced fields
 router.post('/', async (req, res) => {
-  const { title, description, environment, priority, customer_name, category, tags, estimated_hours } = req.body;
+  const { 
+    title, 
+    description, 
+    subject,
+    short_description,
+    long_description,
+    environment, 
+    priority, 
+    customer_name, 
+    category, 
+    subcategory,
+    tags, 
+    estimated_hours,
+    auto_route = true // Whether to auto-route to agents
+  } = req.body;
   
   if (!title || !description || !customer_name) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
   
+  // Validate word counts
+  if (short_description && short_description.split(/\s+/).length > 200) {
+    return res.status(400).json({ error: 'short_description exceeds 200 words' });
+  }
+  
+  if (long_description && long_description.split(/\s+/).length > 1000) {
+    return res.status(400).json({ error: 'long_description exceeds 1000 words' });
+  }
+  
   try {
     // Calculate SLA based on priority
-    let slaHours = 24; // default 24 hours
+    let slaHours = 24;
     if (priority === 'critical') slaHours = 1;
     else if (priority === 'urgent') slaHours = 4;
     else if (priority === 'high') slaHours = 8;
@@ -94,18 +123,33 @@ router.post('/', async (req, res) => {
     else if (priority === 'low') slaHours = 48;
 
     const [result] = await pool.query(
-      `INSERT INTO tickets (title, description, environment, priority, customer_name, category, tags, estimated_hours, sla_due_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? HOUR))`,
-      [title, description, environment || 'dev', priority || 'normal', customer_name, category || 'general', JSON.stringify(tags || []), estimated_hours || null, slaHours]
+      `INSERT INTO tickets (title, description, subject, short_description, long_description, environment, priority, customer_name, category, subcategory, tags, estimated_hours, sla_due_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? HOUR))`,
+      [
+        title, 
+        description, 
+        subject || null,
+        short_description || null,
+        long_description || null,
+        environment || 'dev', 
+        priority || 'normal', 
+        customer_name, 
+        category || 'general',
+        subcategory || null,
+        JSON.stringify(tags || []), 
+        estimated_hours || null, 
+        slaHours
+      ]
     );
     
     const [rows] = await pool.query('SELECT * FROM tickets WHERE id = ?', [result.insertId]);
+    const ticket = rows[0];
     
     // Log history
     await pool.query(
       `INSERT INTO ticket_history (ticket_id, action, actor_name, actor_role, metadata)
        VALUES (?, 'created', ?, 'customer', ?)`,
-      [result.insertId, customer_name, JSON.stringify({ priority, environment })]
+      [result.insertId, customer_name, JSON.stringify({ priority, environment, category, subcategory })]
     );
 
     // Notify admins
@@ -117,8 +161,21 @@ router.post('/', async (req, res) => {
         [admin.name, 'New ticket created', `"${title}" - ${priority} priority`, result.insertId]
       );
     }
+
+    // Auto-route to qualified agents if enabled
+    let routingResult = null;
+    if (auto_route) {
+      try {
+        routingResult = await routingService.routeTicket(ticket);
+      } catch (routingError) {
+        console.error('Routing error:', routingError);
+      }
+    }
     
-    res.status(201).json(rows[0]);
+    res.status(201).json({
+      ...ticket,
+      routing: routingResult
+    });
   } catch (error) {
     console.error('Error creating ticket:', error);
     res.status(500).json({ error: 'Failed to create ticket' });
@@ -128,7 +185,7 @@ router.post('/', async (req, res) => {
 // Update ticket
 router.patch('/:id', async (req, res) => {
   const { id } = req.params;
-  const { status, tech_name, priority, category, tags, estimated_hours, actual_hours, actor_name, actor_role } = req.body;
+  const { status, tech_name, priority, category, subcategory, tags, estimated_hours, actual_hours, actor_name, actor_role, subject, short_description, long_description } = req.body;
   
   try {
     // Get current ticket for history
@@ -142,6 +199,14 @@ router.patch('/:id', async (req, res) => {
     const params = [];
     const historyEntries = [];
     
+    // Validate word counts if provided
+    if (short_description && short_description.split(/\s+/).length > 200) {
+      return res.status(400).json({ error: 'short_description exceeds 200 words' });
+    }
+    if (long_description && long_description.split(/\s+/).length > 1000) {
+      return res.status(400).json({ error: 'long_description exceeds 1000 words' });
+    }
+    
     if (status) {
       updates.push('status = ?');
       params.push(status);
@@ -149,11 +214,25 @@ router.patch('/:id', async (req, res) => {
       
       if (status === 'resolved') {
         updates.push('resolved_at = NOW()');
-        // Check SLA
         const slaStatus = new Date(ticket.sla_due_at) > new Date() ? 'met' : 'breached';
         updates.push('sla_status = ?');
         params.push(slaStatus);
         historyEntries.push({ field: 'sla_status', old: ticket.sla_status, new: slaStatus });
+
+        // Update agent expertise
+        if (ticket.tech_name) {
+          const [ratings] = await pool.query(
+            'SELECT rating FROM ratings WHERE ticket_id = ? AND tech_name = ? ORDER BY created_at DESC LIMIT 1',
+            [id, ticket.tech_name]
+          );
+          const rating = ratings[0]?.rating || 0;
+          await routingService.updateAgentExpertise(
+            ticket.tech_name, 
+            ticket.category, 
+            ticket.subcategory, 
+            rating
+          );
+        }
       }
     }
     
@@ -162,7 +241,6 @@ router.patch('/:id', async (req, res) => {
       params.push(tech_name);
       historyEntries.push({ field: 'tech_name', old: ticket.tech_name, new: tech_name });
       
-      // Set first response time if claiming
       if (tech_name && !ticket.first_response_at) {
         updates.push('first_response_at = NOW()');
       }
@@ -178,6 +256,12 @@ router.patch('/:id', async (req, res) => {
       updates.push('category = ?');
       params.push(category);
       historyEntries.push({ field: 'category', old: ticket.category, new: category });
+    }
+
+    if (subcategory !== undefined) {
+      updates.push('subcategory = ?');
+      params.push(subcategory);
+      historyEntries.push({ field: 'subcategory', old: ticket.subcategory, new: subcategory });
     }
 
     if (tags !== undefined) {
@@ -196,6 +280,24 @@ router.patch('/:id', async (req, res) => {
       updates.push('actual_hours = ?');
       params.push(actual_hours);
       historyEntries.push({ field: 'actual_hours', old: ticket.actual_hours, new: actual_hours });
+    }
+
+    if (subject !== undefined) {
+      updates.push('subject = ?');
+      params.push(subject);
+      historyEntries.push({ field: 'subject', old: ticket.subject, new: subject });
+    }
+
+    if (short_description !== undefined) {
+      updates.push('short_description = ?');
+      params.push(short_description);
+      historyEntries.push({ field: 'short_description', old: ticket.short_description, new: short_description });
+    }
+
+    if (long_description !== undefined) {
+      updates.push('long_description = ?');
+      params.push(long_description);
+      historyEntries.push({ field: 'long_description', old: ticket.long_description, new: long_description });
     }
     
     if (updates.length === 0) {
@@ -248,6 +350,42 @@ router.delete('/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting ticket:', error);
     res.status(500).json({ error: 'Failed to delete ticket' });
+  }
+});
+
+// Get suggested agents for a ticket
+router.get('/:id/suggested-agents', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const [tickets] = await pool.query('SELECT * FROM tickets WHERE id = ?', [id]);
+    
+    if (tickets.length === 0) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+
+    const ticket = tickets[0];
+    const tags = typeof ticket.tags === 'string' ? JSON.parse(ticket.tags) : ticket.tags || [];
+    
+    const topAgents = await routingService.getTopAgents(
+      ticket.category,
+      ticket.subcategory,
+      tags,
+      10
+    );
+
+    res.json({
+      ticket: {
+        id: ticket.id,
+        title: ticket.title,
+        category: ticket.category,
+        subcategory: ticket.subcategory
+      },
+      agents: topAgents
+    });
+  } catch (error) {
+    console.error('Error getting suggested agents:', error);
+    res.status(500).json({ error: 'Failed to get suggested agents' });
   }
 });
 

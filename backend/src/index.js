@@ -19,6 +19,8 @@ import ticketHistoryRouter from './routes/ticketHistory.js';
 import surveysRouter from './routes/surveys.js';
 import chatbotRouter from './routes/chatbot.js';
 import uploadsRouter from './routes/uploads.js';
+import topicsRouter from './routes/topics.js';
+import agentRequestsRouter from './routes/agentRequests.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 // Initialize Sentry if configured
@@ -64,6 +66,8 @@ app.use('/api/ticket-history', ticketHistoryRouter);
 app.use('/api/surveys', surveysRouter);
 app.use('/api/chatbot', chatbotRouter);
 app.use('/api/uploads', uploadsRouter);
+app.use('/api/topics', topicsRouter);
+app.use('/api/agents', agentRequestsRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
