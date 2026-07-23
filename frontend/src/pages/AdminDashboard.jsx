@@ -307,30 +307,114 @@ export default function AdminDashboard() {
               <form onSubmit={(e) => {
                 e.preventDefault();
                 updateSettings({
-                  commission_rate: parseFloat(e.target.commission.value),
-                  minimum_payout: parseFloat(e.target.minPayout.value),
-                  dev_ticket_pay: parseFloat(e.target.devPay.value),
-                  staging_ticket_pay: parseFloat(e.target.stagingPay.value)
+                  commission_rate: parseFloat(e.target.commission?.value || settings.commission_rate),
+                  minimum_payout: parseFloat(e.target.minPayout?.value || settings.minimum_payout),
+                  dev_ticket_pay: parseFloat(e.target.devPay?.value || settings.dev_ticket_pay),
+                  staging_ticket_pay: parseFloat(e.target.stagingPay?.value || settings.staging_ticket_pay),
+                  dev_threshold: parseFloat(e.target.devThreshold?.value || settings.dev_threshold),
+                  staging_threshold: parseFloat(e.target.stagingThreshold?.value || settings.staging_threshold),
+                  credit_low_priority: parseFloat(e.target.creditLow?.value || 0),
+                  credit_normal_priority: parseFloat(e.target.creditNormal?.value || 0),
+                  credit_high_priority: parseFloat(e.target.creditHigh?.value || 50),
+                  credit_urgent_priority: parseFloat(e.target.creditUrgent?.value || 75),
+                  credit_critical_priority: parseFloat(e.target.creditCritical?.value || 100),
+                  email_notifications: e.target.emailNotifications?.checked ?? true,
+                  payout_auto_approve: e.target.payoutAutoApprove?.checked ?? false,
+                  require_ticket_rating: e.target.requireRating?.checked ?? true,
+                  max_ticket_age_days: parseInt(e.target.maxTicketAge?.value || 30)
                 });
               }}>
+                <h5 style={{ marginTop: '20px', marginBottom: '12px' }}>💰 Payout Settings</h5>
                 <div className="form-group">
                   <label>Commission Rate</label>
                   <input type="number" name="commission" step="0.01" min="0" max="1" defaultValue={settings.commission_rate} />
                   <span style={{ fontSize: '12px', color: 'var(--muted)' }}>Platform fee percentage (e.g., 0.15 = 15%)</span>
                 </div>
                 <div className="form-group">
-                  <label>Minimum Payout</label>
+                  <label>Minimum Payout ($)</label>
                   <input type="number" name="minPayout" step="0.01" min="0" defaultValue={settings.minimum_payout} />
                 </div>
                 <div className="form-group">
-                  <label>Dev Ticket Pay</label>
+                  <label>Payout Auto-Approve</label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input type="checkbox" name="payoutAutoApprove" defaultChecked={settings.payout_auto_approve === true || settings.payout_auto_approve === 'true'} />
+                    <span style={{ fontSize: '12px', color: 'var(--muted)' }}>Automatically approve payouts (use with caution)</span>
+                  </label>
+                </div>
+
+                <h5 style={{ marginTop: '20px', marginBottom: '12px' }}>💵 Tech Earnings</h5>
+                <div className="form-group">
+                  <label>Dev Ticket Pay ($)</label>
                   <input type="number" name="devPay" step="0.01" min="0" defaultValue={settings.dev_ticket_pay} />
                 </div>
                 <div className="form-group">
-                  <label>Staging Ticket Pay</label>
+                  <label>Staging Ticket Pay ($)</label>
                   <input type="number" name="stagingPay" step="0.01" min="0" defaultValue={settings.staging_ticket_pay} />
                 </div>
-                <button type="submit" className="btn btn-primary">Save Settings</button>
+                <div className="form-group">
+                  <label>Dev Threshold (%)</label>
+                  <input type="number" name="devThreshold" step="1" min="0" max="100" defaultValue={settings.dev_threshold || 33} />
+                  <span style={{ fontSize: '12px', color: 'var(--muted)' }}>Uptime % for dev environment</span>
+                </div>
+                <div className="form-group">
+                  <label>Staging Threshold (%)</label>
+                  <input type="number" name="stagingThreshold" step="1" min="0" max="100" defaultValue={settings.staging_threshold || 66} />
+                  <span style={{ fontSize: '12px', color: 'var(--muted)' }}>Uptime % for staging environment</span>
+                </div>
+
+                <h5 style={{ marginTop: '20px', marginBottom: '12px' }}>🎫 Ticket Credit Costs</h5>
+                <div className="form-group">
+                  <label>Low Priority Credits</label>
+                  <input type="number" name="creditLow" step="1" min="0" defaultValue={settings.credit_low_priority || 0} />
+                  <span style={{ fontSize: '12px', color: 'var(--muted)' }}>Usually 0 (FREE)</span>
+                </div>
+                <div className="form-group">
+                  <label>Normal Priority Credits</label>
+                  <input type="number" name="creditNormal" step="1" min="0" defaultValue={settings.credit_normal_priority || 0} />
+                  <span style={{ fontSize: '12px', color: 'var(--muted)' }}>Usually 0 (FREE)</span>
+                </div>
+                <div className="form-group">
+                  <label>High Priority Credits</label>
+                  <input type="number" name="creditHigh" step="1" min="0" defaultValue={settings.credit_high_priority || 50} />
+                  <span style={{ fontSize: '12px', color: 'var(--muted)' }}>% of tech pay</span>
+                </div>
+                <div className="form-group">
+                  <label>Urgent Priority Credits</label>
+                  <input type="number" name="creditUrgent" step="1" min="0" defaultValue={settings.credit_urgent_priority || 75} />
+                  <span style={{ fontSize: '12px', color: 'var(--muted)' }}>% of tech pay</span>
+                </div>
+                <div className="form-group">
+                  <label>Critical Priority Credits</label>
+                  <input type="number" name="creditCritical" step="1" min="0" defaultValue={settings.credit_critical_priority || 100} />
+                  <span style={{ fontSize: '12px', color: 'var(--muted)' }}>% of tech pay</span>
+                </div>
+
+                <h5 style={{ marginTop: '20px', marginBottom: '12px' }}>🔔 Notifications</h5>
+                <div className="form-group">
+                  <label>Email Notifications</label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input type="checkbox" name="emailNotifications" defaultChecked={settings.email_notifications !== false} />
+                    <span style={{ fontSize: '12px', color: 'var(--muted)' }}>Send email notifications to users</span>
+                  </label>
+                </div>
+
+                <h5 style={{ marginTop: '20px', marginBottom: '12px' }}>⭐ Ratings</h5>
+                <div className="form-group">
+                  <label>Require Ticket Rating</label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input type="checkbox" name="requireRating" defaultChecked={settings.require_ticket_rating !== false} />
+                    <span style={{ fontSize: '12px', color: 'var(--muted)' }}>Require customer to rate before closing ticket</span>
+                  </label>
+                </div>
+
+                <h5 style={{ marginTop: '20px', marginBottom: '12px' }}>⏰ SLA Settings</h5>
+                <div className="form-group">
+                  <label>Max Ticket Age (days)</label>
+                  <input type="number" name="maxTicketAge" step="1" min="1" defaultValue={settings.max_ticket_age_days || 30} />
+                  <span style={{ fontSize: '12px', color: 'var(--muted)' }}>Days before ticket is auto-escalated</span>
+                </div>
+
+                <button type="submit" className="btn btn-primary" style={{ marginTop: '20px' }}>Save Settings</button>
               </form>
             </div>
           )}

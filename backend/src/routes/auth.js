@@ -523,4 +523,77 @@ router.post('/change-password', async (req, res) => {
   }
 });
 
+// Create first admin (only allowed when no admin exists)
+router.post('/create-admin', async (req, res) => {
+  const { email, password, name } = req.body;
+
+  if (!email || !password || !name) {
+    return res.status(400).json({ error: 'Email, password, and name are required' });
+  }
+
+  if (password.length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters' });
+  }
+
+  try {
+    // Check if any admin exists
+    const [admins] = await pool.query(
+      "SELECT id FROM users WHERE role = 'admin'"
+    );
+
+    if (admins.length > 0) {
+      return res.status(403).json({ error: 'Admin already exists. Contact existing admin for access.' });
+    }
+
+    // Check if email already exists
+    const [existingUsers] = await pool.query(
+      'SELECT id FROM users WHERE email = ?',
+      [email]
+    );
+
+    if (existingUsers.length > 0) {
+      return res.status(409).json({ error: 'Email already registered' });
+    }
+
+    // Hash password
+    const { hash, salt } = hashPassword(password);
+
+    // Create admin user
+    const [result] = await pool.query(
+      `INSERT INTO users (name, email, password_hash, password_salt, role, status)
+       VALUES (?, ?, ?, ?, 'admin', 'active')`,
+      [name, email, hash, salt]
+    );
+
+    const [users] = await pool.query('SELECT * FROM users WHERE id = ?', [result.insertId]);
+    const user = users[0];
+
+    // Generate tokens
+    const token = generateToken(user);
+    const refreshToken = generateRefreshToken(user);
+
+    // Set httpOnly cookie for refresh token
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
+    res.status(201).json({
+      message: 'Admin created successfully',
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      },
+      token
+    });
+  } catch (error) {
+    console.error('Create admin error:', error);
+    res.status(500).json({ error: 'Failed to create admin' });
+  }
+});
+
 export default router;

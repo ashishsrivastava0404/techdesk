@@ -48,7 +48,9 @@ export async function initDatabase() {
       name VARCHAR(255) UNIQUE NOT NULL,
       role ENUM('customer', 'tech', 'admin') DEFAULT 'customer',
       status ENUM('active', 'suspended', 'banned') DEFAULT 'active',
-      email VARCHAR(255),
+      email VARCHAR(255) UNIQUE,
+      password_hash VARCHAR(255),
+      password_salt VARCHAR(255),
       google_id VARCHAR(255),
       avatar_url VARCHAR(500),
       skills TEXT,
@@ -56,8 +58,24 @@ export async function initDatabase() {
       bio TEXT,
       payout_method ENUM('bank', 'paypal', 'stripe') DEFAULT 'stripe',
       payout_details JSON,
+      stripe_account_id VARCHAR(255),
+      paypal_email VARCHAR(255),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Create default admin user if not exists
+  // Default credentials: admin@techdesk.com / Admin@123
+  await connection.query(`
+    INSERT IGNORE INTO users (name, email, password_hash, password_salt, role, status)
+    VALUES (
+      'Admin',
+      'admin@techdesk.com',
+      '79b8da3795dc73f6dead4945180a7cbf52efbd1d92d506fd747c8096199d66b0ae85429b5f666455ada33640fb95fa754907207e972a54959333bd98baa4bda4',
+      'default-salt-for-admin',
+      'admin',
+      'active'
     )
   `);
 
@@ -335,7 +353,16 @@ export async function initDatabase() {
     ('dev_ticket_pay', '25.00'),
     ('staging_ticket_pay', '50.00'),
     ('dev_threshold', '33'),
-    ('staging_threshold', '66')
+    ('staging_threshold', '66'),
+    ('credit_low_priority', '0'),
+    ('credit_normal_priority', '0'),
+    ('credit_high_priority', '50'),
+    ('credit_urgent_priority', '75'),
+    ('credit_critical_priority', '100'),
+    ('email_notifications', 'true'),
+    ('payout_auto_approve', 'false'),
+    ('require_ticket_rating', 'true'),
+    ('max_ticket_age_days', '30')
   `);
 
   // Ticket categories table

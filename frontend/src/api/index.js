@@ -140,6 +140,24 @@ export const api = {
       
       return fetchJSON('/auth/verify', {}, true);
     },
+
+      createAdmin: async (email, password, name) => {
+      const response = await fetch(`${API_BASE}/auth/create-admin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name }),
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Failed to create admin' }));
+        throw new Error(error.error || 'Failed to create admin');
+      }
+
+      const data = await response.json();
+      localStorage.setItem('auth_token', data.token);
+      return data;
+    },
     
     refresh: refreshToken
   },
