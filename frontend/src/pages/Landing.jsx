@@ -148,12 +148,12 @@ export default function Landing() {
           <div className="pricing-row">
             <span><span className="env-badge dev">Dev</span></span>
             <span>$25/ticket</span>
-            <span>Low, Normal, High, Urgent, Critical</span>
+            <span>Low*, Normal*, High, Urgent, Critical</span>
           </div>
           <div className="pricing-row">
             <span><span className="env-badge staging">Staging</span></span>
             <span>$50/ticket</span>
-            <span>Low, Normal, High, Urgent, Critical</span>
+            <span>Low*, Normal*, High, Urgent, Critical</span>
           </div>
           <div className="pricing-row featured">
             <span><span className="env-badge production">Production</span></span>
@@ -161,6 +161,9 @@ export default function Landing() {
             <span>Direct hire with customers</span>
           </div>
         </div>
+        <p className="pricing-note">
+          *<strong>Low & Normal priority tickets are FREE</strong> — Customers pay only for High, Urgent, and Critical tickets.
+        </p>
         <p className="pricing-note">
           Platform takes 15% commission. Minimum payout of $25. Payouts processed in 2-3 business days.
         </p>

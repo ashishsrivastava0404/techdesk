@@ -399,6 +399,16 @@ export default function SubmitTicket() {
               {form.priority === 'normal' && '📋 NORMAL - Response within 24 hours'}
               {form.priority === 'low' && '⚪ LOW - Response within 48 hours'}
             </span>
+            {(form.priority === 'low' || form.priority === 'normal') && (
+              <span style={{ color: 'var(--green)', fontSize: '0.85em', marginLeft: '8px' }}>
+                ✓ FREE - No credit cost
+              </span>
+            )}
+            {(form.priority === 'high' || form.priority === 'urgent' || form.priority === 'critical') && (
+              <span style={{ color: 'var(--orange)', fontSize: '0.85em', marginLeft: '8px' }}>
+                Credit cost applies
+              </span>
+            )}
           </div>
 
           <button type="submit" className="btn btn-primary" disabled={loading}>
