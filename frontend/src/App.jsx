@@ -21,6 +21,7 @@ import MyLeads from './pages/MyLeads.jsx';
 import Earnings from './pages/Earnings.jsx';
 import CRM from './pages/CRM.jsx';
 import AdminDashboard from './pages/AdminDashboard.jsx';
+import EnhancedSettings from './pages/EnhancedSettings.jsx';
 import CustomerBilling from './pages/CustomerBilling.jsx';
 import Notifications from './pages/Notifications.jsx';
 import TicketDetail from './pages/TicketDetail.jsx';
@@ -86,6 +87,7 @@ function AppRoutes() {
           <Route path="/admin/credits" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="/admin/analytics" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="/admin/settings" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+          <Route path="/admin/platform-settings" element={<AdminRoute><EnhancedSettings /></AdminRoute>} />
         </Route>
 
         {/* Redirect root to appropriate page */}

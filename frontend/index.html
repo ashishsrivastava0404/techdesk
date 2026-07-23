@@ -30,9 +30,11 @@
     <!-- Canonical URL -->
     <link rel="canonical" href="https://promote.example.com/" />
     
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- Favicon with Dark/Light mode support -->
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/icon-dark.svg" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/icon-light.svg" media="(prefers-color-scheme: light)" />
+    <link rel="apple-touch-icon" href="/icon.svg" />
     
     <!-- PWA -->
     <meta name="theme-color" content="#6366f1" />

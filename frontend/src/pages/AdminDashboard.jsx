@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext.jsx';
 import { api } from '../api/index.js';
 
@@ -111,9 +112,16 @@ export default function AdminDashboard() {
 
   return (
     <div className="view-container">
-      <div style={{ marginBottom: '24px' }}>
-        <h2 className="view-title" style={{ marginBottom: '4px' }}>Admin Panel</h2>
-        <p className="view-sub" style={{ margin: 0 }}>Manage the platform, users, and finances.</p>
+      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h2 className="view-title" style={{ marginBottom: '4px' }}>Admin Panel</h2>
+          <p className="view-sub" style={{ margin: 0 }}>Manage the platform, users, and finances.</p>
+        </div>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <Link to="/admin/platform-settings" className="btn btn-secondary">
+            ⚙️ Platform Settings
+          </Link>
+        </div>
       </div>
 
       <div className="tabs">

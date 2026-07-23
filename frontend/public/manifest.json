@@ -10,16 +10,24 @@
   "scope": "/",
   "icons": [
     {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
     },
     {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "src": "/icon-dark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "dark",
+      "media": "(prefers-color-scheme: dark)"
+    },
+    {
+      "src": "/icon-light.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "light",
+      "media": "(prefers-color-scheme: light)"
     }
   ],
   "categories": ["productivity", "business", "developer tools"],
@@ -43,21 +51,21 @@
       "short_name": "Submit",
       "description": "Submit a new support ticket",
       "url": "/submit",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon.svg", "sizes": "any" }]
     },
     {
       "name": "View Tickets",
       "short_name": "Tickets",
       "description": "View your tickets",
       "url": "/mytickets",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon.svg", "sizes": "any" }]
     },
     {
       "name": "Leaderboard",
       "short_name": "Leaderboard",
       "description": "View the tech leaderboard",
       "url": "/leaderboard",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon.svg", "sizes": "any" }]
     }
   ],
   "related_applications": [],
