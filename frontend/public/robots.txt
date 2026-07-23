@@ -15,6 +15,18 @@ Disallow: /settings/
 Disallow: /notifications/
 Disallow: /reset-password
 Disallow: /forgot-password
+Disallow: /billing
+Disallow: /crm
+Disallow: /leads
+Disallow: /requests
+
+# Allow public marketing pages
+Allow: /faq
+Allow: /pricing
+Allow: /terms
+Allow: /privacy
+Allow: /cookies
+Allow: /help
 
 # Allow search engines to crawl sitemap
 Sitemap: https://promote.example.com/sitemap.xml

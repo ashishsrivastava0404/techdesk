@@ -2,6 +2,7 @@ import { Router } from 'express';
 import crypto from 'crypto';
 import pool from '../db/index.js';
 import { generateToken, generateRefreshToken } from '../middleware/auth.js';
+import { passwordResetLimiter, registrationLimiter } from '../middleware/rateLimiter.js';
 
 const router = Router();
 
@@ -39,7 +40,7 @@ function isGoogleOAuthConfigured() {
  * @desc    Register a new user (customer or tech only)
  * @access  Public
  */
-router.post('/register', async (req, res) => {
+router.post('/register', registrationLimiter, async (req, res) => {
   const { email, password, name, role } = req.body;
 
   // Validation
@@ -601,7 +602,7 @@ router.post('/create-admin', async (req, res) => {
 const passwordResetTokens = new Map();
 
 // Request password reset
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', passwordResetLimiter, async (req, res) => {
   const { email } = req.body;
 
   if (!email) {
@@ -664,7 +665,7 @@ router.post('/forgot-password', async (req, res) => {
 });
 
 // Reset password with token
-router.post('/reset-password', async (req, res) => {
+router.post('/reset-password', passwordResetLimiter, async (req, res) => {
   const { token, newPassword } = req.body;
 
   if (!token || !newPassword) {
