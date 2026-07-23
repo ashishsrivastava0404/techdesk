@@ -1,6 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext.jsx';
+import { ProtectedRoute, PublicRoute, AdminRoute, TechRoute } from './components/ProtectedRoute.jsx';
 import Layout from './components/Layout.jsx';
+import Landing from './pages/Landing.jsx';
+import Login from './pages/Login.jsx';
+import Signup from './pages/Signup.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import SubmitTicket from './pages/SubmitTicket.jsx';
 import AvailableTickets from './pages/AvailableTickets.jsx';
@@ -19,39 +23,66 @@ import ChatBot from './components/ChatBot.jsx';
 
 function AppRoutes() {
   const { user, loading } = useApp();
-
+  
   if (loading) {
     return (
-      <div className="app-shell" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        <div style={{ color: 'var(--muted)' }}>Loading...</div>
+      <div className="app-loading" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+        <div className="loading-spinner"></div>
+        <p>Loading...</p>
       </div>
     );
   }
 
-  const defaultTab = user?.role === 'tech' ? 'available' : 'submit';
+  // Default routes based on role
+  const getDefaultRoute = () => {
+    if (user?.role === 'admin') return '/admin';
+    if (user?.role === 'tech') return '/available';
+    return '/dashboard';
+  };
 
   return (
     <>
       <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Navigate to={`/${defaultTab}`} replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="submit" element={<SubmitTicket />} />
-          <Route path="available" element={<AvailableTickets />} />
-          <Route path="mytickets" element={<MyTickets />} />
-          <Route path="leaderboard" element={<Leaderboard />} />
-          <Route path="requests" element={<MyRequests />} />
-          <Route path="leads" element={<MyLeads />} />
-          <Route path="earnings" element={<Earnings />} />
-          <Route path="billing" element={<CustomerBilling />} />
-          <Route path="crm" element={<CRM />} />
-          <Route path="notifications" element={<Notifications />} />
-          <Route path="admin" element={<AdminDashboard />} />
-          <Route path="ticket/:id" element={<TicketDetail />} />
-          <Route path="help" element={<HelpCenter />} />
+        {/* Public Routes */}
+        <Route path="/" element={<PublicRoute><Landing /></PublicRoute>} />
+        <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+        <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
+
+        {/* Protected Routes - All authenticated users */}
+        <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/submit" element={<SubmitTicket />} />
+          <Route path="/available" element={<TechRoute><AvailableTickets /></TechRoute>} />
+          <Route path="/mytickets" element={<MyTickets />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/requests" element={<CustomerBilling />} />
+          <Route path="/leads" element={<TechRoute><MyLeads /></TechRoute>} />
+          <Route path="/earnings" element={<TechRoute><Earnings /></TechRoute>} />
+          <Route path="/billing" element={<CustomerBilling />} />
+          <Route path="/crm" element={<CRM />} />
+          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/ticket/:id" element={<TicketDetail />} />
+          <Route path="/help" element={<HelpCenter />} />
+          
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+          <Route path="/admin/users" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+          <Route path="/admin/payments" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+          <Route path="/admin/credits" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+          <Route path="/admin/analytics" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+          <Route path="/admin/settings" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
         </Route>
+
+        {/* Redirect root to appropriate page */}
+        <Route path="*" element={
+          user ? (
+            <Navigate to={getDefaultRoute()} replace />
+          ) : (
+            <Navigate to="/" replace />
+          )
+        } />
       </Routes>
-      <ChatBot />
+      {user && <ChatBot />}
     </>
   );
 }

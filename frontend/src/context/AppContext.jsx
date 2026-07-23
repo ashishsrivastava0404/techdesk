@@ -8,26 +8,48 @@ export function AppProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [toasts, setToasts] = useState([]);
 
+  // Check for existing auth session on mount
   useEffect(() => {
-    const savedName = localStorage.getItem('promote_username');
-    if (savedName) {
-      loadUser(savedName);
-    } else {
-      setLoading(false);
-    }
+    checkAuth();
   }, []);
 
-  const loadUser = async (name) => {
+  const checkAuth = async () => {
     try {
-      const userData = await api.users.get(name);
-      setUser(userData);
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        const response = await api.auth.verify();
+        setUser(response.user);
+      }
     } catch (error) {
-      console.error('Error loading user:', error);
+      // Token is invalid or expired
+      localStorage.removeItem('auth_token');
+      setUser(null);
     } finally {
       setLoading(false);
     }
   };
 
+  // Login function
+  const login = useCallback(async (email, password) => {
+    const response = await api.auth.login(email, password);
+    setUser(response.user);
+    return response;
+  }, []);
+
+  // Register function
+  const register = useCallback(async (email, password, name, role) => {
+    const response = await api.auth.register(email, password, name, role);
+    setUser(response.user);
+    return response;
+  }, []);
+
+  // Logout function
+  const logout = useCallback(async () => {
+    await api.auth.logout();
+    setUser(null);
+  }, []);
+
+  // Legacy function for backward compatibility
   const setIdentity = useCallback(async (name) => {
     if (!name.trim()) return;
     
@@ -40,6 +62,7 @@ export function AppProvider({ children }) {
     }
   }, []);
 
+  // Legacy function for backward compatibility
   const setRole = useCallback(async (role) => {
     if (!user) return;
     
@@ -59,6 +82,15 @@ export function AppProvider({ children }) {
     }, 3000);
   }, []);
 
+  const requireAuth = useCallback(() => {
+    if (!user) {
+      showToast('Please login first');
+      return false;
+    }
+    return true;
+  }, [user, showToast]);
+
+  // Legacy function for backward compatibility
   const requireName = useCallback(() => {
     if (!user?.name) {
       showToast('Enter your name first');
@@ -71,9 +103,13 @@ export function AppProvider({ children }) {
     <AppContext.Provider value={{
       user,
       loading,
+      login,
+      logout,
+      register,
       setIdentity,
       setRole,
       showToast,
+      requireAuth,
       requireName
     }}>
       {children}

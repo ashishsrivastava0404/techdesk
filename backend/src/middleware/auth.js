@@ -63,6 +63,22 @@ export function generateToken(user) {
 }
 
 /**
+ * Generate refresh token for user (longer expiry)
+ */
+export function generateRefreshToken(user) {
+  return jwt.sign(
+    {
+      id: user.id,
+      name: user.name,
+      role: user.role,
+      type: 'refresh'
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+}
+
+/**
  * Role-based access control middleware
  */
 export function requireRole(...roles) {

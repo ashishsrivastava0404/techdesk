@@ -1,14 +1,55 @@
 const API_BASE = '/api';
 
-async function fetchJSON(url, options = {}) {
+// Get auth token from storage
+function getAuthHeaders() {
+  const token = localStorage.getItem('auth_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+// Wrapper for authenticated fetch
+async function fetchJSON(url, options = {}, requiresAuth = true) {
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(requiresAuth ? getAuthHeaders() : {}),
+    ...options.headers
+  };
+
   const response = await fetch(`${API_BASE}${url}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers
-    },
-    ...options
+    ...options,
+    headers
   });
-  
+
+  // Handle token expiration
+  if (response.status === 401) {
+    const data = await response.json().catch(() => ({}));
+    if (data.expired) {
+      // Try to refresh the token
+      const refreshed = await refreshToken();
+      if (refreshed) {
+        // Retry the request with new token
+        const newHeaders = {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+          ...options.headers
+        };
+        const retryResponse = await fetch(`${API_BASE}${url}`, {
+          ...options,
+          headers: newHeaders
+        });
+        
+        if (!retryResponse.ok) {
+          const error = await retryResponse.json().catch(() => ({ error: 'Request failed' }));
+          throw new Error(error.error || 'Request failed');
+        }
+        return retryResponse.json();
+      }
+    }
+    // Token is invalid, clear and redirect
+    localStorage.removeItem('auth_token');
+    window.location.href = '/login';
+    throw new Error('Session expired. Please login again.');
+  }
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Request failed' }));
     throw new Error(error.error || 'Request failed');
@@ -17,7 +58,92 @@ async function fetchJSON(url, options = {}) {
   return response.json();
 }
 
+// Refresh access token
+async function refreshToken() {
+  try {
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (!refreshToken) return false;
+
+    const response = await fetch(`${API_BASE}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+      credentials: 'include'
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      localStorage.setItem('auth_token', data.token);
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 export const api = {
+  // Auth API
+  auth: {
+    login: async (email, password) => {
+      const response = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Login failed' }));
+        throw new Error(error.error || 'Login failed');
+      }
+      
+      const data = await response.json();
+      localStorage.setItem('auth_token', data.token);
+      return data;
+    },
+    
+    register: async (email, password, name, role) => {
+      const response = await fetch(`${API_BASE}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name, role }),
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Registration failed' }));
+        throw new Error(error.error || 'Registration failed');
+      }
+      
+      const data = await response.json();
+      localStorage.setItem('auth_token', data.token);
+      return data;
+    },
+    
+    logout: async () => {
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        await fetch(`${API_BASE}/auth/logout`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          credentials: 'include'
+        });
+      }
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('refresh_token');
+    },
+    
+    verify: async () => {
+      const token = localStorage.getItem('auth_token');
+      if (!token) throw new Error('No token');
+      
+      return fetchJSON('/auth/verify', {}, true);
+    },
+    
+    refresh: refreshToken
+  },
+
   users: {
     get: (name) => fetchJSON(`/users/${encodeURIComponent(name)}`),
     list: () => fetchJSON('/users'),
