@@ -1,7 +1,13 @@
 import { Router } from 'express';
 import { creditService } from '../services/credits.js';
+import { stripeService } from '../services/stripe.js';
 
 const router = Router();
+
+// Check if Stripe is configured
+function isStripeConfigured() {
+  return !!process.env.STRIPE_SECRET_KEY;
+}
 
 /**
  * GET /api/credits/balance/:userName
@@ -92,6 +98,119 @@ router.post('/transfer', async (req, res) => {
   } catch (error) {
     console.error('Error transferring credits:', error);
     res.status(400).json({ error: error.message || 'Failed to transfer credits' });
+  }
+});
+
+/**
+ * POST /api/credits/donate
+ * Donate credits to a tech (tip/bonus after ticket resolution)
+ */
+router.post('/donate', async (req, res) => {
+  const { customer_name, tech_name, ticket_id, amount, note } = req.body;
+  if (!customer_name || !tech_name || !amount) {
+    return res.status(400).json({ error: 'customer_name, tech_name, and amount are required' });
+  }
+  if (customer_name === tech_name) {
+    return res.status(400).json({ error: 'Cannot donate to yourself' });
+  }
+  try {
+    const result = await creditService.transferCredits(
+      customer_name, 
+      tech_name, 
+      parseFloat(amount), 
+      note || `Tip for ticket #${ticket_id}`
+    );
+    res.json({
+      success: true,
+      message: `Successfully donated ${amount} credits to ${tech_name}`,
+      fromBalance: result.fromBalance,
+      toBalance: result.toBalance
+    });
+  } catch (error) {
+    console.error('Error donating credits:', error);
+    res.status(400).json({ error: error.message || 'Failed to donate credits' });
+  }
+});
+
+/**
+ * GET /api/credits/packages
+ * Get available credit purchase packages
+ */
+router.get('/packages', async (req, res) => {
+  const packages = [
+    { id: 'starter', credits: 100, price: 10, label: 'Starter Pack' },
+    { id: 'basic', credits: 250, price: 20, label: 'Basic Pack' },
+    { id: 'pro', credits: 500, price: 35, label: 'Pro Pack' },
+    { id: 'enterprise', credits: 1000, price: 60, label: 'Enterprise Pack' }
+  ];
+  res.json(packages);
+});
+
+/**
+ * POST /api/credits/purchase
+ * Purchase credits with real money
+ */
+router.post('/purchase', async (req, res) => {
+  const { user_name, package_id, amount } = req.body;
+  if (!user_name) {
+    return res.status(400).json({ error: 'user_name is required' });
+  }
+
+  const packages = {
+    starter: { credits: 100, price: 10 },
+    basic: { credits: 250, price: 20 },
+    pro: { credits: 500, price: 35 },
+    enterprise: { credits: 1000, price: 60 }
+  };
+
+  const pkg = package_id ? packages[package_id] : null;
+  const credits = amount || (pkg ? pkg.credits : 100);
+  const price = pkg ? pkg.price : (credits / 10); // Default: $1 per 10 credits
+
+  if (credits < 1) {
+    return res.status(400).json({ error: 'Minimum purchase is 1 credit' });
+  }
+
+  try {
+    // If Stripe is configured, create payment intent
+    let stripePaymentIntentId = null;
+    let clientSecret = null;
+
+    if (isStripeConfigured()) {
+      try {
+        const stripeResult = await stripeService.createPaymentIntent(price, 'usd', {
+          user_name,
+          credits,
+          type: 'credit_purchase'
+        });
+        stripePaymentIntentId = stripeResult.paymentIntentId;
+        clientSecret = stripeResult.clientSecret;
+      } catch (stripeError) {
+        console.error('Stripe error:', stripeError);
+      }
+    }
+
+    // For demo/testing without Stripe, auto-add credits
+    if (!isStripeConfigured() || !stripePaymentIntentId) {
+      await creditService.addCredits(user_name, credits, 'credit_purchase');
+      res.json({
+        success: true,
+        credits,
+        balance: await creditService.getBalance(user_name),
+        message: 'Credits added successfully'
+      });
+    } else {
+      res.json({
+        success: true,
+        credits,
+        clientSecret,
+        paymentIntentId: stripePaymentIntentId,
+        message: 'Payment initiated'
+      });
+    }
+  } catch (error) {
+    console.error('Error purchasing credits:', error);
+    res.status(500).json({ error: 'Failed to process purchase' });
   }
 });
 

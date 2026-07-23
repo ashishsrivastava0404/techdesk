@@ -82,6 +82,36 @@ export default function TicketDetail({ ticket, onClose, onUpdate }) {
     }
   };
 
+  const handleDonate = async () => {
+    const amount = prompt('Enter number of credits to donate to ' + ticket.tech_name + ' (your credits: ' + (user.credits || 0) + '):');
+    if (!amount) return;
+    
+    const amountNum = parseInt(amount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      showToast('Please enter a valid amount');
+      return;
+    }
+    
+    if (amountNum > (user.credits || 0)) {
+      showToast('Insufficient credits. Purchase more credits to donate!');
+      return;
+    }
+
+    try {
+      await api.credits.donate({
+        customer_name: user.name,
+        tech_name: ticket.tech_name,
+        ticket_id: ticket.id,
+        amount: amountNum,
+        note: 'Tip for great service'
+      });
+      showToast(`Successfully donated ${amountNum} credits to ${ticket.tech_name}!`);
+      onUpdate && onUpdate();
+    } catch (error) {
+      showToast(error.message || 'Failed to donate credits');
+    }
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -184,6 +214,15 @@ export default function TicketDetail({ ticket, onClose, onUpdate }) {
             {(isCustomer || isTech) && ticket.status === 'resolved' && (
               <button className="btn btn-ghost" onClick={() => handleStatusChange('closed')}>
                 Close Ticket
+              </button>
+            )}
+            {isCustomer && ticket.status === 'resolved' && ticket.tech_name && (
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => handleDonate()}
+                style={{ background: 'var(--green)', color: 'white' }}
+              >
+                💝 Donate Credits to {ticket.tech_name}
               </button>
             )}
           </div>

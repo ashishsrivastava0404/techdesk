@@ -366,6 +366,15 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data)
     }),
+    donate: (data) => fetchJSON('/credits/donate', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    getPackages: () => fetchJSON('/credits/packages'),
+    purchase: (data) => fetchJSON('/credits/purchase', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
     getCost: (priority, basePay) => fetchJSON(`/credits/cost?priority=${priority}&base_pay=${basePay}`),
     check: (userName, priority, basePay) => fetchJSON(`/credits/check?user_name=${encodeURIComponent(userName)}&priority=${priority}&base_pay=${basePay}`),
     getSettings: () => fetchJSON('/credits/settings')
