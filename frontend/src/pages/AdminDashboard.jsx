@@ -23,6 +23,8 @@ export default function AdminDashboard() {
   const [payouts, setPayouts] = useState([]);
   const [logs, setLogs] = useState([]);
   const [financialLogs, setFinancialLogs] = useState([]);
+  const [supportReports, setSupportReports] = useState([]);
+  const [supportStats, setSupportStats] = useState({ open: 0, in_progress: 0, resolved: 0, urgent: 0 });
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -33,6 +35,7 @@ export default function AdminDashboard() {
     if (path.includes('/credits')) return 'credits';
     if (path.includes('/analytics')) return 'analytics';
     if (path.includes('/financial-audit')) return 'financial-audit';
+    if (path.includes('/support-reports')) return 'support-reports';
     if (path.includes('/settings') && !path.includes('/platform-settings')) return 'settings';
     return 'overview';
   };
@@ -45,6 +48,7 @@ export default function AdminDashboard() {
       'credits': '/admin/credits',
       'analytics': '/admin/analytics',
       'financial-audit': '/admin/financial-audit',
+      'support-reports': '/admin/support-reports',
       'settings': '/admin/settings'
     };
     return paths[tabId] || '/admin';
@@ -91,6 +95,13 @@ export default function AdminDashboard() {
       } else if (tab === 'financial-audit') {
         const data = await api.admin.getFinancialLogs();
         setFinancialLogs(data);
+      } else if (tab === 'support-reports') {
+        const [reports, stats] = await Promise.all([
+          api.admin.getSupportReports(),
+          api.admin.getSupportStats()
+        ]);
+        setSupportReports(reports);
+        setSupportStats(stats);
       }
     } catch (error) {
       showToast('Failed to load data');
@@ -160,6 +171,7 @@ export default function AdminDashboard() {
     { id: 'credits', label: 'Credits', path: '/admin/credits' },
     { id: 'analytics', label: 'Analytics', path: '/admin/analytics' },
     { id: 'financial-audit', label: '💰 Financial Audit', path: '/admin/financial-audit' },
+    { id: 'support-reports', label: '📋 Support Reports', path: '/admin/support-reports' },
     { id: 'settings', label: 'Settings', path: '/admin/settings' }
   ];
 
@@ -487,6 +499,127 @@ export default function AdminDashboard() {
                               Fee: {formatCurrency(log.platform_fee)}
                             </div>
                           )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {tab === 'support-reports' && (
+            <div>
+              {/* Stats Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+                <div className="panel" style={{ textAlign: 'center', padding: '20px' }}>
+                  <div style={{ fontSize: '28px', marginBottom: '8px' }}>📋</div>
+                  <div style={{ fontSize: '24px', fontWeight: 700 }}>{supportStats.open}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Open</div>
+                </div>
+                <div className="panel" style={{ textAlign: 'center', padding: '20px' }}>
+                  <div style={{ fontSize: '28px', marginBottom: '8px' }}>🔄</div>
+                  <div style={{ fontSize: '24px', fontWeight: 700 }}>{supportStats.in_progress}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--muted)' }}>In Progress</div>
+                </div>
+                <div className="panel" style={{ textAlign: 'center', padding: '20px' }}>
+                  <div style={{ fontSize: '28px', marginBottom: '8px' }}>✅</div>
+                  <div style={{ fontSize: '24px', fontWeight: 700 }}>{supportStats.resolved}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Resolved</div>
+                </div>
+                <div className="panel" style={{ textAlign: 'center', padding: '20px', borderColor: supportStats.urgent > 0 ? 'var(--red)' : 'var(--line)' }}>
+                  <div style={{ fontSize: '28px', marginBottom: '8px' }}>🚨</div>
+                  <div style={{ fontSize: '24px', fontWeight: 700, color: supportStats.urgent > 0 ? 'var(--red)' : 'inherit' }}>{supportStats.urgent}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Urgent</div>
+                </div>
+              </div>
+
+              <div className="panel">
+                <h4 style={{ fontFamily: 'var(--display)', marginBottom: '16px' }}>📋 User Support Reports</h4>
+                <p style={{ color: 'var(--muted)', marginBottom: '20px' }}>
+                  View and manage issue reports submitted by users.
+                </p>
+                {supportReports.length === 0 ? (
+                  <div className="empty">
+                    <div style={{ fontSize: '32px', marginBottom: '12px' }}>🎉</div>
+                    <p>No support reports yet!</p>
+                    <p style={{ fontSize: '13px', color: 'var(--muted)' }}>
+                      Users can submit reports using the 🐛 button in the bottom-right corner.
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
+                    {supportReports.map(report => (
+                      <div key={report.id} style={{ 
+                        padding: '16px', 
+                        borderBottom: '1px solid var(--line)',
+                        display: 'flex',
+                        gap: '16px',
+                        alignItems: 'flex-start'
+                      }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                            <span className={`badge badge-${
+                              report.report_type === 'bug' ? 'dev' :
+                              report.report_type === 'feature_request' ? 'success' :
+                              report.report_type === 'complaint' ? 'red' :
+                              report.report_type === 'billing_issue' ? 'amber' : 'default'
+                            }`}>
+                              {report.report_type.replace('_', ' ')}
+                            </span>
+                            <span className={`badge badge-${
+                              report.priority === 'urgent' ? 'red' :
+                              report.priority === 'high' ? 'amber' :
+                              report.priority === 'medium' ? 'default' : 'muted'
+                            }`}>
+                              {report.priority}
+                            </span>
+                            <span className={`badge badge-${
+                              report.status === 'open' ? 'blue' :
+                              report.status === 'in_progress' ? 'amber' :
+                              report.status === 'resolved' ? 'green' : 'muted'
+                            }`}>
+                              {report.status.replace('_', ' ')}
+                            </span>
+                          </div>
+                          <div style={{ fontWeight: 600, marginBottom: '4px' }}>{report.subject}</div>
+                          <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '8px' }}>
+                            {report.description?.substring(0, 150)}...
+                          </div>
+                          <div style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                            From: {report.user_name || 'Anonymous'} ({report.user_role}) • {formatDate(report.created_at)}
+                            {report.page_url && <span> • Page: {new URL(report.page_url).pathname}</span>}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '150px' }}>
+                          <select
+                            value={report.status}
+                            onChange={async (e) => {
+                              try {
+                                await api.admin.updateSupportReport(report.id, { 
+                                  status: e.target.value, 
+                                  admin_name: user.name 
+                                });
+                                showToast('Report status updated');
+                                loadData();
+                              } catch (err) {
+                                showToast('Failed to update status');
+                              }
+                            }}
+                            style={{
+                              padding: '8px',
+                              borderRadius: '6px',
+                              border: '1px solid var(--line)',
+                              background: 'var(--bg)',
+                              color: 'var(--text)',
+                              fontSize: '12px'
+                            }}
+                          >
+                            <option value="open">Open</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="resolved">Resolved</option>
+                            <option value="closed">Closed</option>
+                          </select>
                         </div>
                       </div>
                     ))}

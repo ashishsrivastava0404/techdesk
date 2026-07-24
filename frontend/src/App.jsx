@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext.jsx';
 import { ProtectedRoute, PublicRoute, AdminRoute, TechRoute } from './components/ProtectedRoute.jsx';
@@ -29,9 +30,21 @@ import HelpCenter from './pages/HelpCenter.jsx';
 import ChatBot from './components/ChatBot.jsx';
 import CookieConsent from './components/CookieConsent.jsx';
 import Analytics from './components/Analytics.jsx';
+import ReportIssue from './components/ReportIssue.jsx';
 
 function AppRoutes() {
   const { user, loading } = useApp();
+  const [showReportIssue, setShowReportIssue] = useState(false);
+
+  useEffect(() => {
+    const handleOpenReportIssue = () => {
+      if (user) {
+        setShowReportIssue(true);
+      }
+    };
+    window.addEventListener('openReportIssue', handleOpenReportIssue);
+    return () => window.removeEventListener('openReportIssue', handleOpenReportIssue);
+  }, [user]);
   
   if (loading) {
     return (
@@ -86,6 +99,8 @@ function AppRoutes() {
           <Route path="/admin/payments" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="/admin/credits" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="/admin/analytics" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+          <Route path="/admin/financial-audit" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+          <Route path="/admin/support-reports" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="/admin/settings" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="/admin/platform-settings" element={<AdminRoute><EnhancedSettings /></AdminRoute>} />
         </Route>
@@ -102,6 +117,9 @@ function AppRoutes() {
       {user && <ChatBot />}
       <CookieConsent />
       <Analytics />
+      {showReportIssue && user && (
+        <ReportIssue user={user} onClose={() => setShowReportIssue(false)} />
+      )}
     </>
   );
 }

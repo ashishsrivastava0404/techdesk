@@ -18,6 +18,7 @@ import statsRouter from './routes/stats.js';
 import paymentsRouter from './routes/payments.js';
 import earningsRouter from './routes/earnings.js';
 import crmRouter from './routes/crm.js';
+import supportReportsRouter from './routes/supportReports.js';
 import adminRouter from './routes/admin.js';
 import discussionsRouter from './routes/discussions.js';
 import categoriesRouter from './routes/categories.js';
@@ -81,6 +82,7 @@ app.use('/api/notifications', authenticate, apiLimiter, notificationsRouter);
 app.use('/api/ticket-history', authenticate, ticketHistoryRouter);
 app.use('/api/surveys', authenticate, apiLimiter, surveysRouter);
 app.use('/api/chatbot', authenticate, apiLimiter, chatbotRouter);
+app.use('/api/support-reports', supportReportsRouter);  // Public - anyone can submit reports
 app.use('/api/uploads', authenticate, apiLimiter, uploadsRouter);
 app.use('/api/topics', authenticate, apiLimiter, topicsRouter);
 app.use('/api/agents', authenticate, apiLimiter, agentRequestsRouter);

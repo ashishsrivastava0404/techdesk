@@ -364,6 +364,33 @@ export async function initDatabase() {
     )
   `);
 
+  // User support reports table - for users to report issues
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS support_reports (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT,
+      user_name VARCHAR(255),
+      user_email VARCHAR(255),
+      user_role ENUM('customer', 'tech', 'admin') DEFAULT 'customer',
+      report_type ENUM('bug', 'feature_request', 'complaint', 'billing_issue', 'other') NOT NULL,
+      priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
+      subject VARCHAR(255) NOT NULL,
+      description TEXT NOT NULL,
+      page_url VARCHAR(500),
+      browser_info VARCHAR(255),
+      status ENUM('open', 'in_progress', 'resolved', 'closed') DEFAULT 'open',
+      assigned_to VARCHAR(255),
+      resolution_notes TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      resolved_at TIMESTAMP NULL,
+      INDEX idx_user (user_id),
+      INDEX idx_status (status),
+      INDEX idx_priority (priority),
+      INDEX idx_created (created_at)
+    )
+  `);
+
   // Platform settings table
   await connection.query(`
     CREATE TABLE IF NOT EXISTS platform_settings (

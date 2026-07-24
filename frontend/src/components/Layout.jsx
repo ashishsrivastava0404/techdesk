@@ -36,6 +36,7 @@ export default function Layout() {
     { to: '/admin/payments', label: 'Payments' },
     { to: '/admin/credits', label: 'Credits' },
     { to: '/admin/analytics', label: 'Analytics' },
+    { to: '/admin/support-reports', label: '📋 Reports' },
     { to: '/admin/settings', label: 'Settings' }
   ];
 
@@ -93,6 +94,35 @@ export default function Layout() {
       <main>
         <Outlet />
       </main>
+
+      {/* Floating Report Issue Button */}
+      <button
+        onClick={() => window.dispatchEvent(new CustomEvent('openReportIssue'))}
+        style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          background: 'var(--amber)',
+          color: '#000',
+          border: 'none',
+          borderRadius: '50%',
+          width: '56px',
+          height: '56px',
+          fontSize: '24px',
+          cursor: 'pointer',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+          zIndex: 999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'transform 0.2s'
+        }}
+        onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+        onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+        title="Report an Issue"
+      >
+        🐛
+      </button>
     </div>
   );
 }

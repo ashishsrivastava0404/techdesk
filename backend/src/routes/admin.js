@@ -344,6 +344,113 @@ router.get('/financial-summary', async (req, res) => {
   }
 });
 
+// Get support reports (admin)
+router.get('/support-reports', async (req, res) => {
+  const { status, report_type, priority, limit = 100 } = req.query;
+
+  let query = 'SELECT * FROM support_reports WHERE 1=1';
+  const params = [];
+
+  if (status) {
+    query += ' AND status = ?';
+    params.push(status);
+  }
+  if (report_type) {
+    query += ' AND report_type = ?';
+    params.push(report_type);
+  }
+  if (priority) {
+    query += ' AND priority = ?';
+    params.push(priority);
+  }
+
+  query += ' ORDER BY created_at DESC LIMIT ?';
+  params.push(parseInt(limit));
+
+  try {
+    const [rows] = await pool.query(query, params);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching support reports:', error);
+    res.status(500).json({ error: 'Failed to fetch support reports' });
+  }
+});
+
+// Update support report (admin)
+router.patch('/support-reports/:id', async (req, res) => {
+  const { id } = req.params;
+  const { status, assigned_to, resolution_notes, admin_name, priority } = req.body;
+
+  if (!['open', 'in_progress', 'resolved', 'closed'].includes(status)) {
+    return res.status(400).json({ error: 'Invalid status' });
+  }
+
+  try {
+    const updates = ['status = ?'];
+    const params = [status];
+
+    if (status === 'resolved' || status === 'closed') {
+      updates.push('resolved_at = NOW()');
+    }
+    if (assigned_to !== undefined) {
+      updates.push('assigned_to = ?');
+      params.push(assigned_to);
+    }
+    if (resolution_notes !== undefined) {
+      updates.push('resolution_notes = ?');
+      params.push(resolution_notes);
+    }
+    if (priority !== undefined) {
+      updates.push('priority = ?');
+      params.push(priority);
+    }
+
+    params.push(id);
+    await pool.query(`UPDATE support_reports SET ${updates.join(', ')} WHERE id = ?`, params);
+
+    // Log admin action
+    await pool.query(
+      `INSERT INTO admin_logs (admin_name, action, target_type, target_id, details, ip_address)
+       VALUES (?, 'update_support_report', 'support_report', ?, ?, ?)`,
+      [admin_name || 'system', id, JSON.stringify({ status, resolution_notes }), req.ip]
+    );
+
+    const [rows] = await pool.query('SELECT * FROM support_reports WHERE id = ?', [id]);
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Error updating support report:', error);
+    res.status(500).json({ error: 'Failed to update support report' });
+  }
+});
+
+// Get support report stats (admin)
+router.get('/support-stats', async (req, res) => {
+  try {
+    const [open] = await pool.query(
+      "SELECT COUNT(*) as count FROM support_reports WHERE status = 'open'"
+    );
+    const [inProgress] = await pool.query(
+      "SELECT COUNT(*) as count FROM support_reports WHERE status = 'in_progress'"
+    );
+    const [resolved] = await pool.query(
+      "SELECT COUNT(*) as count FROM support_reports WHERE status = 'resolved'"
+    );
+    const [urgent] = await pool.query(
+      "SELECT COUNT(*) as count FROM support_reports WHERE priority = 'urgent' AND status IN ('open', 'in_progress')"
+    );
+
+    res.json({
+      open: open[0].count,
+      in_progress: inProgress[0].count,
+      resolved: resolved[0].count,
+      urgent: urgent[0].count
+    });
+  } catch (error) {
+    console.error('Error fetching support stats:', error);
+    res.status(500).json({ error: 'Failed to fetch support stats' });
+  }
+});
+
 // Get platform settings
 router.get('/settings', async (req, res) => {
   try {
