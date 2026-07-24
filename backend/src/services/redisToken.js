@@ -2,9 +2,11 @@
  * Redis Token Service
  * 
  * Manages refresh tokens and password reset tokens using Redis.
+ * Falls back to in-memory storage when Redis is unavailable.
  */
 
-import redis, { REDIS_KEYS } from '../db/redis.js';
+import redis, { REDIS_KEYS, isRedisConnected } from '../db/redis.js';
+import { inMemoryToken } from '../db/memoryFallback.js';
 import crypto from 'crypto';
 
 /**
@@ -22,6 +24,11 @@ function generateToken(length = 32) {
  * @param {number} ttl - Time to live in seconds (7 days default)
  */
 export async function createRefreshToken(userId, metadata = {}, ttl = 604800) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return inMemoryToken.createRefreshToken(userId, ttl);
+  }
+  
   try {
     const token = generateToken();
     const tokenKey = `${REDIS_KEYS.REFRESH_TOKEN}${token}`;
@@ -50,6 +57,11 @@ export async function createRefreshToken(userId, metadata = {}, ttl = 604800) {
  * @param {string} token - Refresh token
  */
 export async function verifyRefreshToken(token) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return inMemoryToken.verifyRefreshToken(token);
+  }
+  
   try {
     const tokenKey = `${REDIS_KEYS.REFRESH_TOKEN}${token}`;
     const data = await redis.hgetall(tokenKey);
@@ -73,6 +85,11 @@ export async function verifyRefreshToken(token) {
  * @param {string} token - Refresh token
  */
 export async function revokeRefreshToken(token) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return inMemoryToken.revokeRefreshToken(token);
+  }
+  
   try {
     const tokenKey = `${REDIS_KEYS.REFRESH_TOKEN}${token}`;
     await redis.del(tokenKey);
@@ -89,6 +106,11 @@ export async function revokeRefreshToken(token) {
  * @param {string} userId - User ID
  */
 export async function revokeAllUserTokens(userId) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return 0;
+  }
+  
   try {
     const pattern = `${REDIS_KEYS.REFRESH_TOKEN}*`;
     const keys = await redis.keys(pattern);
@@ -114,6 +136,11 @@ export async function revokeAllUserTokens(userId) {
  * @param {string} userId - User ID
  */
 export async function countUserTokens(userId) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return 0;
+  }
+  
   try {
     const pattern = `${REDIS_KEYS.REFRESH_TOKEN}*`;
     const keys = await redis.keys(pattern);
@@ -139,6 +166,11 @@ export async function countUserTokens(userId) {
  * @param {number} ttl - Time to live in seconds (1 hour default)
  */
 export async function createPasswordResetToken(email, ttl = 3600) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return inMemoryToken.createPasswordResetToken(email, ttl);
+  }
+  
   try {
     const token = generateToken(32);
     const tokenKey = `${REDIS_KEYS.PASSWORD_RESET}${token}`;
@@ -167,6 +199,11 @@ export async function createPasswordResetToken(email, ttl = 3600) {
  * @param {string} token - Reset token
  */
 export async function verifyPasswordResetToken(token) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return inMemoryToken.verifyPasswordResetToken(token);
+  }
+  
   try {
     const tokenKey = `${REDIS_KEYS.PASSWORD_RESET}${token}`;
     const data = await redis.hgetall(tokenKey);
@@ -190,6 +227,11 @@ export async function verifyPasswordResetToken(token) {
  * @param {string} token - Reset token
  */
 export async function consumePasswordResetToken(token) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return inMemoryToken.consumePasswordResetToken(token);
+  }
+  
   try {
     const tokenKey = `${REDIS_KEYS.PASSWORD_RESET}${token}`;
     const data = await redis.hgetall(tokenKey);
@@ -218,6 +260,11 @@ export async function consumePasswordResetToken(token) {
  * @param {number} ttl - Time to live in seconds (24 hours default)
  */
 export async function createVerificationToken(userId, email, ttl = 86400) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return null; // Not supported in memory fallback
+  }
+  
   try {
     const token = generateToken(48);
     const tokenKey = `${REDIS_KEYS.VERIFICATION}${token}`;
@@ -246,6 +293,11 @@ export async function createVerificationToken(userId, email, ttl = 86400) {
  * @param {string} token - Verification token
  */
 export async function verifyVerificationToken(token) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return null; // Not supported in memory fallback
+  }
+  
   try {
     const tokenKey = `${REDIS_KEYS.VERIFICATION}${token}`;
     const data = await redis.hgetall(tokenKey);
@@ -270,6 +322,11 @@ export async function verifyVerificationToken(token) {
  * @param {string} token - Verification token
  */
 export async function consumeVerificationToken(token) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return null; // Not supported in memory fallback
+  }
+  
   try {
     const tokenKey = `${REDIS_KEYS.VERIFICATION}${token}`;
     const data = await redis.hgetall(tokenKey);
@@ -296,6 +353,11 @@ export async function consumeVerificationToken(token) {
  * @param {number} ttl - Time to live in seconds (10 minutes)
  */
 export async function createOAuthState(ttl = 600) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return inMemoryToken.createOAuthState(ttl);
+  }
+  
   try {
     const state = generateToken(32);
     const stateKey = `${REDIS_KEYS.OAUTH_STATE}${state}`;
@@ -314,6 +376,11 @@ export async function createOAuthState(ttl = 600) {
  * @param {string} state - OAuth state
  */
 export async function verifyOAuthState(state) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return inMemoryToken.verifyOAuthState(state);
+  }
+  
   try {
     const stateKey = `${REDIS_KEYS.OAUTH_STATE}${state}`;
     const exists = await redis.exists(stateKey);

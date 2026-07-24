@@ -2,9 +2,11 @@
  * Redis Caching Service
  * 
  * Provides caching functionality for API responses and data.
+ * Falls back to in-memory cache when Redis is unavailable.
  */
 
-import redis, { REDIS_KEYS } from '../db/redis.js';
+import redis, { REDIS_KEYS, isRedisConnected } from '../db/redis.js';
+import { inMemoryCache } from '../db/memoryFallback.js';
 
 /**
  * Cache a value
@@ -13,6 +15,11 @@ import redis, { REDIS_KEYS } from '../db/redis.js';
  * @param {number} ttl - Time to live in seconds
  */
 export async function setCache(key, value, ttl = 300) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return inMemoryCache.set(key, value, ttl);
+  }
+  
   try {
     const cacheKey = `${REDIS_KEYS.CACHE}${key}`;
     const serialized = typeof value === 'object' ? JSON.stringify(value) : value;
@@ -29,6 +36,11 @@ export async function setCache(key, value, ttl = 300) {
  * @param {string} key - Cache key
  */
 export async function getCache(key) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return inMemoryCache.get(key);
+  }
+  
   try {
     const cacheKey = `${REDIS_KEYS.CACHE}${key}`;
     const value = await redis.get(cacheKey);
@@ -54,6 +66,11 @@ export async function getCache(key) {
  * @param {string} key - Cache key
  */
 export async function deleteCache(key) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return inMemoryCache.delete(key);
+  }
+  
   try {
     const cacheKey = `${REDIS_KEYS.CACHE}${key}`;
     await redis.del(cacheKey);
@@ -69,6 +86,12 @@ export async function deleteCache(key) {
  * @param {string} pattern - Key pattern (e.g., 'users:*')
  */
 export async function deleteCachePattern(pattern) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    // In-memory doesn't support patterns well, just return 0
+    return 0;
+  }
+  
   try {
     const cachePattern = `${REDIS_KEYS.CACHE}${pattern}`;
     const keys = await redis.keys(cachePattern);
@@ -89,6 +112,11 @@ export async function deleteCachePattern(pattern) {
  * @param {string} key - Cache key
  */
 export async function hasCache(key) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return inMemoryCache.has(key);
+  }
+  
   try {
     const cacheKey = `${REDIS_KEYS.CACHE}${key}`;
     return await redis.exists(cacheKey) === 1;
@@ -103,6 +131,11 @@ export async function hasCache(key) {
  * @param {string} key - Cache key
  */
 export async function getCacheTTL(key) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return -1; // Not supported in memory fallback
+  }
+  
   try {
     const cacheKey = `${REDIS_KEYS.CACHE}${key}`;
     return await redis.ttl(cacheKey);
@@ -118,6 +151,11 @@ export async function getCacheTTL(key) {
  * @param {number} amount - Amount to increment
  */
 export async function incrementCache(key, amount = 1) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return null; // Not supported in memory fallback
+  }
+  
   try {
     const cacheKey = `${REDIS_KEYS.CACHE}${key}`;
     return await redis.incrby(cacheKey, amount);
@@ -133,6 +171,11 @@ export async function incrementCache(key, amount = 1) {
  * @param {number} amount - Amount to decrement
  */
 export async function decrementCache(key, amount = 1) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return null; // Not supported in memory fallback
+  }
+  
   try {
     const cacheKey = `${REDIS_KEYS.CACHE}${key}`;
     return await redis.decrby(cacheKey, amount);
@@ -193,6 +236,18 @@ export async function invalidateCaches(keys) {
  * Get cache statistics
  */
 export async function getCacheStats() {
+  // Use in-memory fallback stats if Redis is not connected
+  if (!isRedisConnected()) {
+    const { getMemoryStats } = await import('../db/memoryFallback.js');
+    const stats = getMemoryStats();
+    return {
+      totalKeys: stats.cache,
+      estimatedSize: 0,
+      sampleSize: stats.cache,
+      mode: 'memory'
+    };
+  }
+  
   try {
     const pattern = `${REDIS_KEYS.CACHE}*`;
     const keys = await redis.keys(pattern);
@@ -206,7 +261,8 @@ export async function getCacheStats() {
     return {
       totalKeys: keys.length,
       estimatedSize: totalSize * (keys.length / 100),
-      sampleSize: Math.min(keys.length, 100)
+      sampleSize: Math.min(keys.length, 100),
+      mode: 'redis'
     };
   } catch (error) {
     console.error('Get cache stats error:', error.message);
@@ -218,6 +274,11 @@ export async function getCacheStats() {
  * Clear all cache
  */
 export async function clearAllCache() {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return inMemoryCache.clear();
+  }
+  
   try {
     const pattern = `${REDIS_KEYS.CACHE}*`;
     const keys = await redis.keys(pattern);

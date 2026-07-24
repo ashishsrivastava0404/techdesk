@@ -2,9 +2,11 @@
  * Redis Session Management Service
  * 
  * Provides session storage and management using Redis.
+ * Falls back to in-memory storage when Redis is unavailable.
  */
 
-import redis, { REDIS_KEYS } from '../db/redis.js';
+import redis, { REDIS_KEYS, isRedisConnected } from '../db/redis.js';
+import { inMemorySession } from '../db/memoryFallback.js';
 
 /**
  * Create a new session
@@ -13,6 +15,11 @@ import redis, { REDIS_KEYS } from '../db/redis.js';
  * @param {number} ttl - Time to live in seconds (default: 24 hours)
  */
 export async function createSession(sessionId, data, ttl = 86400) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return inMemorySession.create(sessionId, data, ttl);
+  }
+  
   try {
     const key = `${REDIS_KEYS.SESSION}${sessionId}`;
     await redis.hmset(key, {
@@ -34,6 +41,11 @@ export async function createSession(sessionId, data, ttl = 86400) {
  * @param {boolean} updateAccess - Update last access time
  */
 export async function getSession(sessionId, updateAccess = true) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return inMemorySession.get(sessionId, updateAccess);
+  }
+  
   try {
     const key = `${REDIS_KEYS.SESSION}${sessionId}`;
     const session = await redis.hgetall(key);
@@ -59,6 +71,11 @@ export async function getSession(sessionId, updateAccess = true) {
  * @param {Object} data - Updated session data
  */
 export async function updateSession(sessionId, data) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return inMemorySession.update(sessionId, data);
+  }
+  
   try {
     const key = `${REDIS_KEYS.SESSION}${sessionId}`;
     const exists = await redis.exists(key);
@@ -80,6 +97,11 @@ export async function updateSession(sessionId, data) {
  * @param {string} sessionId - Session ID
  */
 export async function deleteSession(sessionId) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return inMemorySession.delete(sessionId);
+  }
+  
   try {
     const key = `${REDIS_KEYS.SESSION}${sessionId}`;
     await redis.del(key);
@@ -96,6 +118,11 @@ export async function deleteSession(sessionId) {
  * @param {number} ttl - New TTL in seconds
  */
 export async function extendSession(sessionId, ttl = 86400) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return inMemorySession.extend(sessionId, ttl);
+  }
+  
   try {
     const key = `${REDIS_KEYS.SESSION}${sessionId}`;
     await redis.expire(key, ttl);
@@ -111,6 +138,11 @@ export async function extendSession(sessionId, ttl = 86400) {
  * @param {string} userId - User ID
  */
 export async function getUserSessions(userId) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return [];
+  }
+  
   try {
     const pattern = `${REDIS_KEYS.SESSION}*`;
     const keys = await redis.keys(pattern);
@@ -143,6 +175,11 @@ export async function getUserSessions(userId) {
  * @param {string} userId - User ID
  */
 export async function deleteUserSessions(userId) {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return inMemorySession.deleteUserSessions(userId);
+  }
+  
   try {
     const sessions = await getUserSessions(userId);
     
@@ -161,6 +198,11 @@ export async function deleteUserSessions(userId) {
  * Count active sessions
  */
 export async function countActiveSessions() {
+  // Use in-memory fallback if Redis is not connected
+  if (!isRedisConnected()) {
+    return 0;
+  }
+  
   try {
     const pattern = `${REDIS_KEYS.SESSION}*`;
     const keys = await redis.keys(pattern);

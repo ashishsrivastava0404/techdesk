@@ -4,11 +4,38 @@
 
 Promote implements Redis for distributed caching, session management, rate limiting, and token storage. Redis enables horizontal scaling by providing shared state across multiple server instances.
 
+## ⚡ Fallback Mode
+
+When Redis is unavailable (disabled or connection fails), the application automatically falls back to in-memory storage. This ensures zero downtime and graceful degradation.
+
+### Configuration
+```bash
+# Disable Redis (use in-memory fallback)
+REDIS_ENABLED=false
+```
+
+### Fallback Features
+| Feature | Fallback Status |
+|---------|----------------|
+| Rate Limiting | ✅ Full support |
+| Session Storage | ✅ Full support |
+| API Caching | ✅ Full support |
+| Token Storage | ✅ Full support |
+| Pattern Deletion | ⚠️ Limited |
+| Cache Stats | ✅ Supported |
+
+### How It Works
+1. On startup, if `REDIS_ENABLED=false`, logs show fallback mode
+2. In-memory stores are initialized with automatic cleanup
+3. All services check `isRedisConnected()` and route accordingly
+4. Cleanup timer runs every 5 minutes to remove expired entries
+
 ## Features Implemented
 
 | Feature | Description | Module |
 |---------|-------------|--------|
 | **Connection Management** | Redis client with reconnection handling | `src/db/redis.js` |
+| **In-Memory Fallback** | Graceful degradation when Redis unavailable | `src/db/memoryFallback.js` |
 | **Rate Limiting** | Distributed rate limiting with multiple strategies | `src/middleware/redisRateLimiter.js` |
 | **Session Management** | User session storage and management | `src/services/redisSession.js` |
 | **Caching** | API response caching with TTL | `src/services/redisCache.js` |
@@ -548,8 +575,23 @@ FLUSHDB  # Clear all
 
 The app continues to work without Redis:
 - Rate limiting falls back to in-memory (per-instance)
-- Sessions use database storage
-- Cache returns null (no caching)
+- Sessions use in-memory fallback store
+- Cache uses in-memory fallback store
+- Token storage uses in-memory fallback store
+
+### Monitoring Fallback Mode
+
+Check logs on startup:
+```
+🟡 Redis: Disabled via REDIS_ENABLED=false
+🟡 Using in-memory fallback for rate limiting, caching, and sessions
+```
+
+Check health endpoint:
+```bash
+curl http://localhost:3001/api/health
+# {"status":"ok","redis":"disconnected"}
+```
 
 ---
 
