@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext.jsx';
+import { useBrand } from '../context/BrandContext.jsx';
 import { api } from '../api/index.js';
 
 const SettingsSection = ({ title, icon, children }) => (
@@ -56,6 +57,10 @@ const SelectField = ({ value, onChange, options, disabled }) => (
 
 export default function EnhancedSettings() {
   const { user, showToast } = useApp();
+  const { brand } = useBrand();
+  const appName = brand.app_name || 'TechDesk';
+  const companyName = brand.company_name || '';
+  
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -73,16 +78,16 @@ export default function EnhancedSettings() {
       setSettings(data);
       setFormData({
         // Platform Info
-        platform_name: data.platform_name || 'Promote',
-        platform_tagline: data.platform_tagline || 'Earn Production Access',
-        support_email: data.support_email || 'support@promote.example.com',
-        platform_url: data.platform_url || 'https://promote.example.com',
+        platform_name: data.platform_name || appName,
+        platform_tagline: data.platform_tagline || '',
+        support_email: data.support_email || 'support@example.com',
+        platform_url: data.platform_url || '',
         
         // Branding
-        app_name: data.app_name || data.platform_name || 'TechDesk',
+        app_name: data.app_name || data.platform_name || appName,
         app_logo_url: data.app_logo_url || data.logo_url || '',
         app_favicon_url: data.app_favicon_url || '',
-        company_name: data.company_name || '',
+        company_name: data.company_name || companyName,
         website_url: data.website_url || '',
         
         // Payout & Earnings
@@ -176,13 +181,13 @@ export default function EnhancedSettings() {
         smtp_user: data.smtp_user || '',
         smtp_pass: data.smtp_pass || '',
         smtp_from_email: data.smtp_from_email || '',
-        smtp_from_name: data.smtp_from_name || 'Promote Platform',
+        smtp_from_name: data.smtp_from_name || appName,
         
         // SendGrid
         sendgrid_enabled: data.sendgrid_enabled === true,
         sendgrid_api_key: data.sendgrid_api_key || '',
         sendgrid_from_email: data.sendgrid_from_email || '',
-        sendgrid_from_name: data.sendgrid_from_name || 'Promote Platform',
+        sendgrid_from_name: data.sendgrid_from_name || appName,
         
         // Twilio SMS
         twilio_enabled: data.twilio_enabled === true,
@@ -1323,9 +1328,9 @@ export default function EnhancedSettings() {
                     <input
                       type="text"
                       className="settings-input"
-                      value={formData.smtp_from_name || 'Promote Platform'}
+                      value={formData.smtp_from_name || appName}
                       onChange={(e) => updateField('smtp_from_name', e.target.value)}
-                      placeholder="Promote Platform"
+                      placeholder={appName}
                     />
                   </div>
                 </div>
@@ -1369,9 +1374,9 @@ export default function EnhancedSettings() {
                     <input
                       type="text"
                       className="settings-input"
-                      value={formData.sendgrid_from_name || 'Promote Platform'}
+                      value={formData.sendgrid_from_name || appName}
                       onChange={(e) => updateField('sendgrid_from_name', e.target.value)}
-                      placeholder="Promote Platform"
+                      placeholder={appName}
                     />
                   </div>
                 </div>
