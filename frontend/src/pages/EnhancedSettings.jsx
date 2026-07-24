@@ -132,10 +132,34 @@ export default function EnhancedSettings() {
         
         // API & Integrations
         stripe_enabled: data.stripe_enabled !== false,
+        stripe_api_key: data.stripe_api_key || '',
+        stripe_secret_key: data.stripe_secret_key || '',
+        stripe_webhook_secret: data.stripe_webhook_secret || '',
         paypal_enabled: data.paypal_enabled !== false,
+        paypal_client_id: data.paypal_client_id || '',
+        paypal_secret: data.paypal_secret || '',
         razorpay_enabled: data.razorpay_enabled === true,
+        razorpay_key_id: data.razorpay_key_id || '',
+        razorpay_key_secret: data.razorpay_key_secret || '',
         google_oauth_enabled: data.google_oauth_enabled !== false,
+        google_client_id: data.google_client_id || '',
+        google_client_secret: data.google_client_secret || '',
+        sentry_enabled: data.sentry_enabled === true,
+        sentry_dsn: data.sentry_dsn || '',
+        openai_enabled: data.openai_enabled === true,
+        openai_api_key: data.openai_api_key || '',
         allow_api_access: data.allow_api_access === true,
+        
+        // AWS S3
+        aws_access_key_id: data.aws_access_key_id || '',
+        aws_secret_access_key: data.aws_secret_access_key || '',
+        aws_region: data.aws_region || 'us-east-1',
+        aws_s3_bucket: data.aws_s3_bucket || '',
+        
+        // Cloudinary
+        cloudinary_api_key: data.cloudinary_api_key || '',
+        cloudinary_cloud_name: data.cloudinary_cloud_name || '',
+        cloudinary_api_secret: data.cloudinary_api_secret || '',
         
         // Feature Flags
         enable_leaderboard: data.enable_leaderboard !== false,
@@ -761,56 +785,302 @@ export default function EnhancedSettings() {
 
         {activeSection === 'integrations' && (
           <SettingsSection title="Payment & API Integrations" icon="🔗">
-            <div className="integration-cards">
-              <div className="integration-card">
-                <div className="integration-header">
-                  <span className="integration-icon">💳</span>
-                  <span className="integration-name">Stripe</span>
-                </div>
-                <SettingRow label="Enable Stripe" description="Accept credit card payments">
-                  <ToggleSwitch
-                    checked={formData.stripe_enabled !== false}
-                    onChange={(val) => updateField('stripe_enabled', val)}
-                  />
-                </SettingRow>
+            {/* Stripe */}
+            <div className="integration-card">
+              <div className="integration-header">
+                <span className="integration-icon">💳</span>
+                <span className="integration-name">Stripe</span>
+                <ToggleSwitch
+                  checked={formData.stripe_enabled !== false}
+                  onChange={(val) => updateField('stripe_enabled', val)}
+                />
               </div>
-              <div className="integration-card">
-                <div className="integration-header">
-                  <span className="integration-icon">🅿️</span>
-                  <span className="integration-name">PayPal</span>
+              {formData.stripe_enabled && (
+                <div className="integration-fields">
+                  <div className="settings-input-group">
+                    <label>API Key</label>
+                    <input
+                      type="password"
+                      className="settings-input"
+                      value={formData.stripe_api_key || ''}
+                      onChange={(e) => updateField('stripe_api_key', e.target.value)}
+                      placeholder="sk_test_..."
+                    />
+                  </div>
+                  <div className="settings-input-group">
+                    <label>Secret Key</label>
+                    <input
+                      type="password"
+                      className="settings-input"
+                      value={formData.stripe_secret_key || ''}
+                      onChange={(e) => updateField('stripe_secret_key', e.target.value)}
+                      placeholder="sk_test_..."
+                    />
+                  </div>
+                  <div className="settings-input-group">
+                    <label>Webhook Secret</label>
+                    <input
+                      type="password"
+                      className="settings-input"
+                      value={formData.stripe_webhook_secret || ''}
+                      onChange={(e) => updateField('stripe_webhook_secret', e.target.value)}
+                      placeholder="whsec_..."
+                    />
+                  </div>
                 </div>
-                <SettingRow label="Enable PayPal" description="Accept PayPal payments">
-                  <ToggleSwitch
-                    checked={formData.paypal_enabled !== false}
-                    onChange={(val) => updateField('paypal_enabled', val)}
-                  />
-                </SettingRow>
+              )}
+            </div>
+
+            {/* PayPal */}
+            <div className="integration-card">
+              <div className="integration-header">
+                <span className="integration-icon">🅿️</span>
+                <span className="integration-name">PayPal</span>
+                <ToggleSwitch
+                  checked={formData.paypal_enabled !== false}
+                  onChange={(val) => updateField('paypal_enabled', val)}
+                />
               </div>
-              <div className="integration-card">
-                <div className="integration-header">
-                  <span className="integration-icon">💠</span>
-                  <span className="integration-name">Razorpay</span>
+              {formData.paypal_enabled && (
+                <div className="integration-fields">
+                  <div className="settings-input-group">
+                    <label>Client ID</label>
+                    <input
+                      type="password"
+                      className="settings-input"
+                      value={formData.paypal_client_id || ''}
+                      onChange={(e) => updateField('paypal_client_id', e.target.value)}
+                      placeholder="PayPal Client ID"
+                    />
+                  </div>
+                  <div className="settings-input-group">
+                    <label>Secret</label>
+                    <input
+                      type="password"
+                      className="settings-input"
+                      value={formData.paypal_secret || ''}
+                      onChange={(e) => updateField('paypal_secret', e.target.value)}
+                      placeholder="PayPal Secret"
+                    />
+                  </div>
                 </div>
-                <SettingRow label="Enable Razorpay" description="Accept payments from India">
-                  <ToggleSwitch
-                    checked={formData.razorpay_enabled || false}
-                    onChange={(val) => updateField('razorpay_enabled', val)}
-                  />
-                </SettingRow>
+              )}
+            </div>
+
+            {/* Razorpay */}
+            <div className="integration-card">
+              <div className="integration-header">
+                <span className="integration-icon">💠</span>
+                <span className="integration-name">Razorpay</span>
+                <ToggleSwitch
+                  checked={formData.razorpay_enabled || false}
+                  onChange={(val) => updateField('razorpay_enabled', val)}
+                />
               </div>
-              <div className="integration-card">
-                <div className="integration-header">
-                  <span className="integration-icon">🌐</span>
-                  <span className="integration-name">Google OAuth</span>
+              {formData.razorpay_enabled && (
+                <div className="integration-fields">
+                  <div className="settings-input-group">
+                    <label>Key ID</label>
+                    <input
+                      type="password"
+                      className="settings-input"
+                      value={formData.razorpay_key_id || ''}
+                      onChange={(e) => updateField('razorpay_key_id', e.target.value)}
+                      placeholder="Razorpay Key ID"
+                    />
+                  </div>
+                  <div className="settings-input-group">
+                    <label>Key Secret</label>
+                    <input
+                      type="password"
+                      className="settings-input"
+                      value={formData.razorpay_key_secret || ''}
+                      onChange={(e) => updateField('razorpay_key_secret', e.target.value)}
+                      placeholder="Razorpay Key Secret"
+                    />
+                  </div>
                 </div>
-                <SettingRow label="Enable Google Login" description="Allow Google sign-in">
-                  <ToggleSwitch
-                    checked={formData.google_oauth_enabled !== false}
-                    onChange={(val) => updateField('google_oauth_enabled', val)}
+              )}
+            </div>
+
+            {/* Google OAuth */}
+            <div className="integration-card">
+              <div className="integration-header">
+                <span className="integration-icon">🌐</span>
+                <span className="integration-name">Google OAuth</span>
+                <ToggleSwitch
+                  checked={formData.google_oauth_enabled !== false}
+                  onChange={(val) => updateField('google_oauth_enabled', val)}
+                />
+              </div>
+              {formData.google_oauth_enabled && (
+                <div className="integration-fields">
+                  <div className="settings-input-group">
+                    <label>Client ID</label>
+                    <input
+                      type="password"
+                      className="settings-input"
+                      value={formData.google_client_id || ''}
+                      onChange={(e) => updateField('google_client_id', e.target.value)}
+                      placeholder="Google Client ID"
+                    />
+                  </div>
+                  <div className="settings-input-group">
+                    <label>Client Secret</label>
+                    <input
+                      type="password"
+                      className="settings-input"
+                      value={formData.google_client_secret || ''}
+                      onChange={(e) => updateField('google_client_secret', e.target.value)}
+                      placeholder="Google Client Secret"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Sentry */}
+            <div className="integration-card">
+              <div className="integration-header">
+                <span className="integration-icon">🐛</span>
+                <span className="integration-name">Sentry (Error Tracking)</span>
+                <ToggleSwitch
+                  checked={formData.sentry_enabled || false}
+                  onChange={(val) => updateField('sentry_enabled', val)}
+                />
+              </div>
+              {formData.sentry_enabled && (
+                <div className="integration-fields">
+                  <div className="settings-input-group">
+                    <label>DSN</label>
+                    <input
+                      type="password"
+                      className="settings-input"
+                      value={formData.sentry_dsn || ''}
+                      onChange={(e) => updateField('sentry_dsn', e.target.value)}
+                      placeholder="https://...@sentry.io/..."
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* OpenAI */}
+            <div className="integration-card">
+              <div className="integration-header">
+                <span className="integration-icon">🤖</span>
+                <span className="integration-name">OpenAI</span>
+                <ToggleSwitch
+                  checked={formData.openai_enabled || false}
+                  onChange={(val) => updateField('openai_enabled', val)}
+                />
+              </div>
+              {formData.openai_enabled && (
+                <div className="integration-fields">
+                  <div className="settings-input-group">
+                    <label>API Key</label>
+                    <input
+                      type="password"
+                      className="settings-input"
+                      value={formData.openai_api_key || ''}
+                      onChange={(e) => updateField('openai_api_key', e.target.value)}
+                      placeholder="sk-..."
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* AWS S3 */}
+            <div className="integration-card">
+              <div className="integration-header">
+                <span className="integration-icon">☁️</span>
+                <span className="integration-name">AWS S3 Storage</span>
+              </div>
+              <div className="integration-fields">
+                <div className="settings-input-group">
+                  <label>Access Key ID</label>
+                  <input
+                    type="password"
+                    className="settings-input"
+                    value={formData.aws_access_key_id || ''}
+                    onChange={(e) => updateField('aws_access_key_id', e.target.value)}
+                    placeholder="AKIA..."
                   />
-                </SettingRow>
+                </div>
+                <div className="settings-input-group">
+                  <label>Secret Access Key</label>
+                  <input
+                    type="password"
+                    className="settings-input"
+                    value={formData.aws_secret_access_key || ''}
+                    onChange={(e) => updateField('aws_secret_access_key', e.target.value)}
+                    placeholder="AWS Secret Key"
+                  />
+                </div>
+                <div className="settings-input-group">
+                  <label>Region</label>
+                  <input
+                    type="text"
+                    className="settings-input"
+                    value={formData.aws_region || 'us-east-1'}
+                    onChange={(e) => updateField('aws_region', e.target.value)}
+                    placeholder="us-east-1"
+                  />
+                </div>
+                <div className="settings-input-group">
+                  <label>S3 Bucket Name</label>
+                  <input
+                    type="text"
+                    className="settings-input"
+                    value={formData.aws_s3_bucket || ''}
+                    onChange={(e) => updateField('aws_s3_bucket', e.target.value)}
+                    placeholder="my-bucket-name"
+                  />
+                </div>
               </div>
             </div>
+
+            {/* Cloudinary */}
+            <div className="integration-card">
+              <div className="integration-header">
+                <span className="integration-icon">📷</span>
+                <span className="integration-name">Cloudinary</span>
+              </div>
+              <div className="integration-fields">
+                <div className="settings-input-group">
+                  <label>Cloud Name</label>
+                  <input
+                    type="text"
+                    className="settings-input"
+                    value={formData.cloudinary_cloud_name || ''}
+                    onChange={(e) => updateField('cloudinary_cloud_name', e.target.value)}
+                    placeholder="my-cloud"
+                  />
+                </div>
+                <div className="settings-input-group">
+                  <label>API Key</label>
+                  <input
+                    type="password"
+                    className="settings-input"
+                    value={formData.cloudinary_api_key || ''}
+                    onChange={(e) => updateField('cloudinary_api_key', e.target.value)}
+                    placeholder="Cloudinary API Key"
+                  />
+                </div>
+                <div className="settings-input-group">
+                  <label>API Secret</label>
+                  <input
+                    type="password"
+                    className="settings-input"
+                    value={formData.cloudinary_api_secret || ''}
+                    onChange={(e) => updateField('cloudinary_api_secret', e.target.value)}
+                    placeholder="Cloudinary API Secret"
+                  />
+                </div>
+              </div>
+            </div>
+
             <SettingRow label="Allow API Access" description="Enable third-party API integrations">
               <ToggleSwitch
                 checked={formData.allow_api_access || false}
@@ -1400,12 +1670,51 @@ export default function EnhancedSettings() {
           margin-bottom: 12px;
         }
 
+        .integration-header .toggle-switch {
+          margin-left: auto;
+        }
+
         .integration-icon {
           font-size: 1.5rem;
         }
 
         .integration-name {
           font-weight: 600;
+        }
+
+        .integration-fields {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          margin-top: 16px;
+          padding-top: 16px;
+          border-top: 1px solid var(--line);
+        }
+
+        .settings-input-group {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .settings-input-group label {
+          font-size: 0.8125rem;
+          color: var(--text-secondary);
+          font-weight: 500;
+        }
+
+        .settings-input-group input {
+          padding: 10px 14px;
+          background: var(--bg-primary);
+          border: 1px solid var(--line);
+          border-radius: 8px;
+          color: var(--text-primary);
+          font-size: 0.9375rem;
+        }
+
+        .settings-input-group input:focus {
+          outline: none;
+          border-color: var(--accent-color);
         }
 
         @media (max-width: 1024px) {

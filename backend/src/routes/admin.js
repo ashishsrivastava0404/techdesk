@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import pool from '../db/index.js';
+import { maskSettingsForFrontend, loadApiKeysFromDatabase, isMasked } from '../services/settingsLoader.js';
 
 const router = Router();
 
@@ -266,7 +267,10 @@ router.get('/settings', async (req, res) => {
       acc[row.key_name] = row.value;
       return acc;
     }, {});
-    res.json(settings);
+    
+    // Mask secrets for frontend display
+    const maskedSettings = maskSettingsForFrontend(settings);
+    res.json(maskedSettings);
   } catch (error) {
     console.error('Error fetching settings:', error);
     res.status(500).json({ error: 'Failed to fetch settings' });
@@ -283,25 +287,42 @@ router.patch('/settings', async (req, res) => {
 
   try {
     for (const [key, value] of Object.entries(settings)) {
+      // Skip masked values - they shouldn't be updated
+      if (isMasked(value)) {
+        continue;
+      }
+      
+      // Use INSERT IGNORE + UPDATE for new or existing keys
+      await pool.query(
+        `INSERT IGNORE INTO platform_settings (key_name, value) VALUES (?, ?)`,
+        [key, JSON.stringify(value)]
+      );
       await pool.query(
         'UPDATE platform_settings SET value = ? WHERE key_name = ?',
         [JSON.stringify(value), key]
       );
     }
 
-    // Log admin action
+    // Log admin action (without sensitive values)
+    const safeSettings = maskSettingsForFrontend(settings);
     await pool.query(
       `INSERT INTO admin_logs (admin_name, action, target_type, details)
        VALUES (?, 'update_settings', 'settings', ?)`,
-      [admin_name || 'system', JSON.stringify(settings)]
+      [admin_name || 'system', JSON.stringify(safeSettings)]
     );
+
+    // Reload API keys into environment if any were updated
+    await loadApiKeysFromDatabase();
 
     const [rows] = await pool.query('SELECT * FROM platform_settings');
     const result = rows.reduce((acc, row) => {
       acc[row.key_name] = row.value;
       return acc;
     }, {});
-    res.json(result);
+    
+    // Return masked settings
+    const maskedResult = maskSettingsForFrontend(result);
+    res.json(maskedResult);
   } catch (error) {
     console.error('Error updating settings:', error);
     res.status(500).json({ error: 'Failed to update settings' });

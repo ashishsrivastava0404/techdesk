@@ -362,7 +362,32 @@ export async function initDatabase() {
     ('email_notifications', 'true'),
     ('payout_auto_approve', 'false'),
     ('require_ticket_rating', 'true'),
-    ('max_ticket_age_days', '30')
+    ('max_ticket_age_days', '30'),
+    ('stripe_enabled', 'true'),
+    ('stripe_api_key', ''),
+    ('stripe_secret_key', ''),
+    ('stripe_webhook_secret', ''),
+    ('paypal_enabled', 'true'),
+    ('paypal_client_id', ''),
+    ('paypal_secret', ''),
+    ('razorpay_enabled', 'false'),
+    ('razorpay_key_id', ''),
+    ('razorpay_key_secret', ''),
+    ('google_oauth_enabled', 'true'),
+    ('google_client_id', ''),
+    ('google_client_secret', ''),
+    ('sentry_enabled', 'false'),
+    ('sentry_dsn', ''),
+    ('openai_enabled', 'false'),
+    ('openai_api_key', ''),
+    ('allow_api_access', 'false'),
+    ('aws_access_key_id', ''),
+    ('aws_secret_access_key', ''),
+    ('aws_region', 'us-east-1'),
+    ('aws_s3_bucket', ''),
+    ('cloudinary_api_key', ''),
+    ('cloudinary_cloud_name', ''),
+    ('cloudinary_api_secret', '')
   `);
 
   // Ticket categories table

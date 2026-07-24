@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import { initDatabase } from './db/index.js';
 import { connectRedis, isRedisConnected } from './db/redis.js';
 import { startCleanupTimer } from './db/memoryFallback.js';
+import { loadApiKeysFromDatabase } from './services/settingsLoader.js';
 import { authenticate } from './middleware/auth.js';
 import { apiLimiter, authLimiter, paymentLimiter } from './middleware/rateLimiter.js';
 import usersRouter from './routes/users.js';
@@ -103,6 +104,9 @@ app.use((req, res) => {
 async function start() {
   try {
     await initDatabase();
+    
+    // Load API keys from database into environment
+    await loadApiKeysFromDatabase();
     
     // Connect to Redis (non-blocking - app works without it)
     if (process.env.REDIS_ENABLED !== 'false') {

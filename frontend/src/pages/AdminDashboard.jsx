@@ -1,22 +1,67 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext.jsx';
 import { api } from '../api/index.js';
 
 export default function AdminDashboard() {
   const { user, showToast } = useApp();
-  const [stats, setStats] = useState(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    usersByRole: {},
+    activeTickets: 0,
+    resolvedThisMonth: 0,
+    revenueThisMonth: 0,
+    totalPlatformRevenue: 0,
+    averageRating: 0,
+    pendingPayouts: { count: 0, total: 0 },
+    disputedPayments: 0
+  });
   const [users, setUsers] = useState([]);
   const [payments, setPayments] = useState([]);
   const [payouts, setPayouts] = useState([]);
   const [logs, setLogs] = useState([]);
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('overview');
+
+  // Determine tab from URL path
+  const getTabFromPath = (path) => {
+    if (path.includes('/users')) return 'users';
+    if (path.includes('/payments')) return 'payments';
+    if (path.includes('/credits')) return 'credits';
+    if (path.includes('/analytics')) return 'analytics';
+    if (path.includes('/settings') && !path.includes('/platform-settings')) return 'settings';
+    return 'overview';
+  };
+
+  const getPathFromTab = (tabId) => {
+    const paths = {
+      'overview': '/admin',
+      'users': '/admin/users',
+      'payments': '/admin/payments',
+      'credits': '/admin/credits',
+      'analytics': '/admin/analytics',
+      'settings': '/admin/settings'
+    };
+    return paths[tabId] || '/admin';
+  };
+
+  const tab = getTabFromPath(location.pathname);
+
+  // Update tab when URL changes
+  useEffect(() => {
+    // URL change is handled by react-router, no additional action needed
+    // The tab is derived from location.pathname on each render
+  }, [location.pathname]);
 
   useEffect(() => {
     loadData();
   }, [tab]);
+
+  const handleTabClick = (tabId) => {
+    navigate(getPathFromTab(tabId));
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -103,11 +148,12 @@ export default function AdminDashboard() {
   }
 
   const tabs = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'users', label: 'Users' },
-    { id: 'payments', label: 'Payments & Payouts' },
-    { id: 'logs', label: 'Audit Logs' },
-    { id: 'settings', label: 'Settings' }
+    { id: 'overview', label: 'Overview', path: '/admin' },
+    { id: 'users', label: 'Users', path: '/admin/users' },
+    { id: 'payments', label: 'Payments & Payouts', path: '/admin/payments' },
+    { id: 'credits', label: 'Credits', path: '/admin/credits' },
+    { id: 'analytics', label: 'Analytics', path: '/admin/analytics' },
+    { id: 'settings', label: 'Settings', path: '/admin/settings' }
   ];
 
   return (
@@ -129,7 +175,7 @@ export default function AdminDashboard() {
           <button
             key={t.id}
             className={`tab ${tab === t.id ? 'active' : ''}`}
-            onClick={() => setTab(t.id)}
+            onClick={() => handleTabClick(t.id)}
           >
             {t.label}
           </button>
@@ -286,26 +332,97 @@ export default function AdminDashboard() {
             </div>
           )}
 
+          {tab === 'credits' && (
+            <div className="panel">
+              <h4 style={{ fontFamily: 'var(--display)', marginBottom: '16px' }}>Credit Transactions</h4>
+              <p style={{ color: 'var(--muted)', marginBottom: '20px' }}>
+                View and manage credit transactions across the platform.
+              </p>
+              <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginBottom: '24px' }}>
+                <div className="stat-card">
+                  <div className="stat-label">Total Credits Issued</div>
+                  <div className="stat-value" style={{ color: 'var(--green)' }}>$0.00</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-label">Total Credits Used</div>
+                  <div className="stat-value" style={{ color: 'var(--amber)' }}>$0.00</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-label">Active Credits</div>
+                  <div className="stat-value">$0.00</div>
+                </div>
+              </div>
+              <p style={{ textAlign: 'center', color: 'var(--muted)' }}>
+                Credit transaction history will appear here.
+              </p>
+            </div>
+          )}
+
+          {tab === 'analytics' && (
+            <div className="panel">
+              <h4 style={{ fontFamily: 'var(--display)', marginBottom: '16px' }}>Platform Analytics</h4>
+              <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: '24px' }}>
+                <div className="stat-card">
+                  <div className="stat-value">{stats?.totalUsers || 0}</div>
+                  <div className="stat-label">Total Users</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-value">{stats?.activeTickets || 0}</div>
+                  <div className="stat-label">Active Tickets</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-value">{stats?.resolvedThisMonth || 0}</div>
+                  <div className="stat-label">Resolved (Month)</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-value">{stats?.averageRating?.toFixed(1) || '0.0'}★</div>
+                  <div className="stat-label">Avg Rating</div>
+                </div>
+              </div>
+              <h5 style={{ marginBottom: '12px' }}>Revenue Overview</h5>
+              <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+                <div className="stat-card">
+                  <div className="stat-label">This Month</div>
+                  <div className="stat-value" style={{ color: 'var(--green)' }}>
+                    {formatCurrency(stats?.revenueThisMonth || 0)}
+                  </div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-label">All Time</div>
+                  <div className="stat-value" style={{ color: 'var(--green)' }}>
+                    {formatCurrency(stats?.totalPlatformRevenue || 0)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {tab === 'logs' && (
             <div className="panel">
               <h4 style={{ fontFamily: 'var(--display)', marginBottom: '16px' }}>Audit Logs ({logs.length})</h4>
-              {logs.map(log => (
-                <div key={log.id} style={{ padding: '12px', borderBottom: '1px solid var(--line)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <span style={{ fontWeight: 600, fontSize: '13px' }}>{log.admin_name}</span>
-                      <span style={{ color: 'var(--muted)', marginLeft: '8px' }}>{log.action}</span>
-                      {log.target_type && <span className="badge badge-dev" style={{ marginLeft: '8px', fontSize: '9px' }}>{log.target_type}</span>}
+              {logs.length === 0 ? (
+                <p style={{ textAlign: 'center', color: 'var(--muted)' }}>
+                  No audit logs yet.
+                </p>
+              ) : (
+                logs.map(log => (
+                  <div key={log.id} style={{ padding: '12px', borderBottom: '1px solid var(--line)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <span style={{ fontWeight: 600, fontSize: '13px' }}>{log.admin_name}</span>
+                        <span style={{ color: 'var(--muted)', marginLeft: '8px' }}>{log.action}</span>
+                        {log.target_type && <span className="badge badge-dev" style={{ marginLeft: '8px', fontSize: '9px' }}>{log.target_type}</span>}
+                      </div>
+                      <span style={{ fontSize: '11px', color: 'var(--muted)' }}>{formatDate(log.created_at)}</span>
                     </div>
-                    <span style={{ fontSize: '11px', color: 'var(--muted)' }}>{formatDate(log.created_at)}</span>
+                    {log.details && (
+                      <pre style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px', overflow: 'auto' }}>
+                        {JSON.stringify(JSON.parse(log.details), null, 2)}
+                      </pre>
+                    )}
                   </div>
-                  {log.details && (
-                    <pre style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px', overflow: 'auto' }}>
-                      {JSON.stringify(JSON.parse(log.details), null, 2)}
-                    </pre>
-                  )}
-                </div>
-              ))}
+                ))
+              )}
             </div>
           )}
 
