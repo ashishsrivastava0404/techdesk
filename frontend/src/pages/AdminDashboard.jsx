@@ -22,6 +22,7 @@ export default function AdminDashboard() {
   const [payments, setPayments] = useState([]);
   const [payouts, setPayouts] = useState([]);
   const [logs, setLogs] = useState([]);
+  const [financialLogs, setFinancialLogs] = useState([]);
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -31,6 +32,7 @@ export default function AdminDashboard() {
     if (path.includes('/payments')) return 'payments';
     if (path.includes('/credits')) return 'credits';
     if (path.includes('/analytics')) return 'analytics';
+    if (path.includes('/financial-audit')) return 'financial-audit';
     if (path.includes('/settings') && !path.includes('/platform-settings')) return 'settings';
     return 'overview';
   };
@@ -42,6 +44,7 @@ export default function AdminDashboard() {
       'payments': '/admin/payments',
       'credits': '/admin/credits',
       'analytics': '/admin/analytics',
+      'financial-audit': '/admin/financial-audit',
       'settings': '/admin/settings'
     };
     return paths[tabId] || '/admin';
@@ -85,6 +88,9 @@ export default function AdminDashboard() {
       } else if (tab === 'settings') {
         const data = await api.admin.getSettings();
         setSettings(data);
+      } else if (tab === 'financial-audit') {
+        const data = await api.admin.getFinancialLogs();
+        setFinancialLogs(data);
       }
     } catch (error) {
       showToast('Failed to load data');
@@ -153,6 +159,7 @@ export default function AdminDashboard() {
     { id: 'payments', label: 'Payments & Payouts', path: '/admin/payments' },
     { id: 'credits', label: 'Credits', path: '/admin/credits' },
     { id: 'analytics', label: 'Analytics', path: '/admin/analytics' },
+    { id: 'financial-audit', label: '💰 Financial Audit', path: '/admin/financial-audit' },
     { id: 'settings', label: 'Settings', path: '/admin/settings' }
   ];
 
@@ -423,6 +430,69 @@ export default function AdminDashboard() {
                   </div>
                 ))
               )}
+            </div>
+          )}
+
+          {tab === 'financial-audit' && (
+            <div>
+              <div className="panel">
+                <h4 style={{ fontFamily: 'var(--display)', marginBottom: '16px' }}>💰 Financial Audit Trail</h4>
+                <p style={{ color: 'var(--muted)', marginBottom: '20px' }}>
+                  Complete audit trail of all financial transactions including payments, payouts, refunds, and disputes.
+                </p>
+                {financialLogs.length === 0 ? (
+                  <div className="empty">
+                    <div style={{ fontSize: '32px', marginBottom: '12px' }}>📒</div>
+                    <p>No financial transactions recorded yet.</p>
+                    <p style={{ fontSize: '13px', color: 'var(--muted)' }}>
+                      All payment and payout events will appear here.
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ maxHeight: '600px', overflowY: 'auto' }}>
+                    {financialLogs.map(log => (
+                      <div key={log.id} style={{ 
+                        padding: '16px', 
+                        borderBottom: '1px solid var(--line)',
+                        display: 'grid',
+                        gridTemplateColumns: '100px 1fr 120px 120px',
+                        gap: '16px',
+                        alignItems: 'center'
+                      }}>
+                        <div style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                          {formatDate(log.created_at)}
+                        </div>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                            <span className={`badge badge-${log.transaction_type}`} style={{ fontSize: '10px' }}>
+                              {log.transaction_type}
+                            </span>
+                            <span style={{ fontWeight: 600, fontSize: '13px' }}>{log.action}</span>
+                          </div>
+                          <div style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                            ID: #{log.transaction_id} • Admin: {log.admin_name || 'System'}
+                          </div>
+                        </div>
+                        <div style={{ fontFamily: 'var(--mono)', fontSize: '13px', textAlign: 'right' }}>
+                          {log.amount ? formatCurrency(log.amount) : '-'}
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          {log.previous_status && (
+                            <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                              {log.previous_status} → {log.new_status}
+                            </span>
+                          )}
+                          {log.platform_fee > 0 && (
+                            <div style={{ fontSize: '10px', color: 'var(--amber)' }}>
+                              Fee: {formatCurrency(log.platform_fee)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

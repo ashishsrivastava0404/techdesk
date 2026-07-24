@@ -335,6 +335,35 @@ export async function initDatabase() {
     )
   `);
 
+  // Financial audit logs table - for all financial transactions
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS financial_audit_logs (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      transaction_type ENUM('payment', 'payout', 'refund', 'dispute', 'credit', 'fee', 'adjustment') NOT NULL,
+      transaction_id INT NOT NULL,
+      action VARCHAR(100) NOT NULL,
+      previous_status VARCHAR(50),
+      new_status VARCHAR(50),
+      amount DECIMAL(10, 2),
+      currency VARCHAR(3) DEFAULT 'USD',
+      platform_fee DECIMAL(10, 2) DEFAULT 0,
+      tech_amount DECIMAL(10, 2) DEFAULT 0,
+      customer_id INT,
+      tech_id INT,
+      admin_id INT,
+      admin_name VARCHAR(255),
+      details JSON,
+      ip_address VARCHAR(45),
+      user_agent TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_transaction (transaction_type, transaction_id),
+      INDEX idx_tech (tech_id),
+      INDEX idx_customer (customer_id),
+      INDEX idx_admin (admin_id),
+      INDEX idx_created (created_at)
+    )
+  `);
+
   // Platform settings table
   await connection.query(`
     CREATE TABLE IF NOT EXISTS platform_settings (

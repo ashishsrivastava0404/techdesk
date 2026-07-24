@@ -1,6 +1,11 @@
 import { Router } from 'express';
 import pool from '../db/index.js';
 import { maskSettingsForFrontend, loadApiKeysFromDatabase, isMasked, syncToAWS } from '../services/settingsLoader.js';
+import { 
+  logFinancialTransaction, 
+  TransactionTypes, 
+  TransactionActions 
+} from '../services/financialAudit.js';
 
 const router = Router();
 
@@ -202,6 +207,14 @@ router.patch('/payouts/:id', async (req, res) => {
   }
 
   try {
+    // Get current payout details for audit
+    const [currentPayout] = await pool.query('SELECT * FROM tech_payouts WHERE id = ?', [id]);
+    if (!currentPayout.length) {
+      return res.status(404).json({ error: 'Payout not found' });
+    }
+    const previousPayout = currentPayout[0];
+    const previousStatus = previousPayout.status;
+
     const updates = ['status = ?'];
     const params = [status];
 
@@ -214,10 +227,37 @@ router.patch('/payouts/:id', async (req, res) => {
 
     // Log admin action
     await pool.query(
-      `INSERT INTO admin_logs (admin_name, action, target_type, target_id, details)
-       VALUES (?, 'update_payout', 'payout', ?, ?)`,
-      [admin_name || 'system', id, JSON.stringify({ status })]
+      `INSERT INTO admin_logs (admin_name, action, target_type, target_id, details, ip_address)
+       VALUES (?, 'update_payout', 'payout', ?, ?, ?)`,
+      [admin_name || 'system', id, JSON.stringify({ status, previousStatus }), req.ip]
     );
+
+    // Log financial transaction
+    const actionMap = {
+      'requested': TransactionActions.PAYOUT_REQUESTED,
+      'processing': TransactionActions.PAYOUT_PROCESSING,
+      'completed': TransactionActions.PAYOUT_COMPLETED,
+      'failed': TransactionActions.PAYOUT_FAILED
+    };
+
+    await logFinancialTransaction({
+      transactionType: TransactionTypes.PAYOUT,
+      transactionId: parseInt(id),
+      action: actionMap[status],
+      previousStatus,
+      newStatus: status,
+      amount: parseFloat(previousPayout.amount),
+      currency: 'USD',
+      techId: previousPayout.tech_id,
+      adminName: admin_name || 'system',
+      details: {
+        tech_name: previousPayout.tech_name,
+        payment_method: previousPayout.payment_method,
+        notes: req.body.notes
+      },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
 
     const [rows] = await pool.query('SELECT * FROM tech_payouts WHERE id = ?', [id]);
     res.json(rows[0]);
@@ -256,6 +296,51 @@ router.get('/logs', async (req, res) => {
   } catch (error) {
     console.error('Error fetching logs:', error);
     res.status(500).json({ error: 'Failed to fetch logs' });
+  }
+});
+
+// Get financial audit logs
+router.get('/financial-logs', async (req, res) => {
+  const { 
+    transaction_type, 
+    tech_id, 
+    customer_id, 
+    start_date, 
+    end_date, 
+    limit = 100, 
+    offset = 0 
+  } = req.query;
+
+  try {
+    const logs = await getFinancialAuditLogs({
+      transactionType: transaction_type,
+      techId: tech_id ? parseInt(tech_id) : null,
+      customerId: customer_id ? parseInt(customer_id) : null,
+      startDate: start_date,
+      endDate: end_date,
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
+    res.json(logs);
+  } catch (error) {
+    console.error('Error fetching financial logs:', error);
+    res.status(500).json({ error: 'Failed to fetch financial logs' });
+  }
+});
+
+// Get financial summary
+router.get('/financial-summary', async (req, res) => {
+  const { start_date, end_date } = req.query;
+  
+  const startDate = start_date || new Date(new Date().setDate(new Date().getDate() - 30)).toISOString();
+  const endDate = end_date || new Date().toISOString();
+
+  try {
+    const summary = await getFinancialSummary({ startDate, endDate });
+    res.json(summary);
+  } catch (error) {
+    console.error('Error fetching financial summary:', error);
+    res.status(500).json({ error: 'Failed to fetch financial summary' });
   }
 });
 

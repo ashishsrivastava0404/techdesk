@@ -305,6 +305,14 @@ export const api = {
       const query = new URLSearchParams(params).toString();
       return fetchJSON(`/admin/logs${query ? `?${query}` : ''}`);
     },
+    getFinancialLogs: (params = {}) => {
+      const query = new URLSearchParams(params).toString();
+      return fetchJSON(`/admin/financial-logs${query ? `?${query}` : ''}`);
+    },
+    getFinancialSummary: (params = {}) => {
+      const query = new URLSearchParams(params).toString();
+      return fetchJSON(`/admin/financial-summary${query ? `?${query}` : ''}`);
+    },
     getSettings: () => fetchJSON('/admin/settings'),
     updateSettings: (settings) => fetchJSON('/admin/settings', {
       method: 'PATCH',
