@@ -231,7 +231,69 @@ export const currencyService = {
 
 ---
 
-## 3. Communication System
+---
+
+## 3. Timezone & Country Features
+
+### Supported Regions
+
+| Region | Timezone | Currency | Locale |
+|--------|----------|----------|--------|
+| United States | America/New_York | USD | en-US |
+| United Kingdom | Europe/London | GBP | en-GB |
+| India | Asia/Kolkata | INR | en-IN |
+| Japan | Asia/Tokyo | JPY | ja-JP |
+| China | Asia/Shanghai | CNY | zh-CN |
+| Germany | Europe/Berlin | EUR | de-DE |
+| Brazil | America/Sao_Paulo | BRL | pt-BR |
+| Mexico | America/Mexico_City | MXN | es-MX |
+
+### Timezone Detection
+
+```javascript
+// Auto-detect user's timezone
+const detectTimezone = () => {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone;
+};
+
+// Common timezones for selection
+const commonTimezones = [
+  { value: 'America/New_York', label: 'Eastern Time (US & Canada)' },
+  { value: 'America/Chicago', label: 'Central Time (US & Canada)' },
+  { value: 'America/Denver', label: 'Mountain Time (US & Canada)' },
+  { value: 'America/Los_Angeles', label: 'Pacific Time (US & Canada)' },
+  { value: 'America/Sao_Paulo', label: 'Brasilia Time (Brazil)' },
+  { value: 'Europe/London', label: 'London (UK & Ireland)' },
+  { value: 'Europe/Paris', label: 'Central European Time' },
+  { value: 'Europe/Berlin', label: 'Berlin (Germany)' },
+  { value: 'Asia/Kolkata', label: 'India Standard Time' },
+  { value: 'Asia/Tokyo', label: 'Japan Standard Time' },
+  { value: 'Asia/Shanghai', label: 'China Standard Time' },
+  { value: 'Australia/Sydney', label: 'Sydney (Australia)' },
+  { value: 'UTC', label: 'UTC (Coordinated Universal Time)' }
+];
+```
+
+### Country-Locale Mapping
+
+```javascript
+const countryLocaleMap = {
+  'US': { timezone: 'America/New_York', currency: 'USD', locale: 'en-US' },
+  'GB': { timezone: 'Europe/London', currency: 'GBP', locale: 'en-GB' },
+  'IN': { timezone: 'Asia/Kolkata', currency: 'INR', locale: 'en-IN' },
+  'JP': { timezone: 'Asia/Tokyo', currency: 'JPY', locale: 'ja-JP' },
+  'CN': { timezone: 'Asia/Shanghai', currency: 'CNY', locale: 'zh-CN' },
+  'DE': { timezone: 'Europe/Berlin', currency: 'EUR', locale: 'de-DE' },
+  'BR': { timezone: 'America/Sao_Paulo', currency: 'BRL', locale: 'pt-BR' },
+  'MX': { timezone: 'America/Mexico_City', currency: 'MXN', locale: 'es-MX' },
+  'FR': { timezone: 'Europe/Paris', currency: 'EUR', locale: 'fr-FR' },
+  'ES': { timezone: 'Europe/Madrid', currency: 'EUR', locale: 'es-ES' }
+};
+```
+
+---
+
+## 4. Communication System
 
 ### Features Overview
 

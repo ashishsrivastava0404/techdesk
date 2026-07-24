@@ -148,6 +148,107 @@ export const formatRelativeTime = (date) => {
   return i18n.t('time.days_ago', { count: diffInDays });
 };
 
+// ============================================
+// TIMEZONE UTILITIES
+// ============================================
+
+// Detect user's timezone automatically
+export const detectUserTimezone = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch (error) {
+    console.warn('Could not detect timezone:', error);
+    return 'UTC';
+  }
+};
+
+// Get timezone offset
+export const getTimezoneOffset = (timezone) => {
+  try {
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      timeZoneName: 'shortOffset'
+    });
+    const parts = formatter.formatToParts(now);
+    const offsetPart = parts.find(p => p.type === 'timeZoneName');
+    return offsetPart?.value || '';
+  } catch {
+    return '';
+  }
+};
+
+// Format time for specific timezone
+export const formatTimeForTimezone = (date, timezone, locale = null) => {
+  try {
+    const targetLocale = locale || getLocaleForLanguage(i18n.language);
+    return new Intl.DateTimeFormat(targetLocale, {
+      timeZone: timezone,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+      dateStyle: 'medium'
+    }).format(new Date(date));
+  } catch {
+    return new Date(date).toLocaleString();
+  }
+};
+
+// Get locale string for a language
+export const getLocaleForLanguage = (languageCode) => {
+  const localeMap = {
+    en: 'en-US',
+    es: 'es-ES',
+    fr: 'fr-FR',
+    de: 'de-DE',
+    pt: 'pt-BR',
+    zh: 'zh-CN',
+    hi: 'hi-IN',
+    ja: 'ja-JP',
+    ar: 'ar-SA'
+  };
+  return localeMap[languageCode] || 'en-US';
+};
+
+// Country to locale mapping
+export const countryLocaleMap = {
+  'US': { timezone: 'America/New_York', currency: 'USD', locale: 'en-US', language: 'en' },
+  'GB': { timezone: 'Europe/London', currency: 'GBP', locale: 'en-GB', language: 'en' },
+  'IN': { timezone: 'Asia/Kolkata', currency: 'INR', locale: 'en-IN', language: 'en' },
+  'JP': { timezone: 'Asia/Tokyo', currency: 'JPY', locale: 'ja-JP', language: 'ja' },
+  'CN': { timezone: 'Asia/Shanghai', currency: 'CNY', locale: 'zh-CN', language: 'zh' },
+  'DE': { timezone: 'Europe/Berlin', currency: 'EUR', locale: 'de-DE', language: 'de' },
+  'BR': { timezone: 'America/Sao_Paulo', currency: 'BRL', locale: 'pt-BR', language: 'pt' },
+  'MX': { timezone: 'America/Mexico_City', currency: 'MXN', locale: 'es-MX', language: 'es' },
+  'FR': { timezone: 'Europe/Paris', currency: 'EUR', locale: 'fr-FR', language: 'fr' },
+  'ES': { timezone: 'Europe/Madrid', currency: 'EUR', locale: 'es-ES', language: 'es' },
+  'IT': { timezone: 'Europe/Rome', currency: 'EUR', locale: 'it-IT', language: 'it' },
+  'NL': { timezone: 'Europe/Amsterdam', currency: 'EUR', locale: 'nl-NL', language: 'nl' },
+  'AU': { timezone: 'Australia/Sydney', currency: 'AUD', locale: 'en-AU', language: 'en' },
+  'CA': { timezone: 'America/Toronto', currency: 'CAD', locale: 'en-CA', language: 'en' }
+};
+
+// Apply all regional settings from country
+export const applyRegionalSettings = (countryCode) => {
+  const settings = countryLocaleMap[countryCode];
+  if (settings) {
+    changeLanguage(settings.language);
+    setPreferredCurrency(settings.currency);
+    localStorage.setItem('preferred_timezone', settings.timezone);
+    localStorage.setItem('preferred_locale', settings.locale);
+  }
+  return settings;
+};
+
+// Timezone preference management
+export const setPreferredTimezone = (timezone) => {
+  localStorage.setItem('preferred_timezone', timezone);
+};
+
+export const getPreferredTimezone = () => {
+  return localStorage.getItem('preferred_timezone') || detectUserTimezone();
+};
+
 // Currency preference management
 export const setPreferredCurrency = (currencyCode) => {
   localStorage.setItem('preferred_currency', currencyCode);
