@@ -161,6 +161,26 @@ export default function EnhancedSettings() {
         cloudinary_cloud_name: data.cloudinary_cloud_name || '',
         cloudinary_api_secret: data.cloudinary_api_secret || '',
         
+        // SMTP Email
+        smtp_enabled: data.smtp_enabled === true,
+        smtp_host: data.smtp_host || '',
+        smtp_port: data.smtp_port || '587',
+        smtp_secure: data.smtp_secure !== false,
+        smtp_user: data.smtp_user || '',
+        smtp_pass: data.smtp_pass || '',
+        smtp_from_email: data.smtp_from_email || '',
+        smtp_from_name: data.smtp_from_name || 'Promote Platform',
+        
+        // SendGrid
+        sendgrid_enabled: data.sendgrid_enabled === true,
+        sendgrid_api_key: data.sendgrid_api_key || '',
+        
+        // Twilio SMS
+        twilio_enabled: data.twilio_enabled === true,
+        twilio_account_sid: data.twilio_account_sid || '',
+        twilio_auth_token: data.twilio_auth_token || '',
+        twilio_phone_number: data.twilio_phone_number || '',
+        
         // Feature Flags
         enable_leaderboard: data.enable_leaderboard !== false,
         enable_referrals: data.enable_referrals === true,
@@ -1079,6 +1099,161 @@ export default function EnhancedSettings() {
                   />
                 </div>
               </div>
+            </div>
+
+            {/* SMTP Email */}
+            <div className="integration-card">
+              <div className="integration-header">
+                <span className="integration-icon">📧</span>
+                <span className="integration-name">SMTP Email</span>
+                <ToggleSwitch
+                  checked={formData.smtp_enabled || false}
+                  onChange={(val) => updateField('smtp_enabled', val)}
+                />
+              </div>
+              {formData.smtp_enabled && (
+                <div className="integration-fields">
+                  <div className="settings-input-group">
+                    <label>SMTP Host</label>
+                    <input
+                      type="text"
+                      className="settings-input"
+                      value={formData.smtp_host || ''}
+                      onChange={(e) => updateField('smtp_host', e.target.value)}
+                      placeholder="smtp.example.com"
+                    />
+                  </div>
+                  <div className="settings-input-group">
+                    <label>Port</label>
+                    <input
+                      type="text"
+                      className="settings-input"
+                      value={formData.smtp_port || '587'}
+                      onChange={(e) => updateField('smtp_port', e.target.value)}
+                      placeholder="587"
+                    />
+                  </div>
+                  <div className="settings-input-group">
+                    <label>Secure (TLS/SSL)</label>
+                    <ToggleSwitch
+                      checked={formData.smtp_secure !== false}
+                      onChange={(val) => updateField('smtp_secure', val)}
+                    />
+                  </div>
+                  <div className="settings-input-group">
+                    <label>Username</label>
+                    <input
+                      type="text"
+                      className="settings-input"
+                      value={formData.smtp_user || ''}
+                      onChange={(e) => updateField('smtp_user', e.target.value)}
+                      placeholder="user@example.com"
+                    />
+                  </div>
+                  <div className="settings-input-group">
+                    <label>Password</label>
+                    <input
+                      type="password"
+                      className="settings-input"
+                      value={formData.smtp_pass || ''}
+                      onChange={(e) => updateField('smtp_pass', e.target.value)}
+                      placeholder="SMTP Password"
+                    />
+                  </div>
+                  <div className="settings-input-group">
+                    <label>From Email</label>
+                    <input
+                      type="text"
+                      className="settings-input"
+                      value={formData.smtp_from_email || ''}
+                      onChange={(e) => updateField('smtp_from_email', e.target.value)}
+                      placeholder="noreply@example.com"
+                    />
+                  </div>
+                  <div className="settings-input-group">
+                    <label>From Name</label>
+                    <input
+                      type="text"
+                      className="settings-input"
+                      value={formData.smtp_from_name || 'Promote Platform'}
+                      onChange={(e) => updateField('smtp_from_name', e.target.value)}
+                      placeholder="Promote Platform"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* SendGrid */}
+            <div className="integration-card">
+              <div className="integration-header">
+                <span className="integration-icon">📨</span>
+                <span className="integration-name">SendGrid (Email API)</span>
+                <ToggleSwitch
+                  checked={formData.sendgrid_enabled || false}
+                  onChange={(val) => updateField('sendgrid_enabled', val)}
+                />
+              </div>
+              {formData.sendgrid_enabled && (
+                <div className="integration-fields">
+                  <div className="settings-input-group">
+                    <label>API Key</label>
+                    <input
+                      type="password"
+                      className="settings-input"
+                      value={formData.sendgrid_api_key || ''}
+                      onChange={(e) => updateField('sendgrid_api_key', e.target.value)}
+                      placeholder="SG.xxxxxx..."
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Twilio SMS */}
+            <div className="integration-card">
+              <div className="integration-header">
+                <span className="integration-icon">📱</span>
+                <span className="integration-name">Twilio SMS</span>
+                <ToggleSwitch
+                  checked={formData.twilio_enabled || false}
+                  onChange={(val) => updateField('twilio_enabled', val)}
+                />
+              </div>
+              {formData.twilio_enabled && (
+                <div className="integration-fields">
+                  <div className="settings-input-group">
+                    <label>Account SID</label>
+                    <input
+                      type="text"
+                      className="settings-input"
+                      value={formData.twilio_account_sid || ''}
+                      onChange={(e) => updateField('twilio_account_sid', e.target.value)}
+                      placeholder="ACxxxxxxxx..."
+                    />
+                  </div>
+                  <div className="settings-input-group">
+                    <label>Auth Token</label>
+                    <input
+                      type="password"
+                      className="settings-input"
+                      value={formData.twilio_auth_token || ''}
+                      onChange={(e) => updateField('twilio_auth_token', e.target.value)}
+                      placeholder="Twilio Auth Token"
+                    />
+                  </div>
+                  <div className="settings-input-group">
+                    <label>Phone Number</label>
+                    <input
+                      type="text"
+                      className="settings-input"
+                      value={formData.twilio_phone_number || ''}
+                      onChange={(e) => updateField('twilio_phone_number', e.target.value)}
+                      placeholder="+1234567890"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <SettingRow label="Allow API Access" description="Enable third-party API integrations">

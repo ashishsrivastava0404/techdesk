@@ -387,7 +387,21 @@ export async function initDatabase() {
     ('aws_s3_bucket', ''),
     ('cloudinary_api_key', ''),
     ('cloudinary_cloud_name', ''),
-    ('cloudinary_api_secret', '')
+    ('cloudinary_api_secret', ''),
+    ('smtp_enabled', 'false'),
+    ('smtp_host', ''),
+    ('smtp_port', '587'),
+    ('smtp_secure', 'true'),
+    ('smtp_user', ''),
+    ('smtp_pass', ''),
+    ('smtp_from_email', ''),
+    ('smtp_from_name', 'Promote Platform'),
+    ('sendgrid_enabled', 'false'),
+    ('sendgrid_api_key', ''),
+    ('twilio_enabled', 'false'),
+    ('twilio_account_sid', ''),
+    ('twilio_auth_token', ''),
+    ('twilio_phone_number', '')
   `);
 
   // Ticket categories table

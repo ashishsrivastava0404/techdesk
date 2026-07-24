@@ -20,6 +20,16 @@ const SETTING_TO_ENV_MAP = {
   'cloudinary_api_key': 'CLOUDINARY_API_KEY',
   'cloudinary_cloud_name': 'CLOUDINARY_CLOUD_NAME',
   'cloudinary_api_secret': 'CLOUDINARY_API_SECRET',
+  'smtp_host': 'SMTP_HOST',
+  'smtp_port': 'SMTP_PORT',
+  'smtp_user': 'SMTP_USER',
+  'smtp_pass': 'SMTP_PASS',
+  'smtp_from_email': 'SMTP_FROM_EMAIL',
+  'smtp_from_name': 'SMTP_FROM_NAME',
+  'sendgrid_api_key': 'SENDGRID_API_KEY',
+  'twilio_account_sid': 'TWILIO_ACCOUNT_SID',
+  'twilio_auth_token': 'TWILIO_AUTH_TOKEN',
+  'twilio_phone_number': 'TWILIO_PHONE_NUMBER',
 };
 
 /**
@@ -41,6 +51,9 @@ const SECRET_KEYS = [
   'aws_secret_access_key',
   'cloudinary_api_key',
   'cloudinary_api_secret',
+  'smtp_pass',
+  'sendgrid_api_key',
+  'twilio_auth_token',
 ];
 
 /**
