@@ -174,6 +174,8 @@ export default function EnhancedSettings() {
         // SendGrid
         sendgrid_enabled: data.sendgrid_enabled === true,
         sendgrid_api_key: data.sendgrid_api_key || '',
+        sendgrid_from_email: data.sendgrid_from_email || '',
+        sendgrid_from_name: data.sendgrid_from_name || 'Promote Platform',
         
         // Twilio SMS
         twilio_enabled: data.twilio_enabled === true,
@@ -847,6 +849,36 @@ export default function EnhancedSettings() {
                       placeholder="whsec_..."
                     />
                   </div>
+                  <div className="settings-input-group">
+                    <label>Publishable Key</label>
+                    <input
+                      type="text"
+                      className="settings-input"
+                      value={formData.stripe_publishable_key || ''}
+                      onChange={(e) => updateField('stripe_publishable_key', e.target.value)}
+                      placeholder="pk_test_..."
+                    />
+                  </div>
+                  <div className="settings-input-group">
+                    <label>Currency</label>
+                    <input
+                      type="text"
+                      className="settings-input"
+                      value={formData.stripe_currency || 'USD'}
+                      onChange={(e) => updateField('stripe_currency', e.target.value)}
+                      placeholder="USD"
+                    />
+                  </div>
+                  <div className="settings-input-group">
+                    <label>Platform Account ID (Connect)</label>
+                    <input
+                      type="text"
+                      className="settings-input"
+                      value={formData.stripe_platform_account_id || ''}
+                      onChange={(e) => updateField('stripe_platform_account_id', e.target.value)}
+                      placeholder="acct_..."
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -882,6 +914,17 @@ export default function EnhancedSettings() {
                       onChange={(e) => updateField('paypal_secret', e.target.value)}
                       placeholder="PayPal Secret"
                     />
+                  </div>
+                  <div className="settings-input-group">
+                    <label>Mode</label>
+                    <select
+                      className="settings-select"
+                      value={formData.paypal_mode || 'sandbox'}
+                      onChange={(e) => updateField('paypal_mode', e.target.value)}
+                    >
+                      <option value="sandbox">Sandbox</option>
+                      <option value="live">Live</option>
+                    </select>
                   </div>
                 </div>
               )}
@@ -1206,6 +1249,26 @@ export default function EnhancedSettings() {
                       placeholder="SG.xxxxxx..."
                     />
                   </div>
+                  <div className="settings-input-group">
+                    <label>From Email</label>
+                    <input
+                      type="text"
+                      className="settings-input"
+                      value={formData.sendgrid_from_email || ''}
+                      onChange={(e) => updateField('sendgrid_from_email', e.target.value)}
+                      placeholder="noreply@yourdomain.com"
+                    />
+                  </div>
+                  <div className="settings-input-group">
+                    <label>From Name</label>
+                    <input
+                      type="text"
+                      className="settings-input"
+                      value={formData.sendgrid_from_name || 'Promote Platform'}
+                      onChange={(e) => updateField('sendgrid_from_name', e.target.value)}
+                      placeholder="Promote Platform"
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -1250,6 +1313,42 @@ export default function EnhancedSettings() {
                       value={formData.twilio_phone_number || ''}
                       onChange={(e) => updateField('twilio_phone_number', e.target.value)}
                       placeholder="+1234567890"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Bank/Plaid Integration */}
+            <div className="integration-card">
+              <div className="integration-header">
+                <span className="integration-icon">🏦</span>
+                <span className="integration-name">Bank Integration (Plaid)</span>
+                <ToggleSwitch
+                  checked={formData.bank_enabled || false}
+                  onChange={(val) => updateField('bank_enabled', val)}
+                />
+              </div>
+              {formData.bank_enabled && (
+                <div className="integration-fields">
+                  <div className="settings-input-group">
+                    <label>API Key</label>
+                    <input
+                      type="password"
+                      className="settings-input"
+                      value={formData.bank_api_key || ''}
+                      onChange={(e) => updateField('bank_api_key', e.target.value)}
+                      placeholder="Plaid API Key"
+                    />
+                  </div>
+                  <div className="settings-input-group">
+                    <label>API Secret</label>
+                    <input
+                      type="password"
+                      className="settings-input"
+                      value={formData.bank_api_secret || ''}
+                      onChange={(e) => updateField('bank_api_secret', e.target.value)}
+                      placeholder="Plaid API Secret"
                     />
                   </div>
                 </div>

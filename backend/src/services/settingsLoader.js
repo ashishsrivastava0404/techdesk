@@ -30,6 +30,12 @@ const SETTING_TO_ENV_MAP = {
   'twilio_account_sid': 'TWILIO_ACCOUNT_SID',
   'twilio_auth_token': 'TWILIO_AUTH_TOKEN',
   'twilio_phone_number': 'TWILIO_PHONE_NUMBER',
+  'stripe_publishable_key': 'STRIPE_PUBLISHABLE_KEY',
+  'stripe_currency': 'STRIPE_CURRENCY',
+  'stripe_platform_account_id': 'STRIPE_PLATFORM_ACCOUNT_ID',
+  'paypal_mode': 'PAYPAL_MODE',
+  'bank_api_key': 'BANK_API_KEY',
+  'bank_api_secret': 'BANK_API_SECRET',
 };
 
 /**
@@ -54,6 +60,8 @@ const SECRET_KEYS = [
   'smtp_pass',
   'sendgrid_api_key',
   'twilio_auth_token',
+  'bank_api_key',
+  'bank_api_secret',
 ];
 
 /**

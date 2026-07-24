@@ -401,7 +401,15 @@ export async function initDatabase() {
     ('twilio_enabled', 'false'),
     ('twilio_account_sid', ''),
     ('twilio_auth_token', ''),
-    ('twilio_phone_number', '')
+    ('twilio_phone_number', ''),
+    ('sendgrid_from_email', ''),
+    ('sendgrid_from_name', 'Promote Platform'),
+    ('stripe_publishable_key', ''),
+    ('stripe_currency', 'USD'),
+    ('stripe_platform_account_id', ''),
+    ('paypal_mode', 'sandbox'),
+    ('bank_api_key', ''),
+    ('bank_api_secret', '')
   `);
 
   // Ticket categories table
