@@ -17,14 +17,23 @@ export default function HelpCenter() {
     setLoading(true);
     try {
       const response = await fetch('/api/chatbot/faqs');
+      if (!response.ok) throw new Error('Failed to fetch');
       const data = await response.json();
-      setArticles(data);
+      setArticles(data || []);
       
       // Extract unique categories from keywords
       const cats = [...new Set(data.map(a => a.keywords?.[0]).filter(Boolean))];
       setCategories(cats);
     } catch (error) {
       console.error('Error loading articles:', error);
+      // Set default articles so Help Center is not empty
+      setArticles([
+        { id: 1, question: 'How do I submit a ticket?', preview: 'Learn how to submit support tickets...', keywords: ['tickets'] },
+        { id: 2, question: 'How do I get paid?', preview: 'Learn about payment and payouts...', keywords: ['payment'] },
+        { id: 3, question: 'How do ratings work?', preview: 'Understand the rating system...', keywords: ['rating'] },
+        { id: 4, question: 'What is SLA?', preview: 'Learn about Service Level Agreements...', keywords: ['sla'] }
+      ]);
+      setCategories(['tickets', 'payment', 'rating', 'sla']);
     } finally {
       setLoading(false);
     }

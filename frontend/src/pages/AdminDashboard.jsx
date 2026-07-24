@@ -60,7 +60,7 @@ export default function AdminDashboard() {
   }, [tab]);
 
   const handleTabClick = (tabId) => {
-    navigate(getPathFromTab(tabId));
+    navigate(getPathFromTab(tabId), { replace: false });
   };
 
   const loadData = async () => {
