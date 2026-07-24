@@ -190,8 +190,12 @@ export default function Landing() {
       <footer className="landing-footer">
         <div className="footer-content">
           <div className="footer-brand">
-            <div className="brand-mark">Pr</div>
-            <span>Promote — Earn Production Access</span>
+            {brand.app_logo_url ? (
+              <img src={brand.app_logo_url} alt={brand.app_name} style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
+            ) : (
+              <div className="brand-mark">{(brand.app_name || 'TD').substring(0, 2).toUpperCase()}</div>
+            )}
+            <span>{brand.app_name || 'TechDesk'}</span>
           </div>
           <div className="footer-links">
             <Link to="/faq">FAQ</Link>

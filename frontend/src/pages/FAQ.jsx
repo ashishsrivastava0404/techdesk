@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useBrand } from '../context/BrandContext.jsx';
 
 const faqCategories = [
   {
@@ -14,7 +15,7 @@ const faqCategories = [
         a: 'There are three main roles: Customers (submit tickets for tech support), Technicians/Techs (resolve tickets and earn money), and Admins (manage the platform).'
       },
       {
-        q: 'Is Promote free to use?',
+        q: 'Is this platform free to use?',
         a: 'Yes! Basic features are completely free. Low and Normal priority tickets are free for customers. Only High, Urgent, and Critical tickets require credits, which are very affordable.'
       }
     ]
@@ -98,6 +99,8 @@ const faqCategories = [
 ];
 
 export default function FAQ() {
+  const { brand } = useBrand();
+  const appName = brand.app_name || 'TechDesk';
   const [expandedQuestion, setExpandedQuestion] = useState(null);
   const [activeCategory, setActiveCategory] = useState(0);
 
@@ -110,7 +113,7 @@ export default function FAQ() {
       <div className="faq-container">
         <div className="faq-header">
           <h1>Frequently Asked Questions</h1>
-          <p>Find answers to common questions about using Promote</p>
+          <p>Find answers to common questions about using {appName}</p>
         </div>
 
         <div className="faq-content">

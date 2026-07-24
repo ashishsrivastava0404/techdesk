@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext.jsx';
+import { useBrand } from '../context/BrandContext.jsx';
 import { api } from '../api/index.js';
 
 export default function Dashboard() {
   const { user, requireName } = useApp();
+  const { brand } = useBrand();
+  const appName = brand.app_name || 'TechDesk';
   const [stats, setStats] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
 
@@ -37,7 +40,7 @@ export default function Dashboard() {
     return (
       <div className="view-container">
         <div className="empty">
-          <div className="empty-title">Welcome to Promote</div>
+          <div className="empty-title">Welcome to {appName}</div>
           <p>Enter your name above to get started.</p>
         </div>
       </div>

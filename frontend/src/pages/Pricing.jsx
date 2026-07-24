@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useBrand } from '../context/BrandContext.jsx';
 
 const plans = [
   {
@@ -89,6 +90,9 @@ const techTiers = [
 ];
 
 export default function Pricing() {
+  const { brand } = useBrand();
+  const appName = brand.app_name || 'TechDesk';
+  
   return (
     <div className="pricing-page">
       <div className="pricing-container">
@@ -200,7 +204,7 @@ export default function Pricing() {
 
         <div className="pricing-cta">
           <h2>Ready to get started?</h2>
-          <p>Join thousands of developers and businesses using Promote today.</p>
+          <p>Join thousands of developers and businesses using {appName} today.</p>
           <div className="cta-buttons">
             <Link to="/signup" className="btn btn-primary btn-large">
               Start Free

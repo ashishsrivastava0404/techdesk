@@ -4,6 +4,7 @@ import { AppProvider, useApp } from './context/AppContext.jsx';
 import { BrandProvider } from './context/BrandContext.jsx';
 import { ProtectedRoute, PublicRoute, AdminRoute, TechRoute } from './components/ProtectedRoute.jsx';
 import Layout from './components/Layout.jsx';
+import BrandSEO from './components/BrandSEO.jsx';
 import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';
 import Signup from './pages/Signup.jsx';
@@ -130,6 +131,7 @@ export default function App() {
     <BrowserRouter>
       <AppProvider>
         <BrandProvider>
+          <BrandSEO />
           <AppRoutes />
         </BrandProvider>
       </AppProvider>

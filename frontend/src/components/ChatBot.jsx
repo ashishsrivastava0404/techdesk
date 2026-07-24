@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext.jsx';
+import { useBrand } from '../context/BrandContext.jsx';
 import { api } from '../api/index.js';
 
 export default function ChatBot() {
   const { user, showToast } = useApp();
+  const { brand } = useBrand();
+  const appName = brand.app_name || 'TechDesk';
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -29,7 +32,7 @@ export default function ChatBot() {
 
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      addBotMessage("Hello! 👋 I'm your Promote support assistant. How can I help you today? Type 'help' to see common topics or browse our help center.");
+      addBotMessage(`Hello! 👋 I'm your ${appName} support assistant. How can I help you today? Type 'help' to see common topics or browse our help center.`);
     }
   }, [isOpen]);
 
@@ -430,7 +433,7 @@ export default function ChatBot() {
                   🤖
                 </div>
                 <div>
-                  <div style={{ fontWeight: 700, color: '#1A1206' }}>Promote Assistant</div>
+                  <div style={{ fontWeight: 700, color: '#1A1206' }}>{appName} Assistant</div>
                   <div style={{ fontSize: '11px', color: 'rgba(26,18,6,0.7)' }}>Always here to help</div>
                 </div>
               </div>
