@@ -421,7 +421,88 @@ npm test -- myService.test.js
 | Redis Fallback System | 28 | ✅ Complete |
 | Category Hierarchy | 17 | ✅ Complete |
 | Threaded Comments | 20 | ✅ Complete |
-| **Total** | **106** | ✅ **All Passing** |
+| Branding & Ecosystem | 60 | ✅ Complete |
+| **Total** | **166** | ✅ **All Passing** |
+
+---
+
+## Branding & Ecosystem Tests
+
+**File:** `backend/tests/branding.test.js`
+
+### Test Coverage
+
+| Test Suite | Tests | Description |
+|------------|-------|-------------|
+| Brand Settings | 8 | Settings schema validation and API response |
+| Fallback Defaults | 5 | Default values when settings are empty |
+| Application Routing | 5 | Route definitions and authentication |
+| Page Title Generation | 7 | Dynamic page title generation |
+| Brand Application | 12 | Brand usage in all components |
+| Component Integration | 5 | BrandProvider and BrandSEO |
+| Settings Form | 7 | Branding and email form fields |
+| API Endpoints | 2 | GET/PUT settings endpoints |
+| Theme Consistency | 2 | Styling consistency |
+| Responsive Design | 2 | Mobile-first breakpoints |
+| Accessibility | 3 | Alt text and semantic HTML |
+| Internationalization | 2 | i18n readiness |
+
+### Running Branding Tests
+
+```bash
+# Backend branding tests
+cd backend && npm test -- branding.test.js
+
+# Frontend branding tests
+cd frontend && npm test -- tests/branding.test.jsx
+
+# All tests
+cd backend && npm test
+cd frontend && npm test
+```
+
+### Branding Test Categories
+
+#### Brand Settings Validation
+```javascript
+describe('Brand Settings', () => {
+  it('should have app_name field', () => { /* ... */ });
+  it('should have app_logo_url field', () => { /* ... */ });
+  it('should have company_name field', () => { /* ... */ });
+  it('should have support_email field', () => { /* ... */ });
+});
+```
+
+#### Fallback Defaults
+```javascript
+describe('Fallback Defaults', () => {
+  it('should use TechDesk as default app_name', () => { /* ... */ });
+  it('should use TechDesk Inc. as default company_name', () => { /* ... */ });
+  it('should show initials when logo_url is empty', () => { /* ... */ });
+});
+```
+
+#### Page Title Generation
+```javascript
+describe('Page Title Generation', () => {
+  it('should generate correct title for dashboard', () => { /* ... */ });
+  it('should generate correct title for admin pages', () => { /* ... */ });
+  it('should generate correct title for Terms', () => { /* ... */ });
+});
+```
+
+#### Brand Application
+```javascript
+describe('Brand Application', () => {
+  describe('Layout Header', () => {
+    it('should display logo when app_logo_url is set', () => { /* ... */ });
+    it('should display initials when no logo', () => { /* ... */ });
+  });
+  describe('ChatBot', () => {
+    it('should greet with app name', () => { /* ... */ });
+  });
+});
+```
 
 ---
 

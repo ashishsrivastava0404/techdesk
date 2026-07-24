@@ -12,6 +12,9 @@ This guide covers administrative functions for the TechDesk platform, including 
 4. [Support Reports](#support-reports)
 5. [Financial Audit](#financial-audit)
 6. [Platform Settings](#platform-settings)
+   - [Branding Settings](#branding-settings)
+   - [Payout Settings](#payout-settings)
+   - [Email Configuration](#email-configuration)
 
 ---
 
@@ -195,6 +198,16 @@ Filter logs by:
 ## Platform Settings
 
 ### Configuration Options
+
+#### Branding Settings
+| Setting | Description |
+|---------|-------------|
+| App Name | Displayed in header, chatbot, page titles |
+| Company Name | Used in legal pages and footer |
+| Logo URL | Header and footer logo |
+| Favicon URL | Browser tab icon |
+| Support Email | Contact email for users |
+| Website URL | Main website link |
 
 #### Payout Settings
 | Setting | Description |

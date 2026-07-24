@@ -1,8 +1,19 @@
-# Promote — System Architecture
+# TechDesk — System Architecture
 
 ## Overview
 
-Promote is a full-stack ticketing platform with a React frontend, Node.js/Express backend, and MariaDB database. The system follows a client-server architecture with RESTful API communication.
+TechDesk is a full-stack ticketing platform with a React frontend, Node.js/Express backend, and MariaDB database. The system follows a client-server architecture with RESTful API communication.
+
+### Key Features
+
+- **Dynamic Branding**: Full platform rebrandable via admin settings
+  - Custom app name, logo, and favicon
+  - Dynamic page titles and meta tags
+  - Brand-consistent emails (SMTP/SendGrid from names)
+  - Legal pages (Terms, Privacy, Cookies) with dynamic company name
+- **Gamified Ticket System**: Techs earn credits through ticket resolution
+- **Multi-Role Access**: Customer, Tech, and Admin roles
+- **Real-time Notifications**: Email and SMS alerts via Twilio
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
