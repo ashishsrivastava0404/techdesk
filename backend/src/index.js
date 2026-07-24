@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import { initDatabase } from './db/index.js';
+import { connectRedis, isRedisConnected } from './db/redis.js';
 import { authenticate } from './middleware/auth.js';
 import { apiLimiter, authLimiter, paymentLimiter } from './middleware/rateLimiter.js';
 import usersRouter from './routes/users.js';
@@ -80,7 +81,10 @@ app.use('/api/agents', authenticate, apiLimiter, agentRequestsRouter);
 app.use('/api/credits', authenticate, apiLimiter, creditsRouter);
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok' });
+  res.json({ 
+    status: 'ok',
+    redis: isRedisConnected() ? 'connected' : 'disconnected'
+  });
 });
 
 // Error handling middleware
@@ -94,6 +98,14 @@ app.use((req, res) => {
 async function start() {
   try {
     await initDatabase();
+    
+    // Connect to Redis (non-blocking - app works without it)
+    if (process.env.REDIS_ENABLED !== 'false') {
+      await connectRedis();
+    } else {
+      console.log('🟡 Redis: Disabled via REDIS_ENABLED=false');
+    }
+    
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });

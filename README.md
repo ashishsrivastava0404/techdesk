@@ -75,10 +75,12 @@ Promote is a full-stack tech ticketing platform with a modern React frontend, No
 - **mysql2** — MySQL/MariaDB driver with promise support
 - **JWT** — Authentication tokens
 - **express-rate-limit** — Rate limiting
+- **ioredis** — Redis client for caching & sessions
 - **Sentry** — Error monitoring
 
 ### Database
 - **MariaDB** — Relational database
+- **Redis** — Caching, sessions, rate limiting
 - **Connection Pooling** — Efficient connection management
 
 ## 📁 Project Structure
@@ -318,3 +320,4 @@ MIT License - See LICENSE file for details
 - [Testing Guide](docs/Testing.md)
 - [PWA Guide](docs/PWA.md)
 - [SEO Guide](docs/SEO.md)
+- [Redis Integration](docs/Redis.md)
