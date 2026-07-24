@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import { initDatabase } from './db/index.js';
 import { connectRedis, isRedisConnected } from './db/redis.js';
-import { startCleanupTimer, createInMemoryRateLimiter } from './db/memoryFallback.js';
+import { startCleanupTimer } from './db/memoryFallback.js';
 import { authenticate } from './middleware/auth.js';
 import { apiLimiter, authLimiter, paymentLimiter } from './middleware/rateLimiter.js';
 import usersRouter from './routes/users.js';
@@ -28,20 +28,6 @@ import topicsRouter from './routes/topics.js';
 import agentRequestsRouter from './routes/agentRequests.js';
 import creditsRouter from './routes/credits.js';
 import { errorHandler } from './middleware/errorHandler.js';
-
-// In-memory fallback limiters (used when Redis is disabled)
-const fallbackApiLimiter = createInMemoryRateLimiter({
-  windowMs: 15 * 60 * 1000,
-  max: 100
-});
-const fallbackAuthLimiter = createInMemoryRateLimiter({
-  windowMs: 15 * 60 * 1000,
-  max: 5
-});
-const fallbackPaymentLimiter = createInMemoryRateLimiter({
-  windowMs: 60 * 1000,
-  max: 10
-});
 
 // Initialize Sentry if configured
 if (process.env.SENTRY_DSN) {

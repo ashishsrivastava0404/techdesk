@@ -2,9 +2,11 @@
  * Redis-based Rate Limiter Middleware
  * 
  * Provides distributed rate limiting using Redis for horizontal scaling.
+ * Falls back to in-memory rate limiting when Redis is unavailable.
  */
 
-import redis, { REDIS_KEYS } from '../db/redis.js';
+import redis, { REDIS_KEYS, isRedisConnected } from '../db/redis.js';
+import { createInMemoryRateLimiter } from '../db/memoryFallback.js';
 
 /**
  * Create a Redis-based rate limiter
@@ -27,7 +29,15 @@ export function createRedisRateLimiter(options = {}) {
 
   const windowSec = Math.ceil(windowMs / 1000);
 
+  // Create in-memory fallback limiter
+  const inMemoryFallback = createInMemoryRateLimiter({ windowMs, max, keyGenerator });
+
   return async (req, res, next) => {
+    // Use in-memory fallback if Redis is not connected
+    if (!isRedisConnected()) {
+      return inMemoryFallback(req, res, next);
+    }
+
     try {
       const key = `${keyPrefix}${keyGenerator(req)}`;
       const currentTime = Math.floor(Date.now() / 1000);
@@ -69,7 +79,7 @@ export function createRedisRateLimiter(options = {}) {
       next();
     } catch (error) {
       console.error('Redis rate limiter error:', error.message);
-      // Fail open - allow request if Redis is unavailable
+      // Fail open - allow request if Redis fails
       next();
     }
   };
@@ -89,7 +99,15 @@ export function createSlidingWindowLimiter(options = {}) {
 
   const windowSec = Math.ceil(windowMs / 1000);
 
+  // Create in-memory fallback limiter
+  const inMemoryFallback = createInMemoryRateLimiter({ windowMs, max, keyGenerator });
+
   return async (req, res, next) => {
+    // Use in-memory fallback if Redis is not connected
+    if (!isRedisConnected()) {
+      return inMemoryFallback(req, res, next);
+    }
+
     try {
       const key = `${keyPrefix}sliding:${keyGenerator(req)}`;
       const now = Date.now();
@@ -125,6 +143,7 @@ export function createSlidingWindowLimiter(options = {}) {
       next();
     } catch (error) {
       console.error('Sliding window limiter error:', error.message);
+      // Fail open - allow request if Redis fails
       next();
     }
   };
@@ -142,7 +161,19 @@ export function createTokenBucketLimiter(options = {}) {
     keyGenerator = (req) => req.ip
   } = options;
 
+  // Create in-memory fallback limiter
+  const inMemoryFallback = createInMemoryRateLimiter({ 
+    windowMs: 60 * 1000, 
+    max: bucketSize, 
+    keyGenerator 
+  });
+
   return async (req, res, next) => {
+    // Use in-memory fallback if Redis is not connected
+    if (!isRedisConnected()) {
+      return inMemoryFallback(req, res, next);
+    }
+
     try {
       const key = `${keyPrefix}bucket:${keyGenerator(req)}`;
       const now = Date.now();
@@ -191,6 +222,7 @@ export function createTokenBucketLimiter(options = {}) {
       next();
     } catch (error) {
       console.error('Token bucket limiter error:', error.message);
+      // Fail open - allow request if Redis fails
       next();
     }
   };

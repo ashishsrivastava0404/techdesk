@@ -64,8 +64,6 @@ export function stopCleanupTimer() {
 // In-Memory Rate Limiter Fallback
 // ============================================================================
 
-const rateLimitStore = new Map();
-
 export function createInMemoryRateLimiter(options = {}) {
   const {
     windowMs = 15 * 60 * 1000,
@@ -83,7 +81,7 @@ export function createInMemoryRateLimiter(options = {}) {
     const now = Date.now();
     const windowStart = now - windowMs;
 
-    let record = rateLimitStore.get(key);
+    let record = memoryStore.rateLimit.get(key);
 
     if (!record || record.windowStart < windowStart) {
       // New window
@@ -91,7 +89,7 @@ export function createInMemoryRateLimiter(options = {}) {
         count: 1,
         windowStart: now
       };
-      rateLimitStore.set(key, record);
+      memoryStore.rateLimit.set(key, record);
     } else {
       record.count++;
     }
@@ -114,13 +112,11 @@ export function createInMemoryRateLimiter(options = {}) {
 // In-Memory Session Store Fallback
 // ============================================================================
 
-const sessionStore = new Map();
-
 export const inMemorySession = {
   async create(sessionId, data, ttl = 86400) {
     if (isRedisConnected()) return false; // Use Redis instead
     
-    sessionStore.set(sessionId, {
+    memoryStore.sessions.set(sessionId, {
       data,
       createdAt: Date.now(),
       lastAccess: Date.now(),
@@ -132,11 +128,11 @@ export const inMemorySession = {
   async get(sessionId, updateAccess = true) {
     if (isRedisConnected()) return null;
     
-    const session = sessionStore.get(sessionId);
+    const session = memoryStore.sessions.get(sessionId);
     if (!session) return null;
     
     if (session.expiresAt && session.expiresAt < Date.now()) {
-      sessionStore.delete(sessionId);
+      memoryStore.sessions.delete(sessionId);
       return null;
     }
     
@@ -150,7 +146,7 @@ export const inMemorySession = {
   async update(sessionId, data) {
     if (isRedisConnected()) return false;
     
-    const session = sessionStore.get(sessionId);
+    const session = memoryStore.sessions.get(sessionId);
     if (!session) return false;
     
     session.data = data;
@@ -160,13 +156,13 @@ export const inMemorySession = {
 
   async delete(sessionId) {
     if (isRedisConnected()) return false;
-    return sessionStore.delete(sessionId);
+    return memoryStore.sessions.delete(sessionId);
   },
 
   async extend(sessionId, ttl = 86400) {
     if (isRedisConnected()) return false;
     
-    const session = sessionStore.get(sessionId);
+    const session = memoryStore.sessions.get(sessionId);
     if (!session) return false;
     
     session.expiresAt = Date.now() + (ttl * 1000);
@@ -177,9 +173,9 @@ export const inMemorySession = {
     if (isRedisConnected()) return false;
     
     let count = 0;
-    for (const [id, session] of sessionStore.entries()) {
+    for (const [id, session] of memoryStore.sessions.entries()) {
       if (session.data?.userId === userId) {
-        sessionStore.delete(id);
+        memoryStore.sessions.delete(id);
         count++;
       }
     }
@@ -191,13 +187,11 @@ export const inMemorySession = {
 // In-Memory Cache Fallback
 // ============================================================================
 
-const cacheStore = new Map();
-
 export const inMemoryCache = {
   async set(key, value, ttl = 300) {
     if (isRedisConnected()) return false;
     
-    cacheStore.set(key, {
+    memoryStore.cache.set(key, {
       value: typeof value === 'object' ? JSON.stringify(value) : value,
       expiresAt: Date.now() + (ttl * 1000)
     });
@@ -207,11 +201,11 @@ export const inMemoryCache = {
   async get(key) {
     if (isRedisConnected()) return null;
     
-    const entry = cacheStore.get(key);
+    const entry = memoryStore.cache.get(key);
     if (!entry) return null;
     
     if (entry.expiresAt && entry.expiresAt < Date.now()) {
-      cacheStore.delete(key);
+      memoryStore.cache.delete(key);
       return null;
     }
     
@@ -224,18 +218,18 @@ export const inMemoryCache = {
 
   async delete(key) {
     if (isRedisConnected()) return false;
-    return cacheStore.delete(key);
+    return memoryStore.cache.delete(key);
   },
 
   async has(key) {
     if (isRedisConnected()) return false;
-    return cacheStore.has(key);
+    return memoryStore.cache.has(key);
   },
 
   async clear() {
     if (isRedisConnected()) return 0;
-    const size = cacheStore.size;
-    cacheStore.clear();
+    const size = memoryStore.cache.size;
+    memoryStore.cache.clear();
     return size;
   }
 };
@@ -244,14 +238,12 @@ export const inMemoryCache = {
 // In-Memory Token Store Fallback
 // ============================================================================
 
-const tokenStore = new Map();
-
 export const inMemoryToken = {
   async createRefreshToken(userId, ttl = 604800) {
     if (isRedisConnected()) return null;
     
     const token = generateToken();
-    tokenStore.set(token, {
+    memoryStore.tokens.set(token, {
       type: 'refresh',
       userId,
       createdAt: Date.now(),
@@ -264,11 +256,11 @@ export const inMemoryToken = {
   async verifyRefreshToken(token) {
     if (isRedisConnected()) return null;
     
-    const entry = tokenStore.get(token);
+    const entry = memoryStore.tokens.get(token);
     if (!entry || entry.type !== 'refresh') return null;
     
     if (entry.expiresAt && entry.expiresAt < Date.now()) {
-      tokenStore.delete(token);
+      memoryStore.tokens.delete(token);
       return null;
     }
     
@@ -277,14 +269,14 @@ export const inMemoryToken = {
 
   async revokeRefreshToken(token) {
     if (isRedisConnected()) return false;
-    return tokenStore.delete(token);
+    return memoryStore.tokens.delete(token);
   },
 
   async createPasswordResetToken(email, ttl = 3600) {
     if (isRedisConnected()) return null;
     
     const token = generateToken();
-    tokenStore.set(token, {
+    memoryStore.tokens.set(token, {
       type: 'reset',
       email,
       createdAt: Date.now(),
@@ -297,11 +289,11 @@ export const inMemoryToken = {
   async verifyPasswordResetToken(token) {
     if (isRedisConnected()) return null;
     
-    const entry = tokenStore.get(token);
+    const entry = memoryStore.tokens.get(token);
     if (!entry || entry.type !== 'reset') return null;
     
     if (entry.expiresAt && entry.expiresAt < Date.now()) {
-      tokenStore.delete(token);
+      memoryStore.tokens.delete(token);
       return null;
     }
     
@@ -311,10 +303,10 @@ export const inMemoryToken = {
   async consumePasswordResetToken(token) {
     if (isRedisConnected()) return null;
     
-    const entry = tokenStore.get(token);
+    const entry = memoryStore.tokens.get(token);
     if (!entry || entry.type !== 'reset') return null;
     
-    tokenStore.delete(token);
+    memoryStore.tokens.delete(token);
     return { email: entry.email, createdAt: entry.createdAt };
   },
 
@@ -322,7 +314,7 @@ export const inMemoryToken = {
     if (isRedisConnected()) return null;
     
     const state = generateToken();
-    tokenStore.set(state, {
+    memoryStore.tokens.set(state, {
       type: 'oauth',
       createdAt: Date.now(),
       expiresAt: Date.now() + (ttl * 1000)
@@ -334,15 +326,15 @@ export const inMemoryToken = {
   async verifyOAuthState(state) {
     if (isRedisConnected()) return false;
     
-    const entry = tokenStore.get(state);
+    const entry = memoryStore.tokens.get(state);
     if (!entry || entry.type !== 'oauth') return false;
     
     if (entry.expiresAt && entry.expiresAt < Date.now()) {
-      tokenStore.delete(state);
+      memoryStore.tokens.delete(state);
       return false;
     }
     
-    tokenStore.delete(state);
+    memoryStore.tokens.delete(state);
     return true;
   }
 };
@@ -365,10 +357,10 @@ function generateToken(length = 32) {
  */
 export function getMemoryStats() {
   return {
-    sessions: sessionStore.size,
-    cache: cacheStore.size,
-    rateLimit: rateLimitStore.size,
-    tokens: tokenStore.size
+    sessions: memoryStore.sessions.size,
+    cache: memoryStore.cache.size,
+    rateLimit: memoryStore.rateLimit.size,
+    tokens: memoryStore.tokens.size
   };
 }
 
@@ -376,10 +368,10 @@ export function getMemoryStats() {
  * Clear all in-memory stores
  */
 export function clearAllMemoryStores() {
-  sessionStore.clear();
-  cacheStore.clear();
-  rateLimitStore.clear();
-  tokenStore.clear();
+  memoryStore.sessions.clear();
+  memoryStore.cache.clear();
+  memoryStore.rateLimit.clear();
+  memoryStore.tokens.clear();
 }
 
 export default {
