@@ -123,6 +123,12 @@ function isThanks(message) {
   return thanks.some(t => message.toLowerCase().includes(t));
 }
 
+// Check if message is asking to report an issue
+function isReportIntent(message) {
+  const keywords = ['report bug', 'report issue', 'report problem', 'submit bug', 'file report', 'contact support', 'support ticket', 'raise issue', 'log bug'];
+  return keywords.some(kw => message.toLowerCase().includes(kw));
+}
+
 // Chat endpoint
 router.post('/chat', async (req, res) => {
   const { message, user_name, session_id } = req.body;
@@ -141,6 +147,9 @@ router.post('/chat', async (req, res) => {
       response = getRandomItem(knowledgeBase.greetings);
     } else if (isThanks(message)) {
       response = getRandomItem(knowledgeBase.responses.thanks);
+    } else if (isReportIntent(message)) {
+      response = "🐛 I'd be happy to help you submit a support report!\n\nI can guide you through the process. Just type 'yes' to start or tell me:\n- What type of issue you're having\n- What's not working\n\nAlternatively, click the 🐛 button in the bottom-right corner anytime for a quick report form.";
+      action = 'start_report';
     } else if (message.toLowerCase().includes('create ticket') || 
                message.toLowerCase().includes('open ticket') ||
                message.toLowerCase().includes('submit ticket')) {
@@ -182,14 +191,14 @@ router.post('/chat', async (req, res) => {
 
 // Get suggested follow-up questions
 function getSuggestions(faqMatched, action) {
-  if (action === 'create_ticket') {
-    return ['Yes, create a ticket', 'No, I have another question'];
+  if (action === 'create_ticket' || action === 'start_report') {
+    return ['Yes, let\'s start', 'Report a bug', 'I have a question'];
   }
   
   if (faqMatched) {
     return [
       'Tell me more',
-      'Create a support ticket',
+      'Report a bug',
       'I have another question'
     ];
   }
@@ -198,7 +207,7 @@ function getSuggestions(faqMatched, action) {
     'How do I submit a ticket?',
     'How do I get paid?',
     'What are priority levels?',
-    'Contact support'
+    'Report a bug'
   ];
 }
 

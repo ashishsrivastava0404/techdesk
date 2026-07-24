@@ -14,6 +14,18 @@ export default function ChatBot() {
   const [selectedArticle, setSelectedArticle] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  
+  // Support report conversation state
+  const [reportState, setReportState] = useState({
+    active: false,
+    step: 'type', // type, priority, subject, description, confirm
+    data: {
+      report_type: '',
+      priority: 'medium',
+      subject: '',
+      description: ''
+    }
+  });
 
   useEffect(() => {
     if (isOpen && messages.length === 0) {
@@ -61,6 +73,47 @@ export default function ChatBot() {
     addUserMessage(userMessage);
     setLoading(true);
 
+    // Handle report conversation flow
+    if (reportState.active) {
+      switch (reportState.step) {
+        case 'type':
+          handleReportType(userMessage);
+          setLoading(false);
+          return;
+        case 'priority':
+          handleReportPriority(userMessage);
+          setLoading(false);
+          return;
+        case 'subject':
+          handleReportSubject(userMessage);
+          setLoading(false);
+          return;
+        case 'description':
+          handleReportDescription(userMessage);
+          setLoading(false);
+          return;
+        case 'confirm':
+          if (userMessage.toLowerCase() === '1' || userMessage.toLowerCase().includes('yes')) {
+            await submitReport();
+          } else if (userMessage.toLowerCase() === '2' || userMessage.toLowerCase().includes('edit')) {
+            setReportState(prev => ({ ...prev, step: 'type', data: { ...prev.data, report_type: '', subject: '', description: '' } }));
+            addBotMessage("Let's start over.\n\n**What type of issue are you reporting?**\n\n1️⃣ Bug Report - Something isn't working\n2️⃣ Feature Request - A new feature idea\n3️⃣ Complaint - You're not happy with something\n4️⃣ Billing Issue - Payment problem\n5️⃣ Other - Something else");
+          } else {
+            cancelReport();
+          }
+          setLoading(false);
+          return;
+      }
+    }
+
+    // Check for report keywords
+    const reportKeywords = ['report bug', 'submit bug', 'report issue', 'report problem', 'file report', 'bug report', 'submit report', 'contact support', 'report something'];
+    if (reportKeywords.some(kw => userMessage.toLowerCase().includes(kw))) {
+      startReportConversation();
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await api.chatbot.chat({
         message: userMessage,
@@ -95,11 +148,148 @@ export default function ChatBot() {
     }, 100);
   };
 
+  // Start support report conversation
+  const startReportConversation = () => {
+    setReportState({
+      active: true,
+      step: 'type',
+      data: { report_type: '', priority: 'medium', subject: '', description: '' }
+    });
+    addBotMessage("🐛 I'd be happy to help you submit a bug report! Let's get some details.\n\n**What type of issue are you reporting?**\n\n1️⃣ Bug Report - Something isn't working\n2️⃣ Feature Request - A new feature idea\n3️⃣ Complaint - You're not happy with something\n4️⃣ Billing Issue - Payment problem\n5️⃣ Other - Something else");
+  };
+
+  // Handle report type selection
+  const handleReportType = (input) => {
+    const typeMap = {
+      '1': 'bug',
+      'bug': 'bug',
+      '2': 'feature_request',
+      'feature': 'feature_request',
+      'request': 'feature_request',
+      '3': 'complaint',
+      '4': 'billing_issue',
+      'billing': 'billing_issue',
+      '5': 'other'
+    };
+    const type = typeMap[input.toLowerCase()];
+    if (type) {
+      setReportState(prev => ({
+        ...prev,
+        step: 'priority',
+        data: { ...prev.data, report_type: type }
+      }));
+      const typeNames = {
+        bug: 'Bug Report 🐛',
+        feature_request: 'Feature Request 💡',
+        complaint: 'Complaint 😤',
+        billing_issue: 'Billing Issue 💰',
+        other: 'Other 📝'
+      };
+      addBotMessage(`Got it! You selected: **${typeNames[type]}**\n\n**How urgent is this issue?**\n\n1️⃣ Low - Minor issue, can wait\n2️⃣ Medium - Normal priority (default)\n3️⃣ High - Important, needs attention\n4️⃣ Urgent - Critical, needs immediate help`);
+    } else {
+      addBotMessage("I didn't understand that. Please enter a number 1-5 or the type name (bug, feature, complaint, billing, other).");
+    }
+  };
+
+  // Handle priority selection
+  const handleReportPriority = (input) => {
+    const priorityMap = {
+      '1': 'low',
+      'low': 'low',
+      '2': 'medium',
+      'medium': 'medium',
+      '3': 'high',
+      'high': 'high',
+      '4': 'urgent',
+      'urgent': 'urgent'
+    };
+    const priority = priorityMap[input.toLowerCase()];
+    if (priority) {
+      setReportState(prev => ({
+        ...prev,
+        step: 'subject',
+        data: { ...prev.data, priority }
+      }));
+      const priorityEmoji = { low: '⚪', medium: '🔵', high: '🟡', urgent: '🚨' };
+      addBotMessage(`Priority set to: **${priorityEmoji[priority]} ${priority.toUpperCase()}**\n\n**Now, please describe the issue in a short title:**\n\nFor example: \"Login button not working\" or \"Feature X crashes on page Y\"`);
+    } else {
+      addBotMessage("Please enter a number 1-4 or the priority level (low, medium, high, urgent).");
+    }
+  };
+
+  // Handle subject
+  const handleReportSubject = (input) => {
+    if (input.length < 5) {
+      addBotMessage("Please provide a more descriptive title (at least 5 characters).");
+      return;
+    }
+    setReportState(prev => ({
+      ...prev,
+      step: 'description',
+      data: { ...prev.data, subject: input }
+    }));
+    addBotMessage(`📝 **Subject:** ${input}\n\n**Now please describe the issue in detail:**\n\nInclude:\n- What happened\n- What you expected\n- Steps to reproduce (if applicable)\n- Any error messages`);
+  };
+
+  // Handle description
+  const handleReportDescription = (input) => {
+    if (input.length < 10) {
+      addBotMessage("Please provide more details about the issue (at least 10 characters).");
+      return;
+    }
+    const newData = { ...reportState.data, description: input };
+    setReportState(prev => ({ ...prev, step: 'confirm', data: newData }));
+    
+    const typeNames = { bug: 'Bug Report', feature_request: 'Feature Request', complaint: 'Complaint', billing_issue: 'Billing Issue', other: 'Other' };
+    const priorityEmoji = { low: '⚪', medium: '🔵', high: '🟡', urgent: '🚨' };
+    
+    addBotMessage(`**📋 Report Summary:**\n\n**Type:** ${typeNames[newData.report_type]}\n**Priority:** ${priorityEmoji[newData.priority]} ${newData.priority}\n**Subject:** ${newData.subject}\n**Description:** ${newData.description.substring(0, 100)}...\n\n**Is this correct?**\n\n1️⃣ Yes, submit report\n2️⃣ No, let me edit\n3️⃣ Cancel`);
+  };
+
+  // Submit the report
+  const submitReport = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/support-reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user?.id,
+          user_name: user?.name,
+          user_email: user?.email,
+          user_role: user?.role,
+          report_type: reportState.data.report_type,
+          priority: reportState.data.priority,
+          subject: reportState.data.subject,
+          description: reportState.data.description,
+          page_url: window.location.href,
+          browser_info: navigator.userAgent.substring(0, 100)
+        })
+      });
+      
+      if (response.ok) {
+        addBotMessage("✅ **Report Submitted Successfully!**\n\nYour report has been sent to our support team. You'll be notified when there's an update.\n\nIs there anything else I can help you with?");
+      } else {
+        addBotMessage("❌ Failed to submit report. Please try again or use the 🐛 button in the corner of the screen.");
+      }
+    } catch (error) {
+      addBotMessage("❌ Error submitting report. Please try again later.");
+    }
+    setReportState({ active: false, step: 'type', data: {} });
+    setLoading(false);
+  };
+
+  // Cancel report
+  const cancelReport = () => {
+    setReportState({ active: false, step: 'type', data: {} });
+    addBotMessage("Report cancelled. Is there anything else I can help you with?");
+  };
+
   const quickReplies = [
     { text: 'How do I submit a ticket?', icon: '🎫' },
     { text: 'How do I get paid?', icon: '💰' },
     { text: 'What are priority levels?', icon: '⚡' },
-    { text: 'Contact support', icon: '📧' }
+    { text: 'Report a bug', icon: '🐛' }
   ];
 
   const formatTime = (date) => {
