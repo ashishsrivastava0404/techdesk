@@ -415,6 +415,22 @@ router.patch('/support-reports/:id', async (req, res) => {
       [admin_name || 'system', id, JSON.stringify({ status, resolution_notes }), req.ip]
     );
 
+    // Notify the user who submitted the report
+    const [report] = await pool.query('SELECT user_name, subject, status FROM support_reports WHERE id = ?', [id]);
+    if (report.length > 0 && report[0].user_name) {
+      const statusEmoji = status === 'resolved' ? '✅' : status === 'in_progress' ? '🔄' : '📋';
+      await pool.query(
+        `INSERT INTO notifications (user_name, type, title, message, related_report_id)
+         VALUES (?, 'report_update', ?, ?, ?)`,
+        [
+          report[0].user_name,
+          `${statusEmoji} Support Report Update`,
+          `Your report "${report[0].subject}" status changed to: ${status}`,
+          id
+        ]
+      );
+    }
+
     const [rows] = await pool.query('SELECT * FROM support_reports WHERE id = ?', [id]);
     res.json(rows[0]);
   } catch (error) {

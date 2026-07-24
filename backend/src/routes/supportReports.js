@@ -43,6 +43,32 @@ router.post('/', async (req, res) => {
       );
     }
 
+    // Create notification for admins
+    const priorityEmoji = priority === 'urgent' ? '🚨' : priority === 'high' ? '⚠️' : '📋';
+    await pool.query(
+      `INSERT INTO notifications (user_name, type, title, message, related_report_id)
+       SELECT 'admin', 'support_report', ?, ?, ?
+       FROM DUAL WHERE EXISTS (SELECT 1 FROM users WHERE role = 'admin')`,
+      [
+        `${priorityEmoji} New Support Report`,
+        `${report_type.replace('_', ' ')}: ${subject} (${priority} priority)`,
+        result.insertId
+      ]
+    );
+
+    // Also insert directly if no admin exists via select
+    await pool.query(
+      `INSERT INTO notifications (user_name, type, title, message, related_report_id)
+       SELECT 'Admin', 'support_report', ?, ?, ?
+       FROM DUAL WHERE EXISTS (SELECT 1 FROM users WHERE role = 'admin' LIMIT 1)
+       ON DUPLICATE KEY UPDATE id = id`,
+      [
+        `${priorityEmoji} New Support Report`,
+        `${report_type.replace('_', ' ')}: ${subject} (${priority} priority)`,
+        result.insertId
+      ]
+    );
+
     res.status(201).json({ 
       success: true, 
       report_id: result.insertId,

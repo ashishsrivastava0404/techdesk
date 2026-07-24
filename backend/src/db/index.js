@@ -573,6 +573,7 @@ export async function initDatabase() {
       related_ticket_id INT,
       related_user VARCHAR(255),
       related_payout_id INT,
+      related_report_id INT,
       is_read BOOLEAN DEFAULT FALSE,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
