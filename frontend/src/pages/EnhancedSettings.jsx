@@ -78,6 +78,13 @@ export default function EnhancedSettings() {
         support_email: data.support_email || 'support@promote.example.com',
         platform_url: data.platform_url || 'https://promote.example.com',
         
+        // Branding
+        app_name: data.app_name || data.platform_name || 'TechDesk',
+        app_logo_url: data.app_logo_url || data.logo_url || '',
+        app_favicon_url: data.app_favicon_url || '',
+        company_name: data.company_name || '',
+        website_url: data.website_url || '',
+        
         // Payout & Earnings
         commission_rate: parseFloat(data.commission_rate || 0.15),
         minimum_payout: parseFloat(data.minimum_payout || 25),
@@ -248,10 +255,11 @@ export default function EnhancedSettings() {
 
   const sections = [
     { id: 'general', icon: '🏢', label: 'General' },
+    { id: 'branding', icon: '🎨', label: 'Branding' },
     { id: 'earnings', icon: '💰', label: 'Earnings' },
     { id: 'tiers', icon: '📊', label: 'Tier System' },
     { id: 'credits', icon: '🎫', label: 'Credits' },
-    { id: 'appearance', icon: '🎨', label: 'Appearance' },
+    { id: 'appearance', icon: '✨', label: 'Appearance' },
     { id: 'notifications', icon: '🔔', label: 'Notifications' },
     { id: 'moderation', icon: '🛡️', label: 'Moderation' },
     { id: 'security', icon: '🔐', label: 'Security' },
@@ -335,6 +343,98 @@ export default function EnhancedSettings() {
                 placeholder="https://example.com/logo.png"
               />
             </SettingRow>
+          </SettingsSection>
+        )}
+
+        {activeSection === 'branding' && (
+          <SettingsSection title="Branding & Identity" icon="🎨">
+            <p style={{ marginBottom: '20px', color: 'var(--muted)', fontSize: '13px' }}>
+              Customize your platform's visual identity. These settings update everywhere automatically.
+            </p>
+            
+            <SettingRow label="Application Name" description="The name shown in the header and browser tab">
+              <input
+                type="text"
+                value={formData.app_name || ''}
+                onChange={(e) => updateField('app_name', e.target.value)}
+                className="settings-input"
+                placeholder="TechDesk"
+              />
+            </SettingRow>
+            
+            <SettingRow label="Company Name" description="Your company or organization name">
+              <input
+                type="text"
+                value={formData.company_name || ''}
+                onChange={(e) => updateField('company_name', e.target.value)}
+                className="settings-input"
+                placeholder="TechDesk Inc."
+              />
+            </SettingRow>
+            
+            <SettingRow label="Logo URL" description="URL to your logo image (recommended: 200x200px)">
+              <input
+                type="url"
+                value={formData.app_logo_url || ''}
+                onChange={(e) => updateField('app_logo_url', e.target.value)}
+                className="settings-input"
+                placeholder="https://example.com/logo.png"
+              />
+            </SettingRow>
+            
+            {formData.app_logo_url && (
+              <div style={{ marginBottom: '20px', padding: '16px', background: 'var(--surface-2)', borderRadius: '12px', textAlign: 'center' }}>
+                <img src={formData.app_logo_url} alt="Logo Preview" style={{ maxWidth: '150px', maxHeight: '80px', objectFit: 'contain' }} />
+                <p style={{ marginTop: '8px', fontSize: '12px', color: 'var(--muted)' }}>Logo Preview</p>
+              </div>
+            )}
+            
+            <SettingRow label="Favicon URL" description="URL to your favicon (16x16 or 32x32 ICO/PNG)">
+              <input
+                type="url"
+                value={formData.app_favicon_url || ''}
+                onChange={(e) => updateField('app_favicon_url', e.target.value)}
+                className="settings-input"
+                placeholder="https://example.com/favicon.ico"
+              />
+            </SettingRow>
+            
+            <SettingRow label="Support Email" description="Contact email shown to users">
+              <input
+                type="email"
+                value={formData.support_email || ''}
+                onChange={(e) => updateField('support_email', e.target.value)}
+                className="settings-input"
+                placeholder="support@example.com"
+              />
+            </SettingRow>
+            
+            <SettingRow label="Website URL" description="Your main website URL">
+              <input
+                type="url"
+                value={formData.website_url || ''}
+                onChange={(e) => updateField('website_url', e.target.value)}
+                className="settings-input"
+                placeholder="https://example.com"
+              />
+            </SettingRow>
+            
+            <div style={{ marginTop: '24px', padding: '16px', background: 'var(--amber-dim)', borderRadius: '12px', border: '1px solid var(--amber)' }}>
+              <h4 style={{ margin: '0 0 8px', fontSize: '14px' }}>💡 Preview</h4>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '12px' }}>
+                {formData.app_logo_url ? (
+                  <img src={formData.app_logo_url} alt="Logo" style={{ width: '40px', height: '40px', objectFit: 'contain', borderRadius: '8px' }} />
+                ) : (
+                  <div style={{ width: '40px', height: '40px', background: 'var(--amber)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#000' }}>
+                    {(formData.app_name || 'TD').substring(0, 2).toUpperCase()}
+                  </div>
+                )}
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '16px' }}>{formData.app_name || 'App Name'}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--muted)' }}>{formData.company_name || 'Company Name'}</div>
+                </div>
+              </div>
+            </div>
           </SettingsSection>
         )}
 

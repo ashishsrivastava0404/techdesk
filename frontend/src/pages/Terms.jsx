@@ -1,6 +1,11 @@
 import { Link } from 'react-router-dom';
+import { useBrand } from '../context/BrandContext.jsx';
 
 export default function Terms() {
+  const { brand } = useBrand();
+  const appName = brand.app_name || 'TechDesk';
+  const companyName = brand.company_name || 'TechDesk Inc.';
+  
   return (
     <div className="legal-page">
       <div className="legal-container">
@@ -10,7 +15,7 @@ export default function Terms() {
         <section>
           <h2>1. Acceptance of Terms</h2>
           <p>
-            By accessing and using Promote ("the Service"), you accept and agree to be bound by 
+            By accessing and using {appName} ("the Service"), you accept and agree to be bound by 
             the terms and provision of this agreement. If you do not agree to abide by these 
             terms, please do not use this Service.
           </p>
@@ -19,7 +24,7 @@ export default function Terms() {
         <section>
           <h2>2. Description of Service</h2>
           <p>
-            Promote is a gamified ticketing platform that allows customers to submit technical 
+            {appName} is a gamified ticketing platform that allows customers to submit technical 
             support tickets and developers (Techs) to resolve them. Techs earn points and 
             reputation through ticket resolution, enabling progression through tier levels 
             (Dev → Staging → Production-Ready).
@@ -101,7 +106,7 @@ export default function Terms() {
           <h2>9. Intellectual Property</h2>
           <p>
             The Service and its original content, features, and functionality are owned by 
-            Promote and are protected by international copyright, trademark, patent, trade 
+            {appName} and are protected by international copyright, trademark, patent, trade 
             secret, and other intellectual property laws.
           </p>
         </section>
@@ -109,7 +114,7 @@ export default function Terms() {
         <section>
           <h2>10. Limitation of Liability</h2>
           <p>
-            In no event shall Promote, nor its directors, employees, partners, agents, 
+            In no event shall {appName}, nor its directors, employees, partners, agents, 
             suppliers, or affiliates, be liable for any indirect, incidental, special, 
             consequential, or punitive damages, including without limitation, loss of 
             profits, data, use, goodwill, or other intangible losses.

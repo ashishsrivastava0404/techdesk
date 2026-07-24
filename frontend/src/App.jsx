@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext.jsx';
+import { BrandProvider } from './context/BrandContext.jsx';
 import { ProtectedRoute, PublicRoute, AdminRoute, TechRoute } from './components/ProtectedRoute.jsx';
 import Layout from './components/Layout.jsx';
 import Landing from './pages/Landing.jsx';
@@ -128,7 +129,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <AppProvider>
-        <AppRoutes />
+        <BrandProvider>
+          <AppRoutes />
+        </BrandProvider>
       </AppProvider>
     </BrowserRouter>
   );

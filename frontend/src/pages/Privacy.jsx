@@ -1,6 +1,11 @@
 import { Link } from 'react-router-dom';
+import { useBrand } from '../context/BrandContext.jsx';
 
 export default function Privacy() {
+  const { brand } = useBrand();
+  const appName = brand.app_name || 'TechDesk';
+  const companyName = brand.company_name || 'TechDesk Inc.';
+
   return (
     <div className="legal-page">
       <div className="legal-container">
@@ -10,7 +15,7 @@ export default function Privacy() {
         <section>
           <h2>1. Introduction</h2>
           <p>
-            Promote ("we", "our", or "us") is committed to protecting your privacy. This 
+            {appName} ("we", "our", or "us") is committed to protecting your privacy. This 
             Privacy Policy explains how we collect, use, disclose, and safeguard your 
             information when you use our platform and services.
           </p>

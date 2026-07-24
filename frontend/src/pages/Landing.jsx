@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom';
+import { useBrand } from '../context/BrandContext.jsx';
 
 export default function Landing() {
+  const { brand } = useBrand();
+  
   return (
     <div className="landing-page">
       {/* Hero Section */}
@@ -199,7 +202,7 @@ export default function Landing() {
           </div>
         </div>
         <div className="footer-bottom">
-          <p>&copy; 2024 Promote Platform. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} {brand.company_name || brand.app_name || 'TechDesk'}. All rights reserved.</p>
         </div>
       </footer>
     </div>

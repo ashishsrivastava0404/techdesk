@@ -1,8 +1,10 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext.jsx';
+import { useBrand } from '../context/BrandContext.jsx';
 
 export default function Layout() {
   const { user, logout } = useApp();
+  const { brand } = useBrand();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -47,10 +49,14 @@ export default function Layout() {
       <header className="topbar">
         <div className="brand">
           <NavLink to="/dashboard" className="brand-link">
-            <div className="brand-mark">Pr</div>
+            {brand.app_logo_url ? (
+              <img src={brand.app_logo_url} alt={brand.app_name} className="brand-logo" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
+            ) : (
+              <div className="brand-mark">{brand.app_name?.substring(0, 2).toUpperCase() || 'TD'}</div>
+            )}
             <div className="brand-text">
-              <h1>Promote</h1>
-              <p>Earn Production Access</p>
+              <h1>{brand.app_name || 'TechDesk'}</h1>
+              <p>{brand.company_name || ''}</p>
             </div>
           </NavLink>
         </div>

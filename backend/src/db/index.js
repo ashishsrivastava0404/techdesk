@@ -468,7 +468,16 @@ export async function initDatabase() {
     ('bank_api_secret', ''),
     ('aws_secrets_manager_enabled', 'false'),
     ('aws_secrets_manager_region', 'us-east-1'),
-    ('aws_secrets_manager_secret_prefix', 'promote')
+    ('aws_secrets_manager_secret_prefix', 'promote'),
+    ('app_name', 'TechDesk'),
+    ('app_logo_url', ''),
+    ('app_favicon_url', ''),
+    ('company_name', 'TechDesk Inc.'),
+    ('support_email', 'support@techdesk.com'),
+    ('website_url', 'https://techdesk.example.com'),
+    ('terms_url', '/terms'),
+    ('privacy_url', '/privacy'),
+    ('cookies_url', '/cookies')
   `);
 
   // Ticket categories table

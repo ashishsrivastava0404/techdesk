@@ -1,6 +1,11 @@
 import { Link } from 'react-router-dom';
+import { useBrand } from '../context/BrandContext.jsx';
 
 export default function Cookies() {
+  const { brand } = useBrand();
+  const appName = brand.app_name || 'TechDesk';
+  const companyName = brand.company_name || 'TechDesk Inc.';
+
   return (
     <div className="legal-page">
       <div className="legal-container">
@@ -18,7 +23,7 @@ export default function Cookies() {
 
         <section>
           <h2>2. How We Use Cookies</h2>
-          <p>Promote uses cookies for several purposes:</p>
+          <p>{appName} uses cookies for several purposes:</p>
           
           <h3>2.1 Essential Cookies</h3>
           <p>
@@ -78,7 +83,7 @@ export default function Cookies() {
         <section>
           <h2>3. Managing Your Cookie Preferences</h2>
           <p>
-            When you first visit Promote, you'll see a cookie consent banner. You can:
+            When you first visit {appName}, you'll see a cookie consent banner. You can:
           </p>
           <ul>
             <li><strong>Accept all cookies:</strong> Enable all cookie types</li>
