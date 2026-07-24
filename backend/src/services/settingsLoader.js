@@ -1,4 +1,5 @@
 import pool from '../db/index.js';
+import { loadSecretsFromAWS, syncSecretsToAWS } from './awsSecretsManager.js';
 
 /**
  * Maps database setting keys to environment variable names
@@ -36,6 +37,7 @@ const SETTING_TO_ENV_MAP = {
   'paypal_mode': 'PAYPAL_MODE',
   'bank_api_key': 'BANK_API_KEY',
   'bank_api_secret': 'BANK_API_SECRET',
+  'aws_secrets_manager_region': 'AWS_REGION',
 };
 
 /**
@@ -67,15 +69,75 @@ const SECRET_KEYS = [
 /**
  * Load API keys from database and set as environment variables
  * Called on server startup
+ * 
+ * Priority:
+ * 1. AWS Secrets Manager (if enabled)
+ * 2. Database platform_settings
+ * 3. Environment variables (from .env)
  */
 export async function loadApiKeysFromDatabase() {
   try {
+    // First, load from database to get AWS Secrets Manager settings
+    const [awsRows] = await pool.query(
+      'SELECT key_name, value FROM platform_settings WHERE key_name LIKE ? OR key_name LIKE ?',
+      ['%aws_secrets%', '%aws_region']
+    );
+    
+    // Set AWS region if configured
+    for (const row of awsRows) {
+      if (row.key_name === 'aws_secrets_manager_region' && row.value) {
+        process.env.AWS_REGION = row.value;
+      }
+      if (row.key_name === 'aws_access_key_id' && row.value) {
+        process.env.AWS_ACCESS_KEY_ID = row.value;
+      }
+      if (row.key_name === 'aws_secret_access_key' && row.value) {
+        process.env.AWS_SECRET_ACCESS_KEY = row.value;
+      }
+    }
+
+    // Check if AWS Secrets Manager is enabled
+    const [secretsEnabled] = await pool.query(
+      'SELECT value FROM platform_settings WHERE key_name = ?',
+      ['aws_secrets_manager_enabled']
+    );
+    
+    const isAwsEnabled = secretsEnabled.length > 0 && secretsEnabled[0].value === 'true';
+
+    if (isAwsEnabled) {
+      console.log('🔐 Loading secrets from AWS Secrets Manager...');
+      try {
+        const awsSecrets = await loadSecretsFromAWS();
+        
+        // Load secrets from AWS into environment
+        for (const [category, secrets] of Object.entries(awsSecrets)) {
+          if (secrets && typeof secrets === 'object') {
+            for (const [key, value] of Object.entries(secrets)) {
+              if (value) {
+                const envVar = SETTING_TO_ENV_MAP[key];
+                if (envVar) {
+                  process.env[envVar] = value;
+                  console.log(`✅ Loaded ${key} from AWS Secrets Manager`);
+                }
+              }
+            }
+          }
+        }
+        console.log('✅ Successfully loaded secrets from AWS Secrets Manager');
+        return;
+      } catch (awsError) {
+        console.warn('⚠️ Failed to load from AWS Secrets Manager, falling back to database:', awsError.message);
+      }
+    }
+
+    // Fallback: Load from database
     const [rows] = await pool.query('SELECT key_name, value FROM platform_settings WHERE key_name IN (?)', 
       [Object.keys(SETTING_TO_ENV_MAP)]);
     
     for (const row of rows) {
       const envVar = SETTING_TO_ENV_MAP[row.key_name];
-      if (envVar && row.value) {
+      // Don't override if already set (from .env)
+      if (envVar && row.value && !process.env[envVar]) {
         process.env[envVar] = row.value;
         console.log(`✅ Loaded ${row.key_name} from database`);
       }
@@ -84,6 +146,28 @@ export async function loadApiKeysFromDatabase() {
     console.log('🔑 API keys loaded from database settings');
   } catch (error) {
     console.error('Error loading API keys from database:', error.message);
+  }
+}
+
+/**
+ * Sync settings to AWS Secrets Manager when saving
+ * Called after admin saves new settings
+ */
+export async function syncToAWS(secrets) {
+  try {
+    const [enabled] = await pool.query(
+      'SELECT value FROM platform_settings WHERE key_name = ?',
+      ['aws_secrets_manager_enabled']
+    );
+    
+    if (enabled.length > 0 && enabled[0].value === 'true') {
+      await syncSecretsToAWS(secrets);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error syncing to AWS:', error.message);
+    return false;
   }
 }
 
@@ -122,4 +206,5 @@ export default {
   maskSettingsForFrontend,
   maskSecret,
   isMasked,
+  syncToAWS,
 };

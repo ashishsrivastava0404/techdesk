@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import pool from '../db/index.js';
-import { maskSettingsForFrontend, loadApiKeysFromDatabase, isMasked } from '../services/settingsLoader.js';
+import { maskSettingsForFrontend, loadApiKeysFromDatabase, isMasked, syncToAWS } from '../services/settingsLoader.js';
 
 const router = Router();
 
@@ -313,6 +313,9 @@ router.patch('/settings', async (req, res) => {
 
     // Reload API keys into environment if any were updated
     await loadApiKeysFromDatabase();
+
+    // Sync to AWS Secrets Manager if enabled
+    await syncToAWS(settings);
 
     const [rows] = await pool.query('SELECT * FROM platform_settings');
     const result = rows.reduce((acc, row) => {

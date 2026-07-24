@@ -409,7 +409,10 @@ export async function initDatabase() {
     ('stripe_platform_account_id', ''),
     ('paypal_mode', 'sandbox'),
     ('bank_api_key', ''),
-    ('bank_api_secret', '')
+    ('bank_api_secret', ''),
+    ('aws_secrets_manager_enabled', 'false'),
+    ('aws_secrets_manager_region', 'us-east-1'),
+    ('aws_secrets_manager_secret_prefix', 'promote')
   `);
 
   // Ticket categories table

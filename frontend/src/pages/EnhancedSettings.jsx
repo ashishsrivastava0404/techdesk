@@ -183,6 +183,11 @@ export default function EnhancedSettings() {
         twilio_auth_token: data.twilio_auth_token || '',
         twilio_phone_number: data.twilio_phone_number || '',
         
+        // AWS Secrets Manager
+        aws_secrets_manager_enabled: data.aws_secrets_manager_enabled === true,
+        aws_secrets_manager_region: data.aws_secrets_manager_region || 'us-east-1',
+        aws_secrets_manager_secret_prefix: data.aws_secrets_manager_secret_prefix || 'promote',
+        
         // Feature Flags
         enable_leaderboard: data.enable_leaderboard !== false,
         enable_referrals: data.enable_referrals === true,
@@ -1361,6 +1366,53 @@ export default function EnhancedSettings() {
                 onChange={(val) => updateField('allow_api_access', val)}
               />
             </SettingRow>
+
+            {/* AWS Secrets Manager */}
+            <div className="integration-card">
+              <div className="integration-header">
+                <span className="integration-icon">🔐</span>
+                <span className="integration-name">AWS Secrets Manager</span>
+                <ToggleSwitch
+                  checked={formData.aws_secrets_manager_enabled || false}
+                  onChange={(val) => updateField('aws_secrets_manager_enabled', val)}
+                />
+              </div>
+              {formData.aws_secrets_manager_enabled && (
+                <div className="integration-fields">
+                  <div style={{ background: 'var(--amber-dim)', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px' }}>
+                    ⚠️ AWS Secrets Manager will store all API keys securely. Make sure your AWS credentials have permissions for Secrets Manager.
+                  </div>
+                  <div className="settings-input-group">
+                    <label>AWS Region</label>
+                    <select
+                      className="settings-select"
+                      value={formData.aws_secrets_manager_region || 'us-east-1'}
+                      onChange={(e) => updateField('aws_secrets_manager_region', e.target.value)}
+                    >
+                      <option value="us-east-1">US East (N. Virginia)</option>
+                      <option value="us-west-2">US West (Oregon)</option>
+                      <option value="eu-west-1">EU (Ireland)</option>
+                      <option value="eu-central-1">EU (Frankfurt)</option>
+                      <option value="ap-southeast-1">Asia Pacific (Singapore)</option>
+                      <option value="ap-northeast-1">Asia Pacific (Tokyo)</option>
+                    </select>
+                  </div>
+                  <div className="settings-input-group">
+                    <label>Secret Prefix</label>
+                    <input
+                      type="text"
+                      className="settings-input"
+                      value={formData.aws_secrets_manager_secret_prefix || 'promote'}
+                      onChange={(e) => updateField('aws_secrets_manager_secret_prefix', e.target.value)}
+                      placeholder="promote"
+                    />
+                    <span style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>
+                      Secrets will be stored as: {formData.aws_secrets_manager_secret_prefix || 'promote'}/stripe, {formData.aws_secrets_manager_secret_prefix || 'promote'}/smtp, etc.
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
           </SettingsSection>
         )}
 
