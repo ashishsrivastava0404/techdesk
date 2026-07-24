@@ -10,6 +10,7 @@ import { apiLimiter, authLimiter, paymentLimiter } from './middleware/rateLimite
 import usersRouter from './routes/users.js';
 import authRouter from './routes/auth.js';
 import ticketsRouter from './routes/tickets.js';
+import ticketCommentsRouter from './routes/ticketComments.js';
 import ratingsRouter from './routes/ratings.js';
 import hireRequestsRouter from './routes/hireRequests.js';
 import statsRouter from './routes/stats.js';
@@ -19,6 +20,7 @@ import crmRouter from './routes/crm.js';
 import adminRouter from './routes/admin.js';
 import discussionsRouter from './routes/discussions.js';
 import categoriesRouter from './routes/categories.js';
+import ticketHierarchyRouter from './routes/ticketHierarchy.js';
 import notificationsRouter from './routes/notifications.js';
 import ticketHistoryRouter from './routes/ticketHistory.js';
 import surveysRouter from './routes/surveys.js';
@@ -63,6 +65,7 @@ app.use('/api/auth', apiLimiter, authRouter);
 // Apply authenticate middleware + rate limiter to all protected routes
 app.use('/api/users', authenticate, usersRouter);
 app.use('/api/tickets', authenticate, apiLimiter, ticketsRouter);
+app.use('/api/tickets', authenticate, ticketCommentsRouter);
 app.use('/api/ratings', authenticate, apiLimiter, ratingsRouter);
 app.use('/api/hire-requests', authenticate, apiLimiter, hireRequestsRouter);
 app.use('/api/stats', authenticate, statsRouter);
@@ -72,6 +75,7 @@ app.use('/api/crm', authenticate, apiLimiter, crmRouter);
 app.use('/api/admin', authenticate, apiLimiter, adminRouter);
 app.use('/api/discussions', authenticate, apiLimiter, discussionsRouter);
 app.use('/api/categories', authenticate, categoriesRouter);
+app.use('/api/ticket-hierarchy', ticketHierarchyRouter);  // Public - cached, no auth needed
 app.use('/api/notifications', authenticate, apiLimiter, notificationsRouter);
 app.use('/api/ticket-history', authenticate, ticketHistoryRouter);
 app.use('/api/surveys', authenticate, apiLimiter, surveysRouter);

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import pool from '../db/index.js';
 import { routingService } from '../services/routing.js';
+import { validateCategoryPath, getFullPath } from '../constants/ticketCategories.js';
 
 const router = Router();
 
@@ -95,6 +96,7 @@ router.post('/', async (req, res) => {
     customer_name, 
     category, 
     subcategory,
+    topic,
     tags, 
     estimated_hours,
     auto_route = true // Whether to auto-route to agents
@@ -102,6 +104,13 @@ router.post('/', async (req, res) => {
   
   if (!title || !description || !customer_name) {
     return res.status(400).json({ error: 'Missing required fields' });
+  }
+  
+  // Validate category path if provided
+  if (category && subcategory && topic) {
+    if (!validateCategoryPath(category, subcategory, topic)) {
+      return res.status(400).json({ error: 'Invalid category hierarchy path' });
+    }
   }
   
   // Validate word counts
@@ -122,9 +131,14 @@ router.post('/', async (req, res) => {
     else if (priority === 'normal') slaHours = 24;
     else if (priority === 'low') slaHours = 48;
 
+    // Get full category path for reporting
+    const categoryPath = category && subcategory && topic 
+      ? getFullPath(category, subcategory, topic)
+      : null;
+
     const [result] = await pool.query(
-      `INSERT INTO tickets (title, description, subject, short_description, long_description, environment, priority, customer_name, category, subcategory, tags, estimated_hours, sla_due_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? HOUR))`,
+      `INSERT INTO tickets (title, description, subject, short_description, long_description, environment, priority, customer_name, category, subcategory, topic, tags, estimated_hours, sla_due_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? HOUR))`,
       [
         title, 
         description, 
@@ -136,6 +150,7 @@ router.post('/', async (req, res) => {
         customer_name, 
         category || 'general',
         subcategory || null,
+        topic || null,
         JSON.stringify(tags || []), 
         estimated_hours || null, 
         slaHours
@@ -145,11 +160,18 @@ router.post('/', async (req, res) => {
     const [rows] = await pool.query('SELECT * FROM tickets WHERE id = ?', [result.insertId]);
     const ticket = rows[0];
     
-    // Log history
+    // Log history with full category path
     await pool.query(
       `INSERT INTO ticket_history (ticket_id, action, actor_name, actor_role, metadata)
        VALUES (?, 'created', ?, 'customer', ?)`,
-      [result.insertId, customer_name, JSON.stringify({ priority, environment, category, subcategory })]
+      [result.insertId, customer_name, JSON.stringify({ 
+        priority, 
+        environment, 
+        category, 
+        subcategory, 
+        topic,
+        categoryPath 
+      })]
     );
 
     // Notify admins
@@ -174,7 +196,8 @@ router.post('/', async (req, res) => {
     
     res.status(201).json({
       ...ticket,
-      routing: routingResult
+      routing: routingResult,
+      categoryPath
     });
   } catch (error) {
     console.error('Error creating ticket:', error);

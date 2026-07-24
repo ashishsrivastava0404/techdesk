@@ -4,11 +4,12 @@ import { api } from '../api/index.js';
 
 export default function TicketDetail({ ticket, onClose, onUpdate }) {
   const { user, showToast } = useApp();
-  const [messages, setMessages] = useState([]);
+  const [comments, setComments] = useState([]);
   const [history, setHistory] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [activeTab, setActiveTab] = useState('discussion');
   const [loading, setLoading] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null);
   const messagesEndRef = useRef(null);
 
   const isCustomer = user?.name === ticket.customer_name;
@@ -18,21 +19,32 @@ export default function TicketDetail({ ticket, onClose, onUpdate }) {
 
   useEffect(() => {
     if (canViewDiscussion && ticket.id) {
-      loadMessages();
+      loadComments();
       loadHistory();
     }
   }, [ticket.id, canViewDiscussion]);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [comments]);
 
-  const loadMessages = async () => {
+  const loadComments = async () => {
     try {
+      // Try to load from new comments API first, fallback to discussions
+      try {
+        const response = await fetch(`/api/tickets/${ticket.id}/comments?includeInternal=true`);
+        const data = await response.json();
+        if (data.success) {
+          setComments(data.data || []);
+          return;
+        }
+      } catch (e) {
+        // Fallback to old API
+      }
       const data = await api.discussions.get(ticket.id, user?.name, user?.role);
-      setMessages(data);
+      setComments(data);
     } catch (error) {
-      console.error('Error loading messages:', error);
+      console.error('Error loading comments:', error);
     }
   };
 
@@ -51,6 +63,29 @@ export default function TicketDetail({ ticket, onClose, onUpdate }) {
 
     setLoading(true);
     try {
+      // Try new comments API first
+      try {
+        const response = await fetch(`/api/tickets/${ticket.id}/comments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: newMessage,
+            message_type: 'comment',
+            parent_id: replyingTo,
+            is_internal: false
+          })
+        });
+        const data = await response.json();
+        if (data.success) {
+          setNewMessage('');
+          setReplyingTo(null);
+          loadComments();
+          return;
+        }
+      } catch (e) {
+        // Fallback to old API
+      }
+      
       await api.discussions.send({
         ticket_id: ticket.id,
         sender_name: user.name,
@@ -58,12 +93,107 @@ export default function TicketDetail({ ticket, onClose, onUpdate }) {
         content: newMessage
       });
       setNewMessage('');
-      loadMessages();
+      loadComments();
     } catch (error) {
       showToast('Failed to send message');
     } finally {
       setLoading(false);
     }
+  };
+
+  const replyToComment = (comment) => {
+    setReplyingTo(comment.id);
+    setNewMessage(`@${comment.user_name} `);
+  };
+
+  // Render comments with threading support
+  const renderComments = (comments, isReply = false) => {
+    return comments.map(comment => {
+      const isOwn = comment.user_name === user?.name;
+      const isTechnician = comment.user_role === 'technician' || comment.user_role === 'admin';
+      
+      // Different styling for technicians vs customers
+      const bubbleBg = isOwn 
+        ? 'var(--amber)' 
+        : isTechnician 
+          ? 'var(--primary)' 
+          : 'var(--panel)';
+      const bubbleColor = isOwn ? '#1A1206' : 'var(--text-light)';
+
+      return (
+        <div key={comment.id} style={{ 
+          marginLeft: isReply ? '24px' : '0',
+          marginBottom: '12px',
+          borderLeft: isReply ? '2px solid var(--border-color)' : 'none',
+          paddingLeft: isReply ? '12px' : '0'
+        }}>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: isOwn ? 'flex-end' : 'flex-start'
+          }}>
+            {/* Role badge */}
+            <div style={{
+              fontSize: '11px',
+              fontWeight: 600,
+              marginBottom: '4px',
+              color: isTechnician ? 'var(--primary)' : 'var(--text-muted)'
+            }}>
+              {comment.user_role === 'technician' && '🔧 '}
+              {comment.user_role === 'admin' && '👑 '}
+              {comment.user_role === 'customer' && '👤 '}
+              {comment.user_name}
+              {comment.user_role !== 'system' && ` (${comment.user_role})`}
+            </div>
+            
+            {/* Message bubble */}
+            <div style={{
+              maxWidth: '80%',
+              padding: '10px 14px',
+              borderRadius: '12px',
+              background: bubbleBg,
+              color: bubbleColor
+            }}>
+              {comment.message}
+            </div>
+            
+            {/* Timestamp and actions */}
+            <div style={{ 
+              fontSize: '10px', 
+              color: 'var(--muted)', 
+              marginTop: '4px',
+              display: 'flex',
+              gap: '8px',
+              alignItems: 'center'
+            }}>
+              <span>{formatDate(comment.created_at)}</span>
+              {!isReply && (
+                <button
+                  type="button"
+                  onClick={() => replyToComment(comment)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    fontSize: '10px'
+                  }}
+                >
+                  Reply
+                </button>
+              )}
+            </div>
+          </div>
+          
+          {/* Render replies (children) */}
+          {comment.children && comment.children.length > 0 && (
+            <div style={{ marginTop: '8px' }}>
+              {renderComments(comment.children, true)}
+            </div>
+          )}
+        </div>
+      );
+    });
   };
 
   const handleStatusChange = async (newStatus) => {
@@ -257,45 +387,48 @@ export default function TicketDetail({ ticket, onClose, onUpdate }) {
                     padding: '12px',
                     marginBottom: '12px'
                   }}>
-                    {messages.length === 0 ? (
+                    {comments.length === 0 ? (
                       <div style={{ textAlign: 'center', color: 'var(--muted)', padding: '40px' }}>
                         No messages yet. Start the conversation!
                       </div>
                     ) : (
-                      messages.map(msg => (
-                        <div key={msg.id} style={{
-                          marginBottom: '12px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: msg.sender_name === user?.name ? 'flex-end' : 'flex-start'
-                        }}>
-                          <div style={{
-                            maxWidth: '80%',
-                            padding: '10px 14px',
-                            borderRadius: '12px',
-                            background: msg.sender_name === user?.name ? 'var(--amber)' : 'var(--panel)',
-                            color: msg.sender_name === user?.name ? '#1A1206' : 'var(--text)'
-                          }}>
-                            <div style={{ fontSize: '11px', fontWeight: 600, marginBottom: '4px', opacity: 0.8 }}>
-                              {msg.sender_name} {msg.sender_role !== 'system' && <span>({msg.sender_role})</span>}
-                            </div>
-                            <div style={{ fontSize: '14px', lineHeight: 1.4 }}>{msg.content}</div>
-                          </div>
-                          <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '4px' }}>
-                            {formatDate(msg.created_at)}
-                          </div>
-                        </div>
-                      ))
+                      // Render threaded comments
+                      renderComments(comments)
                     )}
                     <div ref={messagesEndRef} />
                   </div>
+
+                  {/* Reply indicator */}
+                  {replyingTo && (
+                    <div style={{
+                      padding: '8px 12px',
+                      background: 'var(--surface-1)',
+                      borderRadius: '4px',
+                      marginBottom: '8px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      fontSize: '12px'
+                    }}>
+                      <span>
+                        Replying to a comment. 
+                        <button 
+                          type="button"
+                          onClick={() => { setReplyingTo(null); setNewMessage(''); }}
+                          style={{ background: 'none', border: 'none', color: 'var(--amber)', cursor: 'pointer', marginLeft: '8px' }}
+                        >
+                          Cancel
+                        </button>
+                      </span>
+                    </div>
+                  )}
 
                   <form onSubmit={sendMessage} style={{ display: 'flex', gap: '8px' }}>
                     <input
                       type="text"
                       value={newMessage}
                       onChange={e => setNewMessage(e.target.value)}
-                      placeholder="Type a message..."
+                      placeholder={replyingTo ? "Type your reply..." : "Type a message..."}
                       style={{ flex: 1 }}
                     />
                     <button type="submit" className="btn btn-primary" disabled={loading || !newMessage.trim()}>

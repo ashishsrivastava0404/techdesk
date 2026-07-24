@@ -8,6 +8,7 @@ export default function SubmitTicket() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [categoryHierarchy, setCategoryHierarchy] = useState({});
   const [topicSuggestions, setTopicSuggestions] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -19,8 +20,9 @@ export default function SubmitTicket() {
     description: '',
     environment: 'dev',
     priority: 'normal',
-    category: 'general',
-    subcategory: '',
+    category: '',      // Top-level category ID
+    subcategory: '',   // Subcategory ID
+    topic: '',         // Topic ID
     tags: '',
     estimated_hours: ''
   });
@@ -37,6 +39,16 @@ export default function SubmitTicket() {
     loadTopicSuggestions();
   }, []);
 
+  // Reset subcategory and topic when category changes
+  useEffect(() => {
+    setForm(f => ({ ...f, subcategory: '', topic: '' }));
+  }, [form.category]);
+
+  // Reset topic when subcategory changes
+  useEffect(() => {
+    setForm(f => ({ ...f, topic: '' }));
+  }, [form.subcategory]);
+
   useEffect(() => {
     if (form.category && form.category !== 'general') {
       loadTemplates(form.category);
@@ -47,8 +59,14 @@ export default function SubmitTicket() {
 
   const loadCategories = async () => {
     try {
-      const data = await api.categories.list();
-      setCategories(data);
+      // Load both database categories and hierarchy
+      const [dbCategories, hierarchyData] = await Promise.all([
+        api.categories.list().catch(() => []),
+        fetch('/api/ticket-hierarchy').then(r => r.json()).catch(() => ({ data: {} }))
+      ]);
+      
+      setCategories(dbCategories);
+      setCategoryHierarchy(hierarchyData.data || {});
     } catch (error) {
       console.error('Error loading categories:', error);
     }
@@ -122,11 +140,15 @@ export default function SubmitTicket() {
       return;
     }
 
+    // Validate category hierarchy if using new system
+    const hasFullHierarchy = form.category && form.subcategory && form.topic;
+    const isLegacyCategory = form.category && !form.category.includes('_');
+
     setLoading(true);
     try {
       const tagArray = form.tags.split(',').map(t => t.trim()).filter(Boolean);
       
-      await api.tickets.create({
+      const ticketData = {
         title: form.title,
         subject: form.subject || null,
         short_description: form.short_description || null,
@@ -134,12 +156,21 @@ export default function SubmitTicket() {
         description: form.description,
         environment: form.environment,
         priority: form.priority,
-        category: form.category,
-        subcategory: form.subcategory || null,
         tags: tagArray,
         estimated_hours: form.estimated_hours ? parseFloat(form.estimated_hours) : null,
         customer_name: user.name
-      });
+      };
+
+      // Include category hierarchy if selected
+      if (hasFullHierarchy) {
+        ticketData.category = form.category;
+        ticketData.subcategory = form.subcategory;
+        ticketData.topic = form.topic;
+      } else if (isLegacyCategory) {
+        ticketData.category = form.category;
+      }
+
+      await api.tickets.create(ticketData);
       showToast('Ticket submitted successfully');
       navigate('/mytickets');
     } catch (error) {
@@ -222,20 +253,72 @@ export default function SubmitTicket() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div className="field">
-              <label>Category</label>
+          {/* Category Hierarchy Selection */}
+          <div className="field">
+            <label>Category Hierarchy</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+              {/* Category */}
               <select
                 value={form.category}
                 onChange={(e) => setForm(f => ({ ...f, category: e.target.value }))}
+                style={{ cursor: 'pointer' }}
               >
-                <option value="general">General Inquiry</option>
+                <option value="">Select Category</option>
+                {Object.entries(categoryHierarchy).map(([key, cat]) => (
+                  <option key={key} value={key}>
+                    {cat.icon} {cat.name}
+                  </option>
+                ))}
+                {/* Legacy categories fallback */}
+                <option value="general">General</option>
                 {categories.map(cat => (
                   <option key={cat.id} value={cat.name}>{cat.name}</option>
                 ))}
               </select>
-            </div>
 
+              {/* Subcategory */}
+              <select
+                value={form.subcategory}
+                onChange={(e) => setForm(f => ({ ...f, subcategory: e.target.value }))}
+                disabled={!form.category || !categoryHierarchy[form.category]?.subcategories}
+                style={{ cursor: form.subcategory ? 'pointer' : 'not-allowed' }}
+              >
+                <option value="">Select Subcategory</option>
+                {form.category && categoryHierarchy[form.category]?.subcategories && 
+                  Object.entries(categoryHierarchy[form.category].subcategories).map(([key, sub]) => (
+                    <option key={key} value={key}>{sub.name}</option>
+                  ))
+                }
+              </select>
+
+              {/* Topic */}
+              <select
+                value={form.topic}
+                onChange={(e) => setForm(f => ({ ...f, topic: e.target.value }))}
+                disabled={!form.subcategory || !categoryHierarchy[form.category]?.subcategories?.[form.subcategory]?.topics}
+                style={{ cursor: form.topic ? 'pointer' : 'not-allowed' }}
+              >
+                <option value="">Select Topic</option>
+                {form.category && form.subcategory && categoryHierarchy[form.category]?.subcategories?.[form.subcategory]?.topics &&
+                  Object.entries(categoryHierarchy[form.category].subcategories[form.subcategory].topics).map(([key, topic]) => (
+                    <option key={key} value={key}>{topic.name}</option>
+                  ))
+                }
+              </select>
+            </div>
+            
+            {/* Selected Path Display */}
+            {form.category && (
+              <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                <strong>Selected:</strong> {' '}
+                {categoryHierarchy[form.category]?.icon} {categoryHierarchy[form.category]?.name}
+                {form.subcategory && ` → ${categoryHierarchy[form.category]?.subcategories?.[form.subcategory]?.name}`}
+                {form.topic && ` → ${categoryHierarchy[form.category]?.subcategories?.[form.subcategory]?.topics?.[form.topic]?.name}`}
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div className="field">
               <label>Est. Hours</label>
               <input
