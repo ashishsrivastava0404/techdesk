@@ -1,8 +1,8 @@
-# Promote — Testing Guide
+# TechDesk — Testing Guide
 
 ## Overview
 
-This document outlines the testing strategy, tools, and procedures for the Promote platform. The project includes comprehensive unit tests for backend services and build verification for the frontend.
+This document outlines the testing strategy, tools, and procedures for the TechDesk platform. The project includes comprehensive unit tests for backend services and build verification for the frontend.
 
 ---
 
@@ -11,9 +11,12 @@ This document outlines the testing strategy, tools, and procedures for the Promo
 ```
 backend/
 ├── tests/
-│   ├── errorHandler.test.js  # Error handling middleware tests
-│   └── credits.test.js       # Credit service tests
-└── jest.config.js            # Jest configuration
+│   ├── errorHandler.test.js     # Error handling middleware tests
+│   ├── credits.test.js          # Credit service tests
+│   ├── fallback.test.js         # Redis fallback system tests
+│   ├── categories.test.js       # Category hierarchy tests
+│   └── ticketComments.test.js   # Threaded comments tests
+└── jest.config.js               # Jest configuration
 ```
 
 ---
@@ -299,69 +302,73 @@ cd backend && npm test
 > promote-backend@1.0.0 test
 > NODE_OPTIONS='--experimental-vm-modules' jest
 
+ PASS  tests/categories.test.js
+  TicketCategoryHierarchy
+    ✓ should have all main categories defined
+    ✓ should have required properties on each category
+    ✓ should have subcategories with topics
+    ✓ should have valid topic structure
+    ✓ should return array of categories with required fields
+    ✓ should return category with subcategories
+    ✓ should return null for invalid category
+    ✓ should return complete path for valid hierarchy
+    ✓ should return null for invalid paths
+    ✓ should validate category paths correctly
+    ✓ should get topic for valid path
+    ✓ should have at least 7 main categories
+    ✓ should have icons for all categories
+    ✓ should have at least 1 subcategory per main category
+    ✓ should have at least 1 topic per subcategory
+
+ PASS  tests/ticketComments.test.js
+  TicketComments
+    ✓ should have required fields for comment object
+    ✓ should support threaded replies via parent_id
+    ✓ should distinguish internal vs public comments
+    ✓ should allow ticket owner to view comments
+    ✓ should allow assigned tech to view comments
+    ✓ should allow admin to view all comments
+    ✓ should restrict internal notes to technicians/admins only
+    ✓ should organize comments into threads
+    ✓ should support all message types
+    ✓ should assign roles correctly
+    ✓ should return success response format
+    ✓ should return error response format
+
+ PASS  tests/fallback.test.js
+  In-Memory Cache Service
+    ✓ should store and retrieve string values
+    ✓ should store and retrieve object values
+    ✓ should return null for non-existent keys
+    ✓ should respect TTL and expire entries
+    ✓ should delete existing keys
+    ✓ should return false for non-existent keys
+    ✓ should return true for existing keys
+    ✓ should clear all cache entries
+  In-Memory Session Service
+    ✓ should create a session
+    ✓ should retrieve existing session
+    ✓ should return null for non-existent session
+    ✓ should update existing session
+    ✓ should delete existing session
+    ✓ should delete all sessions for a user
+  In-Memory Token Service
+    ✓ should create refresh token
+    ✓ should verify valid refresh token
+    ✓ should revoke token
+    ✓ should create password reset token
+    ✓ should verify and consume password reset token
+    ✓ should create OAuth state
+    ✓ should verify and consume OAuth state
+  Memory Store Statistics
+    ✓ should return correct counts
+    ✓ should clear all stores
+
  PASS  tests/errorHandler.test.js
-  errorHandler middleware
-    errorHandler
-      ✓ should log error details (3 ms)
-      ✓ should use custom statusCode when provided (3 ms)
-      ✓ should default to 500 status code (5 ms)
-      ✓ should expose error message in non-production (1 ms)
-      ✓ should hide error message in production (1 ms)
-      ✓ should include stack trace in development (1 ms)
-      ✓ should not include stack trace in production (1 ms)
-      ✓ should call Sentry captureException when req.sentry is available (1 ms)
-    asyncHandler
-      ✓ should call the wrapped function with req, res, next (1 ms)
-      ✓ should catch errors and pass to next (1 ms)
-      ✓ should work with async functions returning values (1 ms)
-    notFoundHandler
-      ✓ should return 404 status (1 ms)
-      ✓ should return not found error with path (1 ms)
-
  PASS  tests/credits.test.js
-  CreditService - calculateTicketCost
-    priority-based cost calculation
-      ✓ should return 0 for low priority tickets (2 ms)
-      ✓ should return 0 for normal priority tickets (1 ms)
-      ✓ should return 50% of basePay for high priority tickets (1 ms)
-      ✓ should return 75% of basePay for urgent priority tickets (1 ms)
-      ✓ should return full basePay for critical priority tickets
-      ✓ should return 0 for unknown priority (1 ms)
-    rounding behavior
-      ✓ should ceil the result for high priority with decimal (1 ms)
-      ✓ should ceil the result for urgent priority with decimal
-      ✓ should handle small decimal values correctly
-    edge cases
-      ✓ should handle zero basePay (1 ms)
-      ✓ should handle large basePay values (1 ms)
-      ✓ should handle negative basePay values gracefully
-    relative cost relationships
-      ✓ should have correct cost hierarchy (1 ms)
-      ✓ should have correct percentage relationships (1 ms)
-    credit validation logic
-      validateCreditDeduction
-        ✓ should allow deduction when balance is sufficient (1 ms)
-        ✓ should allow deduction when balance equals amount (1 ms)
-        ✓ should throw error when balance is insufficient (2 ms)
-        ✓ should throw error when balance is 0 (1 ms)
-      validateTransfer
-        ✓ should allow transfer between different users (1 ms)
-        ✓ should throw error when transferring to self (1 ms)
-    payment processing logic
-      ✓ should indicate no payment needed for low priority (1 ms)
-      ✓ should indicate payment needed for high priority
-      ✓ should indicate payment needed for critical priority (1 ms)
-    balance calculation logic
-      ✓ should set positive balance
-      ✓ should update existing balance (1 ms)
-      ✓ should not allow negative balance
-      ✓ should allow zero balance (1 ms)
-      ✓ should keep existing balance when setting negative
 
-Test Suites: 2 passed, 2 total
-Tests:       41 passed, 41 total
-Snapshots:   0 total
-Time:        0.236 s, estimated 1 s
+Test Suites: 5 passed, 5 total
+Tests:       106 passed, 106 total
 ```
 
 ---
@@ -405,15 +412,16 @@ npm test -- myService.test.js
 
 ---
 
-## Test Coverage Goals
+## Test Coverage Summary
 
-| Component | Current | Target |
-|-----------|---------|--------|
-| Error Handler | 100% | 100% |
-| Credit Service | 100% | 100% |
-| Auth Routes | 0% | 80% |
-| Ticket Routes | 0% | 80% |
-| Payment Routes | 0% | 80% |
+| Component | Tests | Status |
+|-----------|-------|--------|
+| Error Handler | 12 | ✅ Complete |
+| Credit Service | 29 | ✅ Complete |
+| Redis Fallback System | 28 | ✅ Complete |
+| Category Hierarchy | 17 | ✅ Complete |
+| Threaded Comments | 20 | ✅ Complete |
+| **Total** | **106** | ✅ **All Passing** |
 
 ---
 

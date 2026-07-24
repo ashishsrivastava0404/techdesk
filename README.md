@@ -1,19 +1,27 @@
-# Promote — Earn Production Access
+# TechDesk вЂ” Modern Tech Support Platform
 
 A gamified ticketing platform where developers earn their way to production access by resolving staging and dev environment tickets.
 
-## 🚀 Overview
+## рџљЂ Overview
 
-Promote is a full-stack tech ticketing platform with a modern React frontend, Node.js/Express backend, and MariaDB database. The platform implements a meritocratic system where developers build reputation through quality work.
+TechDesk is a full-stack tech ticketing platform with a modern React frontend, Node.js/Express backend, MariaDB database, and Redis caching. The platform implements a meritocratic system where developers build reputation through quality work.
 
-## ✨ Features
+## вњЁ Features
 
 ### Core Platform
 - **Role-based System**: Customers submit tickets, Techs resolve them
 - **Environment Targeting**: Dev and Staging environment tickets
 - **Rating System**: 1-5 stars after ticket resolution
-- **Leaderboard**: Techs progress from Dev → Staging → Production-Ready tiers
+- **Leaderboard**: Techs progress from Dev в†’ Staging в†’ Production-Ready tiers
 - **Hiring System**: Direct hiring of Production-Ready techs
+
+### Ticketing System
+- **Hierarchical Categories**: Category в†’ Subcategory в†’ Topic selection (7 main categories, 40+ subcategories)
+- **Threaded Discussions**: Comment threads with role-based access (customer, technician, admin)
+- **Priority-based Routing**: Automatic routing to top qualified agents
+- **SLA Tracking**: Automatic due dates based on priority
+- **Ticket History**: Complete audit trail of all ticket changes
+- **Multi-category Support**: Templates and topic suggestions
 
 ### User Management
 - Google OAuth authentication
@@ -21,12 +29,10 @@ Promote is a full-stack tech ticketing platform with a modern React frontend, No
 - Role-based access control (customer, tech, admin)
 - Profile management with skills and hourly rates
 
-### Ticketing System
-- Encrypted message threads
-- Priority-based routing to top agents
-- SLA tracking with automatic due dates
-- Ticket history and audit logging
-- Multi-category support with templates
+### Caching & Performance
+- **Redis Integration**: Distributed caching, sessions, rate limiting
+- **In-Memory Fallback**: Graceful degradation when Redis unavailable
+- **Auto-cleanup**: Automatic expired entry cleanup every 5 minutes
 
 ### Payments & Billing
 - Multi-gateway support (Stripe, Razorpay, PayPal)
@@ -60,101 +66,92 @@ Promote is a full-stack tech ticketing platform with a modern React frontend, No
 - Sitemap.xml
 - robots.txt
 
-## 🛠 Tech Stack
+## рџ›  Tech Stack
 
 ### Frontend
-- **React 18** — UI framework
-- **Vite** — Build tool and dev server
-- **React Router 6** — Client-side routing
-- **Context API** — State management
-- **CSS Variables** — Theming (dark mode)
+- **React 18** вЂ” UI framework
+- **Vite** вЂ” Build tool and dev server
+- **React Router 6** вЂ” Client-side routing
+- **Context API** вЂ” State management
+- **CSS Variables** вЂ” Theming (dark mode)
 
 ### Backend
-- **Node.js** — Runtime environment
-- **Express** — Web framework
-- **mysql2** — MySQL/MariaDB driver with promise support
-- **JWT** — Authentication tokens
-- **express-rate-limit** — Rate limiting
-- **ioredis** — Redis client for caching & sessions
-- **Sentry** — Error monitoring
+- **Node.js** вЂ” Runtime environment
+- **Express** вЂ” Web framework
+- **mysql2** вЂ” MySQL/MariaDB driver with promise support
+- **JWT** вЂ” Authentication tokens
+- **ioredis** вЂ” Redis client for caching & sessions
+- **Sentry** вЂ” Error monitoring
 
-### Database
-- **MariaDB** — Relational database
-- **Redis** — Caching, sessions, rate limiting
-- **Connection Pooling** — Efficient connection management
+### Database & Caching
+- **MariaDB** вЂ” Relational database
+- **Redis** вЂ” Caching, sessions, rate limiting (with in-memory fallback)
+- **Connection Pooling** вЂ” Efficient connection management
 
-## 📁 Project Structure
+## рџ“Ѓ Project Structure
 
 ```
-promote/
-├── frontend/
-│   ├── src/
-│   │   ├── api/              # API client functions
-│   │   ├── components/        # Reusable UI components
-│   │   │   ├── Analytics.jsx  # Google Analytics integration
-│   │   │   ├── ChatBot.jsx   # Support chatbot
-│   │   │   ├── CookieConsent.jsx # Cookie consent banner
-│   │   │   ├── HireModal.jsx
-│   │   │   ├── Layout.jsx    # App shell with navigation
-│   │   │   ├── PayoutModal.jsx
-│   │   │   ├── ProtectedRoute.jsx # Route protection
-│   │   │   ├── RatingModal.jsx
-│   │   │   └── TicketCard.jsx
-│   │   ├── context/
-│   │   │   └── AppContext.jsx
-│   │   ├── pages/            # Route-level components
-│   │   │   ├── Landing.jsx         # Landing page
-│   │   │   ├── Login.jsx           # Login page
-│   │   │   ├── Signup.jsx          # Signup page
-│   │   │   ├── ResetPassword.jsx   # Password reset
-│   │   │   ├── Dashboard.jsx       # Customer dashboard
-│   │   │   ├── SubmitTicket.jsx   # Create ticket
-│   │   │   ├── AvailableTickets.jsx # Tech ticket list
-│   │   │   ├── MyTickets.jsx       # User's tickets
-│   │   │   ├── TicketDetail.jsx    # Ticket details
-│   │   │   ├── Leaderboard.jsx      # Tech rankings
-│   │   │   ├── MyRequests.jsx      # Hire requests
-│   │   │   ├── MyLeads.jsx         # Incoming requests
-│   │   │   ├── Earnings.jsx        # Tech earnings
-│   │   │   ├── CustomerBilling.jsx # Customer billing
-│   │   │   ├── CRM.jsx             # CRM interface
-│   │   │   ├── Notifications.jsx   # Notifications
-│   │   │   ├── HelpCenter.jsx      # Help center
-│   │   │   ├── AdminDashboard.jsx  # Admin panel
-│   │   │   ├── EnhancedSettings.jsx # Platform settings
-│   │   │   ├── FAQ.jsx             # FAQ page
-│   │   │   ├── Pricing.jsx         # Pricing page
-│   │   │   ├── Terms.jsx           # Terms of Service
-│   │   │   ├── Privacy.jsx         # Privacy Policy
-│   │   │   └── Cookies.jsx         # Cookie Policy
-│   │   ├── App.jsx           # Route definitions
-│   │   └── index.css         # Global styles
-│   ├── public/
-│   │   ├── sw.js             # Service worker
-│   │   ├── manifest.json     # PWA manifest
-│   │   ├── sitemap.xml       # SEO sitemap
-│   │   ├── robots.txt        # Search engine directives
-│   │   ├── icon.svg          # Adaptive icon
-│   │   ├── icon-dark.svg     # Dark mode icon
-│   │   └── icon-light.svg    # Light mode icon
-│   └── index.html            # HTML template
-│
-├── backend/
-│   ├── src/
-│   │   ├── db/               # Database connection
-│   │   ├── middleware/        # Express middleware
-│   │   │   ├── auth.js       # JWT authentication
-│   │   │   ├── errorHandler.js # Error handling
-│   │   │   └── rateLimiter.js # Rate limiting
-│   │   ├── services/         # Business logic
-│   │   ├── routes/           # API routes
-│   │   └── index.js          # Express app
-│   └── tests/                 # Unit tests
-│
-└── docs/                     # Documentation
+techdesk/
+в”њв”Ђв”Ђ frontend/
+в”‚   в”њв”Ђв”Ђ src/
+в”‚   в”‚   в”њв”Ђв”Ђ api/              # API client functions
+в”‚   в”‚   в”њв”Ђв”Ђ components/        # Reusable UI components
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ Analytics.jsx  # Google Analytics integration
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ ChatBot.jsx   # Support chatbot
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ CookieConsent.jsx # Cookie consent banner
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ HireModal.jsx
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ Layout.jsx    # App shell with navigation
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ PayoutModal.jsx
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ ProtectedRoute.jsx # Route protection
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ RatingModal.jsx
+в”‚   в”‚   в”‚   в””в”Ђв”Ђ TicketCard.jsx
+в”‚   в”‚   в”њв”Ђв”Ђ context/
+в”‚   в”‚   в”‚   в””в”Ђв”Ђ AppContext.jsx
+в”‚   в”‚   в”њв”Ђв”Ђ pages/            # Route-level components
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ SubmitTicket.jsx   # Create ticket (hierarchical categories)
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ TicketDetail.jsx   # Ticket details (threaded discussions)
+в”‚   в”‚   в”‚   в””в”Ђв”Ђ ...                # Other pages
+в”‚   в”‚   в”њв”Ђв”Ђ App.jsx           # Route definitions
+в”‚   в”‚   в””в”Ђв”Ђ index.css         # Global styles
+в”‚   в”њв”Ђв”Ђ public/
+в”‚   в”‚   в”њв”Ђв”Ђ sw.js             # Service worker
+в”‚   в”‚   в”њв”Ђв”Ђ manifest.json     # PWA manifest
+в”‚   в”‚   в”њв”Ђв”Ђ sitemap.xml       # SEO sitemap
+в”‚   в”‚   в””в”Ђв”Ђ robots.txt        # Search engine directives
+в”‚   в””в”Ђв”Ђ index.html            # HTML template
+в”‚
+в”њв”Ђв”Ђ backend/
+в”‚   в”њв”Ђв”Ђ src/
+в”‚   в”‚   в”њв”Ђв”Ђ db/
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ index.js               # Database connection
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ redis.js              # Redis connection
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ memoryFallback.js     # In-memory fallback
+в”‚   в”‚   в”‚   в””в”Ђв”Ђ migrations/           # SQL migrations
+в”‚   в”‚   в”њв”Ђв”Ђ middleware/
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ auth.js              # JWT authentication
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ errorHandler.js      # Error handling
+в”‚   в”‚   в”‚   в””в”Ђв”Ђ rateLimiter.js       # Rate limiting (with fallback)
+в”‚   в”‚   в”њв”Ђв”Ђ services/
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ redisCache.js        # Caching service
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ redisSession.js       # Session service
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ redisToken.js        # Token service
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ routing.js           # Agent routing
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ credits.js           # Credit system
+в”‚   в”‚   в”‚   в””в”Ђв”Ђ ...
+в”‚   в”‚   в”њв”Ђв”Ђ constants/
+в”‚   в”‚   в”‚   в””в”Ђв”Ђ ticketCategories.js  # Category hierarchy
+в”‚   в”‚   в”њв”Ђв”Ђ routes/
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ tickets.js           # Ticket CRUD
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ ticketComments.js    # Threaded comments
+в”‚   в”‚   в”‚   в”њв”Ђв”Ђ ticketHierarchy.js   # Category hierarchy API
+в”‚   в”‚   в”‚   в””в”Ђв”Ђ ...
+в”‚   в”‚   в””в”Ђв”Ђ index.js          # Express app
+в”‚   в””в”Ђв”Ђ tests/                 # Unit tests (106 tests)
+в”‚
+в””в”Ђв”Ђ docs/                     # Documentation
 ```
 
-## 🚀 Getting Started
+## рџљЂ Getting Started
 
 ### Prerequisites
 
@@ -206,7 +203,7 @@ cd frontend && npm run dev
 
 8. Open http://localhost:5173
 
-## 🔐 Authentication
+## рџ”ђ Authentication
 
 The platform supports multiple authentication methods:
 
@@ -229,7 +226,7 @@ The platform supports multiple authentication methods:
 | Registration | 5 attempts | 1 hour |
 | Payments | 10 requests | 1 minute |
 
-## 🧪 Testing
+## рџ§Є Testing
 
 ### Backend Tests
 ```bash
@@ -242,11 +239,16 @@ cd frontend && npm run build
 ```
 
 ### Test Coverage
-- **Error Handler**: 12 tests
-- **Credit Service**: 29 tests
-- **Total**: 41 tests passing
+| Test Suite | Tests | Description |
+|-----------|-------|-------------|
+| fallback.test.js | 28 | Redis fallback system (cache, sessions, tokens) |
+| errorHandler.test.js | 12 | Error handling middleware |
+| credits.test.js | 29 | Credit service logic |
+| categories.test.js | 17 | Category hierarchy structure |
+| ticketComments.test.js | 20 | Threaded comments system |
+| **Total** | **106** | **All Passing** ✅ |
 
-## 📱 PWA Installation
+## рџ“± PWA Installation
 
 The platform is a Progressive Web App:
 
@@ -260,7 +262,7 @@ The platform is a Progressive Web App:
 - Push notifications (configurable)
 - App-like experience
 
-## 🔍 SEO
+## рџ”Ќ SEO
 
 The platform includes comprehensive SEO:
 
@@ -271,7 +273,7 @@ The platform includes comprehensive SEO:
 - Sitemap for search engines
 - robots.txt configuration
 
-## 🛡️ Security
+## рџ›ЎпёЏ Security
 
 ### Implemented
 - Rate limiting on all endpoints
@@ -307,11 +309,11 @@ SENTRY_DSN=https://...
 VITE_API_URL=http://localhost:3001/api
 ```
 
-## 📄 License
+## рџ“„ License
 
 MIT License - See LICENSE file for details
 
-## 📚 Documentation
+## рџ“љ Documentation
 
 - [Architecture](docs/Architecture.md)
 - [Database Schema](docs/Database.md)
