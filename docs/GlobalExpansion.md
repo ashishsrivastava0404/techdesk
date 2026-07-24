@@ -397,7 +397,113 @@ CREATE TABLE email_templates (
 );
 ```
 
-### Message Types
+---
+
+## 5. Test Coverage
+
+### Backend Tests
+
+| Test Suite | Tests | Description |
+|------------|-------|-------------|
+| Branding & Ecosystem | 60 | Brand settings, routing, pages |
+| i18n & Currency | 50 | Translations, currency conversion |
+| Regional Settings | 117 | Timezone, country mapping, search |
+| Error Handler | 12 | Error middleware |
+| Credit Service | 29 | Credit calculations |
+| Redis Fallback | 28 | Cache fallback system |
+| Category Hierarchy | 17 | Ticket categories |
+| Threaded Comments | 20 | Comment system |
+
+**Total Backend Tests: 333**
+
+### Frontend Tests
+
+| Test Suite | Tests | Description |
+|------------|-------|-------------|
+| Brand Components | 71 | Layout, ChatBot, BrandSEO, pages |
+
+### Running Tests
+
+```bash
+# Backend tests
+cd backend && npm test
+
+# Frontend tests
+cd frontend && npm test
+
+# Specific test suites
+cd backend && npm test -- branding.test.js
+cd backend && npm test -- i18n-currency.test.js
+cd backend && npm test -- regional-settings.test.js
+```
+
+### Test Coverage Areas
+
+- ✅ Timezone detection and formatting (35+ timezones)
+- ✅ Country-locale mapping (20 countries)
+- ✅ Search functionality
+- ✅ LocalStorage persistence
+- ✅ RTL language detection
+- ✅ Currency conversion (8 currencies)
+- ✅ Email template translations
+
+---
+
+## 6. API Contracts
+
+### Timezone API
+
+```
+GET /api/i18n/timezones
+Response: { timezones: [...] }
+
+GET /api/i18n/user/preference/:userId
+Response: { 
+  timezone: 'Asia/Kolkata', 
+  language: 'en',
+  currency: 'INR',
+  locale: 'en-IN'
+}
+
+PATCH /api/v1/settings/timezone
+Body: { timezone: 'America/New_York' }
+Response: { success: true }
+```
+
+### Troubleshooting
+
+#### Invalid Timezone Handling
+```javascript
+// Graceful fallback for invalid timezones
+const getTimezoneOffset = (timezone) => {
+  try {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      timeZoneName: 'shortOffset'
+    });
+    return formatter.formatToParts(new Date()).find(p => p.type === 'timeZoneName')?.value || 'UTC';
+  } catch {
+    return 'UTC';
+  }
+};
+```
+
+#### Browser Intl API Limitations
+Some older browsers may not support all timezones. Implement feature detection:
+```javascript
+const supportsTimezone = (timezone) => {
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: timezone });
+    return true;
+  } catch {
+    return false;
+  }
+};
+```
+
+---
+
+## 7. Message Types
 
 | Type | Description | Use Case |
 |------|-------------|----------|
