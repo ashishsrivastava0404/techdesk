@@ -512,6 +512,62 @@ async function runMigrations() {
       console.log('   ✓ chatbot_conversations table exists');
     }
 
+    // ============================================
+    // PAYMENTS TABLE
+    // ============================================
+    console.log('\n💳 Checking payments table...');
+
+    const [paymentTables] = await connection.query(`SHOW TABLES LIKE 'payments'`);
+
+    if (paymentTables.length === 0) {
+      console.log('   → Creating payments table...');
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS payments (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_name VARCHAR(255) NOT NULL,
+          ticket_id INT,
+          tech_name VARCHAR(255),
+          customer_name VARCHAR(255) NOT NULL,
+          amount DECIMAL(10,2) NOT NULL,
+          platform_fee DECIMAL(10,2) DEFAULT 0,
+          status ENUM('pending', 'held', 'released', 'disputed', 'refunded') DEFAULT 'pending',
+          stripe_payment_id VARCHAR(255),
+          payment_method ENUM('stripe', 'paypal', 'bank') DEFAULT 'stripe',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('   ✓ payments table created');
+    } else {
+      console.log('   ✓ payments table exists');
+    }
+
+    // ============================================
+    // TECH PAYOUTS TABLE
+    // ============================================
+    console.log('\n🏧 Checking tech_payouts table...');
+
+    const [payoutTables] = await connection.query(`SHOW TABLES LIKE 'tech_payouts'`);
+
+    if (payoutTables.length === 0) {
+      console.log('   → Creating tech_payouts table...');
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS tech_payouts (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_name VARCHAR(255) NOT NULL,
+          amount DECIMAL(10,2) NOT NULL,
+          method ENUM('bank', 'paypal', 'stripe') DEFAULT 'stripe',
+          status ENUM('requested', 'processing', 'completed', 'rejected') DEFAULT 'requested',
+          notes TEXT,
+          processed_at TIMESTAMP NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('   ✓ tech_payouts table created');
+    } else {
+      console.log('   ✓ tech_payouts table exists');
+    }
+
     console.log('\n========================================');
     console.log('✅ Database migrations completed successfully!');
     console.log('========================================\n');
