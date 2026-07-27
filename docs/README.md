@@ -55,9 +55,27 @@ Welcome to the TechDesk documentation. This folder contains comprehensive guides
 ### Testing
 - Run backend tests: `cd backend && npm test`
 - Run frontend tests: `cd frontend && npm test`
-- Total tests: **809 tests passing**
+- Total tests: **841 tests passing**
+
+### Sample Data
+- Populate database: `cd backend && npm run seed`
+- Sample data includes: users, tickets, categories, templates, tech stack, and more
 
 ## Recent Updates
+
+### v1.6.0 - Sample Data
+- Added database seed script with comprehensive sample data
+- 10 users (customers, tech experts, admin)
+- 10 ticket categories with hierarchy
+- 7 issue templates
+- 20 topic suggestions
+- 10 sample tickets with various statuses
+- Expert skills and ratings
+- Credit transactions and notifications
+- CRM contacts and interactions
+- Help articles
+- Frontend sample data module for testing
+- 32 new sample data validation tests
 
 ### v1.5.1 - Test Coverage
 - Added 81 comprehensive tests for Master Data Management
