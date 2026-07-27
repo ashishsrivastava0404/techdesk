@@ -325,8 +325,8 @@ async function runMigrations() {
       await connection.query(`
         CREATE TABLE IF NOT EXISTS platform_settings (
           id INT AUTO_INCREMENT PRIMARY KEY,
-          setting_key VARCHAR(255) UNIQUE NOT NULL,
-          setting_value TEXT,
+          key_name VARCHAR(255) UNIQUE NOT NULL,
+          value TEXT,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )
@@ -334,6 +334,22 @@ async function runMigrations() {
       console.log('   ✓ platform_settings table created');
     } else {
       console.log('   ✓ platform_settings table exists');
+      
+      // Check if using old column names and rename if needed
+      const [columns] = await connection.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'platform_settings'
+      `);
+      
+      const colMap = columns.map(c => c.COLUMN_NAME);
+      if (colMap.includes('setting_key') && !colMap.includes('key_name')) {
+        console.log('   → Renaming columns to match expected schema...');
+        await connection.query(`ALTER TABLE platform_settings CHANGE setting_key key_name VARCHAR(255)`);
+        await connection.query(`ALTER TABLE platform_settings CHANGE setting_value value TEXT`);
+        console.log('   ✓ Columns renamed');
+      }
     }
 
     // ============================================
