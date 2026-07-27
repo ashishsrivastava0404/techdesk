@@ -587,6 +587,69 @@ async function runMigrations() {
     } else {
       console.log('   ✓ admin_logs table exists');
     }
+        // expert_skills table
+        const [expertSkillsTable] = await connection.query(\`SHOW TABLES LIKE 'expert_skills'\`);
+        if (expertSkillsTable.length === 0) {
+          console.log('   → Creating expert_skills table...');
+          await connection.query(\`
+            CREATE TABLE IF NOT EXISTS expert_skills (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              user_id INT NOT NULL,
+              tech_id VARCHAR(100) NOT NULL,
+              expertise_level ENUM('beginner', 'intermediate', 'advanced', 'expert', 'certified') DEFAULT 'beginner',
+              years_experience INT DEFAULT 0,
+              certification_proof TEXT,
+              is_verified BOOLEAN DEFAULT FALSE,
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+              UNIQUE KEY unique_user_tech (user_id, tech_id)
+            )
+          \`);
+          console.log('   ✓ expert_skills table created');
+        } else {
+          console.log('   ✓ expert_skills table exists');
+        }
+
+        // expert_stats table
+        const [expertStatsTable] = await connection.query(\`SHOW TABLES LIKE 'expert_stats'\`);
+        if (expertStatsTable.length === 0) {
+          console.log('   → Creating expert_stats table...');
+          await connection.query(\`
+            CREATE TABLE IF NOT EXISTS expert_stats (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              user_id INT NOT NULL UNIQUE,
+              total_tickets_resolved INT DEFAULT 0,
+              total_rating DECIMAL(10,2) DEFAULT 0,
+              avg_rating DECIMAL(3,2) DEFAULT 0,
+              avg_resolution_time INT DEFAULT 0,
+              last_active TIMESTAMP NULL DEFAULT NULL,
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+          \`);
+          console.log('   ✓ expert_stats table created');
+        } else {
+          console.log('   ✓ expert_stats table exists');
+        }
+
+        // tech_stack table
+        const [techStackTable] = await connection.query(\`SHOW TABLES LIKE 'tech_stack'\`);
+        if (techStackTable.length === 0) {
+          console.log('   → Creating tech_stack table...');
+          await connection.query(\`
+            CREATE TABLE IF NOT EXISTS tech_stack (
+              id VARCHAR(100) PRIMARY KEY,
+              name VARCHAR(255) NOT NULL,
+              category VARCHAR(100) NOT NULL,
+              certified BOOLEAN DEFAULT FALSE,
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+          \`);
+          console.log('   ✓ tech_stack table created');
+        } else {
+          console.log('   ✓ tech_stack table exists');
+        }
+
 
     // ============================================
     // AGENT REQUESTS TABLE
