@@ -6,7 +6,7 @@ import { initDatabase } from './db/index.js';
 import { connectRedis, isRedisConnected } from './db/redis.js';
 import { startCleanupTimer } from './db/memoryFallback.js';
 import { loadApiKeysFromDatabase } from './services/settingsLoader.js';
-import { authenticate } from './middleware/auth.js';
+import { authenticate, optionalAuth } from './middleware/auth.js';
 import { apiLimiter, authLimiter, paymentLimiter } from './middleware/rateLimiter.js';
 import usersRouter from './routes/users.js';
 import authRouter from './routes/auth.js';
@@ -82,10 +82,10 @@ app.use('/api/ticket-hierarchy', ticketHierarchyRouter);  // Public - cached, no
 app.use('/api/notifications', authenticate, apiLimiter, notificationsRouter);
 app.use('/api/ticket-history', authenticate, ticketHistoryRouter);
 app.use('/api/surveys', authenticate, apiLimiter, surveysRouter);
-app.use('/api/chatbot', authenticate, apiLimiter, chatbotRouter);
+app.use('/api/chatbot', optionalAuth, apiLimiter, chatbotRouter);
 app.use('/api/support-reports', supportReportsRouter);  // Public - anyone can submit reports
 app.use('/api/uploads', authenticate, apiLimiter, uploadsRouter);
-app.use('/api/topics', authenticate, apiLimiter, topicsRouter);
+app.use('/api/topics', optionalAuth, apiLimiter, topicsRouter);
 app.use('/api/agents', authenticate, apiLimiter, agentRequestsRouter);
 app.use('/api/credits', authenticate, apiLimiter, creditsRouter);
 app.use('/api/expert', expertRouter);  // Expert profile & skills routes (auth handled in route)

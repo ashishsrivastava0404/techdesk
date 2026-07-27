@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import pool from '../db/index.js';
+import { optionalAuth } from '../middleware/auth.js';
 
 const router = Router();
 

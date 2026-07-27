@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { api } from '../api/index.js';
 
 const BrandContext = createContext({
   brand: {
@@ -35,9 +36,8 @@ export function BrandProvider({ children }) {
 
   const loadBrandSettings = async () => {
     try {
-      const response = await fetch('/api/admin/settings');
-      if (response.ok) {
-        const data = await response.json();
+      const data = await api.admin.settings.get();
+      if (data) {
         setBrand({
           app_name: data.app_name || data.platform_name || 'TechDesk',
           app_logo_url: data.app_logo_url || data.logo_url || '',
