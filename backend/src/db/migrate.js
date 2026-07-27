@@ -265,6 +265,7 @@ async function runMigrations() {
           tags TEXT,
           satisfaction_score INT DEFAULT NULL,
           resolved_at TIMESTAMP NULL DEFAULT NULL,
+          first_response_at TIMESTAMP NULL DEFAULT NULL,
           sla_status ENUM('on_track', 'at_risk', 'breached') DEFAULT 'on_track',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -403,6 +404,12 @@ async function runMigrations() {
       console.log('   ✓ crm_contacts table created');
     } else {
       console.log('   ✓ crm_contacts table exists');
+      try {
+        await connection.query(\`ALTER TABLE crm_contacts ADD COLUMN user_type ENUM('customer', 'tech', 'other') DEFAULT 'customer'\`);
+        console.log('   → Added user_type column');
+      } catch (err) {
+        if (err.code !== 'ER_DUP_FIELDNAME') {}
+      }
     }
 
     // ============================================
@@ -735,7 +742,7 @@ async function runMigrations() {
       await connection.query(`
         CREATE TABLE IF NOT EXISTS tech_earnings (
           id INT AUTO_INCREMENT PRIMARY KEY,
-          user_name VARCHAR(255) NOT NULL,
+          tech_name VARCHAR(255) NOT NULL,
           ticket_id INT,
           amount DECIMAL(10,2) NOT NULL,
           type ENUM('earning', 'bonus', 'refund') DEFAULT 'earning',
@@ -864,7 +871,7 @@ async function runMigrations() {
       await connection.query(`
         CREATE TABLE IF NOT EXISTS tech_payouts (
           id INT AUTO_INCREMENT PRIMARY KEY,
-          user_name VARCHAR(255) NOT NULL,
+          tech_name VARCHAR(255) NOT NULL,
           amount DECIMAL(10,2) NOT NULL,
           method ENUM('bank', 'paypal', 'stripe') DEFAULT 'stripe',
           status ENUM('requested', 'processing', 'completed', 'rejected') DEFAULT 'requested',
