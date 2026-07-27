@@ -7,6 +7,7 @@ import { Router } from 'express';
 import { expertService } from '../services/expertService.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import db from '../db/index.js';
 import { getAllTechnologies, getTechnologiesByCategory, EXPERTISE_LEVELS, TECH_STACK } from '../constants/techStack.js';
 
 const router = Router();
@@ -23,7 +24,7 @@ router.get('/technologies', asyncHandler(async (req, res) => {
     return res.json({ 
       success: true, 
       technologies,
-      categories: Object.keys(require('../constants/techStack.js').TECH_STACK)
+      categories: Object.keys(TECH_STACK)
     });
   }
   
@@ -275,8 +276,7 @@ router.get('/admin/experts', authenticate, requireRole('admin'), asyncHandler(as
   const { page = 1, limit = 20 } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
   
-  const db = require('../db/index.js');
-  const [experts] = await db.query(
+    const [experts] = await db.query(
     `SELECT u.id, u.name, u.email, u.status, u.created_at,
             es.total_tickets_resolved, es.avg_rating, es.last_active,
             COUNT(DISTINCT eskills.id) as skills_count
