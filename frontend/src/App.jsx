@@ -5,6 +5,7 @@ import { BrandProvider } from './context/BrandContext.jsx';
 import { ProtectedRoute, PublicRoute, AdminRoute, TechRoute } from './components/ProtectedRoute.jsx';
 import Layout from './components/Layout.jsx';
 import BrandSEO from './components/BrandSEO.jsx';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 import './i18n/index.js'; // Initialize i18n
 import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';
@@ -130,12 +131,14 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AppProvider>
-        <BrandProvider>
-          <BrandSEO />
-          <AppRoutes />
-        </BrandProvider>
-      </AppProvider>
+      <ErrorBoundary>
+        <AppProvider>
+          <BrandProvider>
+            <BrandSEO />
+            <AppRoutes />
+          </BrandProvider>
+        </AppProvider>
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }
