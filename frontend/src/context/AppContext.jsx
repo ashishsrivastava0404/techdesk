@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../api/index.js';
 
 const AppContext = createContext(null);
@@ -7,9 +7,12 @@ export function AppProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [toasts, setToasts] = useState([]);
+  const authChecked = useRef(false);
 
   // Check for existing auth session on mount
   useEffect(() => {
+    if (authChecked.current) return;
+    authChecked.current = true;
     checkAuth();
   }, []);
 
