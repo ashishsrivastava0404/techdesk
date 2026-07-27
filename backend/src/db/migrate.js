@@ -262,6 +262,21 @@ async function runMigrations() {
       console.log('   ✓ tickets table created');
     } else {
       console.log('   ✓ tickets table exists');
+      
+      // Check for missing columns
+      const [columns] = await connection.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'tickets'
+      `);
+      
+      const colMap = columns.map(c => c.COLUMN_NAME);
+      if (!colMap.includes('tags')) {
+        console.log('   → Adding tags column...');
+        await connection.query(`ALTER TABLE tickets ADD COLUMN tags TEXT`);
+        console.log('   ✓ tags column added');
+      }
     }
 
     // ============================================
@@ -420,6 +435,7 @@ async function runMigrations() {
           slug VARCHAR(255) UNIQUE NOT NULL,
           content TEXT,
           category VARCHAR(100),
+          tags TEXT,
           author VARCHAR(255),
           status ENUM('draft', 'published', 'archived') DEFAULT 'draft',
           view_count INT DEFAULT 0,
@@ -430,6 +446,21 @@ async function runMigrations() {
       console.log('   ✓ help_articles table created');
     } else {
       console.log('   ✓ help_articles table exists');
+      
+      // Check for missing columns
+      const [columns] = await connection.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'help_articles'
+      `);
+      
+      const colMap = columns.map(c => c.COLUMN_NAME);
+      if (!colMap.includes('tags')) {
+        console.log('   → Adding tags column...');
+        await connection.query(`ALTER TABLE help_articles ADD COLUMN tags TEXT`);
+        console.log('   ✓ tags column added');
+      }
     }
 
     // ============================================
