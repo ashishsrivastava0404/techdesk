@@ -55,9 +55,18 @@ Welcome to the TechDesk documentation. This folder contains comprehensive guides
 ### Testing
 - Run backend tests: `cd backend && npm test`
 - Run frontend tests: `cd frontend && npm test`
-- Total tests: **728 tests passing**
+- Total tests: **809 tests passing**
 
 ## Recent Updates
+
+### v1.5.1 - Test Coverage
+- Added 81 comprehensive tests for Master Data Management
+- Category hierarchy routing tests
+- Template management tests
+- Tech stack grid tests
+- Topic suggestions tests
+- Loading & error state tests
+- API integration tests
 
 ### v1.5.0 - Validation & UI Improvements
 - Enhanced Master Data section with loading states
