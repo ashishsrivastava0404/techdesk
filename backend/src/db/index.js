@@ -3,38 +3,50 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const poolConfig = {
+const getDbConfig = () => ({
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
-};
-
-if (process.env.DB_SOCKET) {
-  poolConfig.socketPath = process.env.DB_SOCKET;
-} else {
-  poolConfig.host = process.env.DB_HOST || 'localhost';
-  poolConfig.port = parseInt(process.env.DB_PORT || '3306', 10);
-}
-
-const pool = mysql.createPool({
-  ...poolConfig,
+  queueLimit: 0,
+  ...(process.env.DB_SOCKET 
+    ? { socketPath: process.env.DB_SOCKET }
+    : { 
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || '3306', 10)
+      }),
   database: process.env.DB_NAME || 'promote'
 });
 
+// Pool will be created lazily after database is initialized
+let pool = null;
+
+export function getPool() {
+  if (!pool) {
+    pool = mysql.createPool(getDbConfig());
+  }
+  return pool;
+}
+
+// For backward compatibility
+export default {
+  query: (...args) => getPool().query(...args),
+  getConnection: () => getPool().getConnection(),
+  execute: (...args) => getPool().execute(...args)
+};
+
 export async function initDatabase() {
+  // First connect without database to create it if needed
   const initConfig = {
     user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || ''
+    password: process.env.DB_PASSWORD || '',
+    ...(process.env.DB_SOCKET 
+      ? { socketPath: process.env.DB_SOCKET }
+      : { 
+          host: process.env.DB_HOST || 'localhost',
+          port: parseInt(process.env.DB_PORT || '3306', 10)
+        })
   };
-
-  if (process.env.DB_SOCKET) {
-    initConfig.socketPath = process.env.DB_SOCKET;
-  } else {
-    initConfig.host = process.env.DB_HOST || 'localhost';
-    initConfig.port = parseInt(process.env.DB_PORT || '3306', 10);
-  }
 
   const connection = await mysql.createConnection(initConfig);
 
