@@ -254,6 +254,7 @@ async function runMigrations() {
           environment ENUM('dev', 'staging', 'production') DEFAULT 'dev',
           tags TEXT,
           satisfaction_score INT DEFAULT NULL,
+          resolved_at TIMESTAMP NULL DEFAULT NULL,
           sla_status ENUM('on_track', 'at_risk', 'breached') DEFAULT 'on_track',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
