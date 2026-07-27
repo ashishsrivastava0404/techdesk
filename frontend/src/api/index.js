@@ -465,6 +465,36 @@ export const api = {
     getRequest: (id) => fetchJSON(`/agents/requests/${id}`)
   },
 
+  // Expert Profile & Skills
+  expert: {
+    getTechnologies: (category) => category 
+      ? fetchJSON(`/expert/technologies?category=${category}`)
+      : fetchJSON('/expert/technologies'),
+    getProfile: () => fetchJSON('/expert/profile'),
+    getPublicProfile: (userId) => fetchJSON(`/expert/profile/${userId}`),
+    updateSkills: (skills) => fetchJSON('/expert/skills', {
+      method: 'PUT',
+      body: JSON.stringify({ skills })
+    }),
+    getQualifiedExperts: (category, complexity) => 
+      fetchJSON(`/expert/qualified?category=${category}&complexity=${complexity || 'moderate'}`),
+    checkEligibility: (category, complexity) => 
+      fetchJSON(`/expert/eligibility?category=${category}&complexity=${complexity || 'moderate'}`),
+    checkClaimEligibility: (ticketId, category, complexity) => fetchJSON(`/expert/claim/${ticketId}/check`, {
+      method: 'POST',
+      body: JSON.stringify({ category, complexity: complexity || 'moderate' })
+    }),
+    getLeaderboard: (limit = 10) => fetchJSON(`/expert/leaderboard?limit=${limit}`),
+    getStats: () => fetchJSON('/expert/stats'),
+    // Admin endpoints
+    getPendingVerifications: () => fetchJSON('/expert/admin/pending'),
+    verifySkill: (userId, techId, verified = true) => fetchJSON('/expert/admin/verify', {
+      method: 'POST',
+      body: JSON.stringify({ userId, techId, verified })
+    }),
+    getAllExperts: (page = 1, limit = 20) => fetchJSON(`/expert/admin/experts?page=${page}&limit=${limit}`)
+  },
+
   // Password Reset
   passwordReset: {
     requestReset: async (email) => {

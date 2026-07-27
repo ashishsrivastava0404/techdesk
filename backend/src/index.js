@@ -31,6 +31,7 @@ import uploadsRouter from './routes/uploads.js';
 import topicsRouter from './routes/topics.js';
 import agentRequestsRouter from './routes/agentRequests.js';
 import creditsRouter from './routes/credits.js';
+import expertRouter from './routes/expert.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 // Initialize Sentry if configured
@@ -87,6 +88,7 @@ app.use('/api/uploads', authenticate, apiLimiter, uploadsRouter);
 app.use('/api/topics', authenticate, apiLimiter, topicsRouter);
 app.use('/api/agents', authenticate, apiLimiter, agentRequestsRouter);
 app.use('/api/credits', authenticate, apiLimiter, creditsRouter);
+app.use('/api/expert', expertRouter);  // Expert profile & skills routes (auth handled in route)
 
 app.get('/api/health', (req, res) => {
   res.json({ 

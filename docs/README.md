@@ -32,6 +32,7 @@ Welcome to the TechDesk documentation. This folder contains comprehensive guides
 - [Validation.md](./Validation.md) - Validation system documentation
 - [Notifications.md](./Notifications.md) - Notification system documentation
 - [Routing.md](./Routing.md) - Routing system documentation
+- [ExpertProfile.md](./ExpertProfile.md) - Expert profile & expertise management
 
 ### Business Logic
 - [MarketingStrategy.md](./MarketingStrategy.md) - Marketing and referral system
@@ -54,9 +55,17 @@ Welcome to the TechDesk documentation. This folder contains comprehensive guides
 ### Testing
 - Run backend tests: `cd backend && npm test`
 - Run frontend tests: `cd frontend && npm test`
-- Total tests: **660 tests passing**
+- Total tests: **710 tests passing**
 
 ## Recent Updates
+
+### v1.3.0 - Expert Profile & Expertise System
+- Added ExpertProfile.md with complete expert management docs
+- Added TechStack.js with 100+ technologies across 10 categories
+- Added ExpertProfile component with Trust Layer UI
+- Added ExpertSnippet and QualifiedExpertsList components
+- Added techstack dropdown to SubmitTicket form
+- Added 68 expert service tests
 
 ### v1.2.0 - Comprehensive Documentation
 - Added Validation.md with complete validation system docs

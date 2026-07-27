@@ -12,6 +12,13 @@ export default function SubmitTicket() {
   const [topicSuggestions, setTopicSuggestions] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  // Tech stack data
+  const [techCategories, setTechCategories] = useState([]);
+  const [technologies, setTechnologies] = useState([]);
+  const [selectedTechs, setSelectedTechs] = useState([]);
+  const [techSearch, setTechSearch] = useState('');
+  const [showTechDropdown, setShowTechDropdown] = useState(false);
+  
   const [form, setForm] = useState({
     title: '',
     subject: '',
@@ -37,6 +44,7 @@ export default function SubmitTicket() {
   useEffect(() => {
     loadCategories();
     loadTopicSuggestions();
+    loadTechnologies();
   }, []);
 
   // Reset subcategory and topic when category changes
@@ -81,6 +89,41 @@ export default function SubmitTicket() {
       console.error('Error loading topic suggestions:', error);
     }
   };
+
+  const loadTechnologies = async () => {
+    try {
+      const response = await fetch('/api/expert/technologies');
+      const data = await response.json();
+      if (data.success) {
+        setTechCategories(data.categories || []);
+        setTechnologies(data.technologies || []);
+      }
+    } catch (error) {
+      console.error('Error loading technologies:', error);
+    }
+  };
+
+  const addTech = (tech) => {
+    if (!selectedTechs.find(t => t.id === tech.id)) {
+      setSelectedTechs([...selectedTechs, { id: tech.id, name: tech.name, category: tech.categoryName }]);
+    }
+    setTechSearch('');
+    setShowTechDropdown(false);
+  };
+
+  const removeTech = (techId) => {
+    setSelectedTechs(selectedTechs.filter(t => t.id !== techId));
+  };
+
+  // Filter technologies based on search
+  const filteredTechnologies = useMemo(() => {
+    if (!techSearch.trim()) return technologies.slice(0, 20);
+    const search = techSearch.toLowerCase();
+    return technologies.filter(t => 
+      t.name.toLowerCase().includes(search) ||
+      t.categoryName.toLowerCase().includes(search)
+    ).slice(0, 20);
+  }, [techSearch, technologies]);
 
   const loadTemplates = async (cat) => {
     try {
@@ -147,6 +190,7 @@ export default function SubmitTicket() {
     setLoading(true);
     try {
       const tagArray = form.tags.split(',').map(t => t.trim()).filter(Boolean);
+      const techArray = selectedTechs.map(t => t.id);
       
       const ticketData = {
         title: form.title,
@@ -158,7 +202,8 @@ export default function SubmitTicket() {
         priority: form.priority,
         tags: tagArray,
         estimated_hours: form.estimated_hours ? parseFloat(form.estimated_hours) : null,
-        customer_name: user.name
+        customer_name: user.name,
+        tech_stack: techArray // Include selected technologies
       };
 
       // Include category hierarchy if selected
@@ -316,6 +361,134 @@ export default function SubmitTicket() {
                 {form.topic && ` → ${categoryHierarchy[form.category]?.subcategories?.[form.subcategory]?.topics?.[form.topic]?.name}`}
               </div>
             )}
+          </div>
+
+          {/* Tech Stack Selection */}
+          <div className="field">
+            <label>
+              Tech Stack
+              <span style={{ fontWeight: 400, color: 'var(--text-muted)', marginLeft: '8px' }}>
+                (Optional - Helps match you with the right expert)
+              </span>
+            </label>
+            
+            {/* Selected Technologies Tags */}
+            {selectedTechs.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+                {selectedTechs.map((tech) => (
+                  <span
+                    key={tech.id}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '4px 10px',
+                      background: 'var(--primary-color)',
+                      color: 'white',
+                      borderRadius: '16px',
+                      fontSize: '12px'
+                    }}
+                  >
+                    {tech.name}
+                    <button
+                      type="button"
+                      onClick={() => removeTech(tech.id)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'white',
+                        cursor: 'pointer',
+                        padding: 0,
+                        fontSize: '16px',
+                        lineHeight: 1
+                      }}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            
+            {/* Tech Search Input */}
+            <div style={{ position: 'relative' }}>
+              <input
+                type="text"
+                value={techSearch}
+                onChange={(e) => {
+                  setTechSearch(e.target.value);
+                  setShowTechDropdown(true);
+                }}
+                onFocus={() => setShowTechDropdown(true)}
+                placeholder="Search technologies (e.g., Node.js, AWS, React...)"
+                style={{ width: '100%' }}
+              />
+              
+              {/* Tech Dropdown */}
+              {showTechDropdown && filteredTechnologies.length > 0 && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  background: 'var(--surface-1)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '8px',
+                  zIndex: 20,
+                  maxHeight: '300px',
+                  overflow: 'auto',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                }}>
+                  {/* Category Headers */}
+                  {techCategories
+                    .filter(cat => filteredTechnologies.some(t => t.categoryId === cat.id))
+                    .map(cat => (
+                      <div key={cat.id}>
+                        <div style={{
+                          padding: '8px 12px',
+                          background: 'var(--surface-2)',
+                          fontWeight: 600,
+                          fontSize: '12px',
+                          color: 'var(--text-muted)',
+                          position: 'sticky',
+                          top: 0
+                        }}>
+                          {cat.icon} {cat.name}
+                        </div>
+                        {filteredTechnologies
+                          .filter(t => t.categoryId === cat.id)
+                          .map((tech) => (
+                            <div
+                              key={tech.id}
+                              onClick={() => addTech(tech)}
+                              style={{
+                                padding: '10px 12px',
+                                cursor: 'pointer',
+                                borderBottom: '1px solid var(--border-color)',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center'
+                              }}
+                            >
+                              <span style={{ fontWeight: 500 }}>{tech.name}</span>
+                              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                {tech.certified && (
+                                  <span style={{ color: '#10b981' }}>✓ Certified</span>
+                                )}
+                              </span>
+                            </div>
+                          ))
+                        }
+                      </div>
+                    ))
+                  }
+                </div>
+              )}
+            </div>
+            
+            <small style={{ color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
+              Select relevant technologies to help us match you with qualified experts
+            </small>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
