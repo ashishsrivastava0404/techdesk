@@ -32,7 +32,8 @@ export function getPool() {
 export default {
   query: (...args) => getPool().query(...args),
   getConnection: () => getPool().getConnection(),
-  execute: (...args) => getPool().execute(...args)
+  execute: (...args) => getPool().execute(...args),
+  end: () => getPool().end()
 };
 
 export async function initDatabase() {
