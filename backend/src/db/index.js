@@ -705,5 +705,3 @@ export async function initDatabase() {
   await connection.end();
   console.log('Database initialized successfully');
 }
-
-export default pool;
