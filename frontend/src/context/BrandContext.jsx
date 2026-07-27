@@ -36,7 +36,7 @@ export function BrandProvider({ children }) {
 
   const loadBrandSettings = async () => {
     try {
-      const data = await api.admin.settings.get();
+      const data = await api.admin.getSettings();
       if (data) {
         setBrand({
           app_name: data.app_name || data.platform_name || 'TechDesk',
