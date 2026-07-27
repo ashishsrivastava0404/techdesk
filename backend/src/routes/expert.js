@@ -6,7 +6,7 @@
 import { Router } from 'express';
 import { expertService } from '../services/expertService.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
-import { authMiddleware, requireRole } from '../middleware/auth.js';
+import { authenticate, requireRole } from '../middleware/auth.js';
 import { getAllTechnologies, getTechnologiesByCategory, EXPERTISE_LEVELS } from '../constants/techStack.js';
 
 const router = Router();
@@ -51,7 +51,7 @@ router.get('/technologies', asyncHandler(async (req, res) => {
  * GET /api/expert/profile
  * Get current expert's profile
  */
-router.get('/profile', authMiddleware, asyncHandler(async (req, res) => {
+router.get('/profile', authenticate, asyncHandler(async (req, res) => {
   if (req.user.role !== 'tech' && req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Access denied. Expert role required.' });
   }
@@ -95,7 +95,7 @@ router.get('/profile/:userId', asyncHandler(async (req, res) => {
  * PUT /api/expert/skills
  * Update expert's skills
  */
-router.put('/skills', authMiddleware, asyncHandler(async (req, res) => {
+router.put('/skills', authenticate, asyncHandler(async (req, res) => {
   if (req.user.role !== 'tech' && req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Access denied. Expert role required.' });
   }
@@ -145,7 +145,7 @@ router.get('/qualified', asyncHandler(async (req, res) => {
  * GET /api/expert/eligibility
  * Check current user's eligibility for a ticket
  */
-router.get('/eligibility', authMiddleware, asyncHandler(async (req, res) => {
+router.get('/eligibility', authenticate, asyncHandler(async (req, res) => {
   if (req.user.role !== 'tech') {
     return res.status(403).json({ error: 'Access denied. Expert role required.' });
   }
@@ -169,7 +169,7 @@ router.get('/eligibility', authMiddleware, asyncHandler(async (req, res) => {
  * POST /api/expert/claim/:ticketId/check
  * Check if current expert can claim a ticket
  */
-router.post('/claim/:ticketId/check', authMiddleware, asyncHandler(async (req, res) => {
+router.post('/claim/:ticketId/check', authenticate, asyncHandler(async (req, res) => {
   if (req.user.role !== 'tech') {
     return res.status(403).json({ error: 'Access denied. Expert role required.' });
   }
@@ -218,7 +218,7 @@ router.get('/leaderboard', asyncHandler(async (req, res) => {
  * GET /api/expert/stats
  * Get current expert's stats
  */
-router.get('/stats', authMiddleware, asyncHandler(async (req, res) => {
+router.get('/stats', authenticate, asyncHandler(async (req, res) => {
   if (req.user.role !== 'tech' && req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Access denied. Expert role required.' });
   }
@@ -242,7 +242,7 @@ router.get('/stats', authMiddleware, asyncHandler(async (req, res) => {
  * GET /api/expert/admin/pending
  * Get pending skill verifications (admin only)
  */
-router.get('/admin/pending', authMiddleware, requireRole('admin'), asyncHandler(async (req, res) => {
+router.get('/admin/pending', authenticate, requireRole('admin'), asyncHandler(async (req, res) => {
   const pending = await expertService.getPendingVerifications();
   
   res.json({ success: true, pending });
@@ -252,7 +252,7 @@ router.get('/admin/pending', authMiddleware, requireRole('admin'), asyncHandler(
  * POST /api/expert/admin/verify
  * Verify an expert's skill (admin only)
  */
-router.post('/admin/verify', authMiddleware, requireRole('admin'), asyncHandler(async (req, res) => {
+router.post('/admin/verify', authenticate, requireRole('admin'), asyncHandler(async (req, res) => {
   const { userId, techId, verified } = req.body;
   
   if (!userId || !techId) {
@@ -271,7 +271,7 @@ router.post('/admin/verify', authMiddleware, requireRole('admin'), asyncHandler(
  * GET /api/expert/admin/experts
  * Get all experts with stats (admin only)
  */
-router.get('/admin/experts', authMiddleware, requireRole('admin'), asyncHandler(async (req, res) => {
+router.get('/admin/experts', authenticate, requireRole('admin'), asyncHandler(async (req, res) => {
   const { page = 1, limit = 20 } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
   
