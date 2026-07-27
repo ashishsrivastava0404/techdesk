@@ -55,9 +55,17 @@ Welcome to the TechDesk documentation. This folder contains comprehensive guides
 ### Testing
 - Run backend tests: `cd backend && npm test`
 - Run frontend tests: `cd frontend && npm test`
-- Total tests: **710 tests passing**
+- Total tests: **728 tests passing**
 
 ## Recent Updates
+
+### v1.5.0 - Validation & UI Improvements
+- Enhanced Master Data section with loading states
+- Empty state handling with clear CTAs
+- Error handling with toast notifications
+- Notification bell icon with unread count badge
+- Polling for notification updates every 30 seconds
+- Data integrity with optional chaining
 
 ### v1.4.0 - Master Data Management
 - Added Master Data section to Admin Panel
