@@ -79,6 +79,29 @@ export default function EnhancedSettings() {
   const [loadingTopics, setLoadingTopics] = useState(false);
   const [loadingTechStack, setLoadingTechStack] = useState(false);
 
+  // Master data action handlers
+  const handleMasterDataAction = (action, type, item) => {
+    console.log(`Action: ${action} | Type: ${type} | Item:`, item);
+    switch (action) {
+      case 'edit':
+        showToast(`Editing ${type}: ${item.name || item.tag || item.id}`, 'info');
+        // TODO: Open edit modal
+        break;
+      case 'delete':
+        if (window.confirm(`Are you sure you want to delete "${item.name || item.tag}"?`)) {
+          showToast(`Deleting ${type}: ${item.name || item.tag}`, 'info');
+          // TODO: Call delete API
+        }
+        break;
+      case 'create':
+        showToast(`Creating new ${type}`, 'info');
+        // TODO: Open create modal
+        break;
+      default:
+        console.log('Unknown action:', action);
+    }
+  };
+
   useEffect(() => {
     loadSettings();
   }, []);
@@ -1707,7 +1730,10 @@ export default function EnhancedSettings() {
               ) : categories.length === 0 ? (
                 <div className="master-data-empty">
                   <p>No categories found</p>
-                  <button className="btn btn-primary">
+                  <button 
+                    className="btn btn-primary"
+                    onClick={(e) => { e.stopPropagation(); handleMasterDataAction('create', 'category', {}); }}
+                  >
                     ➕ Create First Category
                   </button>
                 </div>
@@ -1720,15 +1746,31 @@ export default function EnhancedSettings() {
                         <span className="item-name">{cat.name}</span>
                         <span className="item-count">{(cat.subcategories?.length || 0)} subcategories</span>
                       </div>
-                      <div className="master-data-item-actions">
-                        <button className="btn-icon" title="Edit">✏️</button>
-                        <button className="btn-icon" title="Delete">🗑️</button>
+                      <div className="master-data-item-actions" onClick={(e) => e.stopPropagation()}>
+                        <button 
+                          className="btn-icon" 
+                          title="Edit"
+                          onClick={() => handleMasterDataAction('edit', 'category', cat)}
+                        >
+                          ✏️
+                        </button>
+                        <button 
+                          className="btn-icon" 
+                          title="Delete"
+                          onClick={() => handleMasterDataAction('delete', 'category', cat)}
+                        >
+                          🗑️
+                        </button>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-              <button className="btn btn-primary" style={{ marginTop: '16px' }}>
+              <button 
+                className="btn btn-primary" 
+                style={{ marginTop: '16px' }}
+                onClick={(e) => { e.stopPropagation(); handleMasterDataAction('create', 'category', {}); }}
+              >
                 ➕ Add Category
               </button>
             </SettingsSection>
@@ -1748,7 +1790,10 @@ export default function EnhancedSettings() {
               ) : templates.length === 0 ? (
                 <div className="master-data-empty">
                   <p>No templates found</p>
-                  <button className="btn btn-primary">
+                  <button 
+                    className="btn btn-primary"
+                    onClick={(e) => { e.stopPropagation(); handleMasterDataAction('create', 'template', {}); }}
+                  >
                     ➕ Create First Template
                   </button>
                 </div>
@@ -1763,15 +1808,31 @@ export default function EnhancedSettings() {
                           {tmpl.is_active ? 'Active' : 'Inactive'}
                         </span>
                       </div>
-                      <div className="master-data-item-actions">
-                        <button className="btn-icon" title="Edit">✏️</button>
-                        <button className="btn-icon" title="Preview">👁️</button>
+                      <div className="master-data-item-actions" onClick={(e) => e.stopPropagation()}>
+                        <button 
+                          className="btn-icon" 
+                          title="Edit"
+                          onClick={() => handleMasterDataAction('edit', 'template', tmpl)}
+                        >
+                          ✏️
+                        </button>
+                        <button 
+                          className="btn-icon" 
+                          title="Preview"
+                          onClick={() => showToast(`Preview: ${tmpl.name || 'Unnamed Template'}`, 'info')}
+                        >
+                          👁️
+                        </button>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-              <button className="btn btn-primary" style={{ marginTop: '16px' }}>
+              <button 
+                className="btn btn-primary" 
+                style={{ marginTop: '16px' }}
+                onClick={(e) => { e.stopPropagation(); handleMasterDataAction('create', 'template', {}); }}
+              >
                 ➕ Add Template
               </button>
             </SettingsSection>
@@ -1791,7 +1852,10 @@ export default function EnhancedSettings() {
               ) : techStackCategories.length === 0 ? (
                 <div className="master-data-empty">
                   <p>No technologies found</p>
-                  <button className="btn btn-primary">
+                  <button 
+                    className="btn btn-primary"
+                    onClick={(e) => { e.stopPropagation(); handleMasterDataAction('create', 'technology', {}); }}
+                  >
                     ➕ Add First Technology
                   </button>
                 </div>
@@ -1812,14 +1876,23 @@ export default function EnhancedSettings() {
                           </span>
                         ))}
                         {(cat.technologies?.length || 0) > 5 && (
-                          <span className="tech-more">+{(cat.technologies.length - 5)} more</span>
+                          <button 
+                            className="tech-more-btn"
+                            onClick={(e) => { e.stopPropagation(); showToast(`Viewing all ${cat.technologies.length} technologies in ${cat.name}`, 'info'); }}
+                          >
+                            +{(cat.technologies.length - 5)} more
+                          </button>
                         )}
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-              <button className="btn btn-primary" style={{ marginTop: '16px' }}>
+              <button 
+                className="btn btn-primary" 
+                style={{ marginTop: '16px' }}
+                onClick={(e) => { e.stopPropagation(); handleMasterDataAction('create', 'technology', {}); }}
+              >
                 ➕ Add Technology
               </button>
             </SettingsSection>
@@ -1839,7 +1912,10 @@ export default function EnhancedSettings() {
               ) : topicSuggestions.length === 0 ? (
                 <div className="master-data-empty">
                   <p>No topic suggestions found</p>
-                  <button className="btn btn-primary">
+                  <button 
+                    className="btn btn-primary"
+                    onClick={(e) => { e.stopPropagation(); handleMasterDataAction('create', 'topic', {}); }}
+                  >
                     ➕ Add First Topic
                   </button>
                 </div>
@@ -1852,15 +1928,31 @@ export default function EnhancedSettings() {
                         <span className="item-count">{(topic.usage_count || 0)} uses</span>
                         <span className="item-badge success">{Number(topic.success_rate || 0).toFixed(0)}% success</span>
                       </div>
-                      <div className="master-data-item-actions">
-                        <button className="btn-icon" title="Edit">✏️</button>
-                        <button className="btn-icon" title="Delete">🗑️</button>
+                      <div className="master-data-item-actions" onClick={(e) => e.stopPropagation()}>
+                        <button 
+                          className="btn-icon" 
+                          title="Edit"
+                          onClick={() => handleMasterDataAction('edit', 'topic', topic)}
+                        >
+                          ✏️
+                        </button>
+                        <button 
+                          className="btn-icon" 
+                          title="Delete"
+                          onClick={() => handleMasterDataAction('delete', 'topic', topic)}
+                        >
+                          🗑️
+                        </button>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-              <button className="btn btn-primary" style={{ marginTop: '16px' }}>
+              <button 
+                className="btn btn-primary" 
+                style={{ marginTop: '16px' }}
+                onClick={(e) => { e.stopPropagation(); handleMasterDataAction('create', 'topic', {}); }}
+              >
                 ➕ Add Topic
               </button>
             </SettingsSection>
@@ -2645,6 +2737,22 @@ export default function EnhancedSettings() {
           padding: 4px 8px;
         }
 
+        .tech-more-btn {
+          font-size: 0.75rem;
+          color: var(--accent-color);
+          background: transparent;
+          border: 1px solid var(--accent-color);
+          padding: 4px 8px;
+          border-radius: 4px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .tech-more-btn:hover {
+          background: var(--accent-color);
+          color: var(--bg-primary);
+        }
+
         /* Loading and Empty States */
         .master-data-loading {
           display: flex;
@@ -2700,6 +2808,67 @@ export default function EnhancedSettings() {
         .master-data-header .btn:disabled {
           opacity: 0.6;
           cursor: not-allowed;
+        }
+
+        /* Responsive breakpoints for Master Data */
+        @media (max-width: 768px) {
+          .enhanced-settings {
+            grid-template-columns: 1fr;
+          }
+
+          .settings-sidebar {
+            border-right: none;
+            border-bottom: 1px solid var(--line);
+          }
+
+          .master-data-list {
+            flex-direction: column;
+          }
+
+          .master-data-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+          }
+
+          .master-data-item-actions {
+            align-self: flex-end;
+          }
+
+          .tech-stack-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .btn-icon {
+            padding: 8px;
+            font-size: 1rem;
+          }
+        }
+
+        /* Ensure z-index doesn't block interactions */
+        .master-data-item-actions {
+          position: relative;
+          z-index: 1;
+        }
+
+        .btn-icon {
+          cursor: pointer;
+          pointer-events: auto;
+          position: relative;
+          z-index: 2;
+        }
+
+        .btn-icon:hover {
+          transform: scale(1.1);
+        }
+
+        /* Ensure no pointer-events blocking */
+        .settings-content {
+          pointer-events: auto;
+        }
+
+        .SettingsSection {
+          pointer-events: auto;
         }
       `}</style>
     </div>
