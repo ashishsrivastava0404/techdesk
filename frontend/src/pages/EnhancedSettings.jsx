@@ -66,10 +66,26 @@ export default function EnhancedSettings() {
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState('general');
   const [formData, setFormData] = useState({});
+  
+  // Master data state
+  const [categories, setCategories] = useState([]);
+  const [templates, setTemplates] = useState([]);
+  const [topicSuggestions, setTopicSuggestions] = useState([]);
+  const [techStackCategories, setTechStackCategories] = useState([]);
 
   useEffect(() => {
     loadSettings();
   }, []);
+
+  // Load master data when section is activated
+  useEffect(() => {
+    if (activeSection === 'masterdata') {
+      fetchCategories();
+      fetchTemplates();
+      fetchTopics();
+      fetchTechStack();
+    }
+  }, [activeSection]);
 
   const loadSettings = async () => {
     setLoading(true);
@@ -220,6 +236,63 @@ export default function EnhancedSettings() {
     }
   };
 
+  // Master data fetch functions
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/ticket-hierarchy');
+      const data = await response.json();
+      // Convert hierarchy to flat list for display
+      const catList = Object.entries(data.data || {}).map(([id, cat]) => ({
+        id,
+        name: cat.name,
+        icon: cat.icon,
+        subcategories: Object.keys(cat.subcategories || {}).map(subId => ({
+          id: subId,
+          name: cat.subcategories[subId].name
+        }))
+      }));
+      setCategories(catList);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  const fetchTemplates = async () => {
+    try {
+      const response = await api.categories.getTemplates();
+      setTemplates(Array.isArray(response) ? response : []);
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+    }
+  };
+
+  const fetchTopics = async () => {
+    try {
+      const response = await fetch('/api/topics/suggest?limit=50');
+      const data = await response.json();
+      setTopicSuggestions(data.topics || []);
+    } catch (error) {
+      console.error('Error fetching topics:', error);
+    }
+  };
+
+  const fetchTechStack = async () => {
+    try {
+      const response = await fetch('/api/expert/technologies');
+      const data = await response.json();
+      if (data.success && data.categories) {
+        // Group technologies by category
+        const grouped = data.categories.map(cat => ({
+          ...cat,
+          technologies: data.technologies?.filter(t => t.categoryId === cat.id) || []
+        }));
+        setTechStackCategories(grouped);
+      }
+    } catch (error) {
+      console.error('Error fetching tech stack:', error);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -272,6 +345,7 @@ export default function EnhancedSettings() {
     { id: 'integrations', icon: '🔗', label: 'Integrations' },
     { id: 'features', icon: '⚡', label: 'Features' },
     { id: 'legal', icon: '📜', label: 'Legal' },
+    { id: 'masterdata', icon: '🗃️', label: 'Master Data' },
   ];
 
   return (
@@ -1590,6 +1664,127 @@ export default function EnhancedSettings() {
             </SettingRow>
           </SettingsSection>
         )}
+
+        {activeSection === 'masterdata' && (
+          <div className="master-data-section">
+            <SettingsSection title="Categories" icon="📁">
+              <div className="master-data-header">
+                <p>Manage ticket categories and subcategories</p>
+                <button className="btn btn-secondary" onClick={() => fetchCategories()}>
+                  🔄 Refresh
+                </button>
+              </div>
+              <div className="master-data-list">
+                {categories.map(cat => (
+                  <div key={cat.id} className="master-data-item">
+                    <div className="master-data-item-info">
+                      <span className="item-icon">{cat.icon || '📁'}</span>
+                      <span className="item-name">{cat.name}</span>
+                      <span className="item-count">{cat.subcategories?.length || 0} subcategories</span>
+                    </div>
+                    <div className="master-data-item-actions">
+                      <button className="btn-icon" title="Edit">✏️</button>
+                      <button className="btn-icon" title="Delete">🗑️</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button className="btn btn-primary" style={{ marginTop: '16px' }}>
+                ➕ Add Category
+              </button>
+            </SettingsSection>
+
+            <SettingsSection title="Templates" icon="📝">
+              <div className="master-data-header">
+                <p>Manage issue templates for faster ticket creation</p>
+                <button className="btn btn-secondary" onClick={fetchTemplates}>
+                  🔄 Refresh
+                </button>
+              </div>
+              <div className="master-data-list">
+                {templates.map(tmpl => (
+                  <div key={tmpl.id} className="master-data-item">
+                    <div className="master-data-item-info">
+                      <span className="item-name">{tmpl.name}</span>
+                      <span className="item-count">{tmpl.use_count || 0} uses</span>
+                      <span className={`item-badge ${tmpl.is_active ? 'active' : 'inactive'}`}>
+                        {tmpl.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    <div className="master-data-item-actions">
+                      <button className="btn-icon" title="Edit">✏️</button>
+                      <button className="btn-icon" title="Preview">👁️</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button className="btn btn-primary" style={{ marginTop: '16px' }}>
+                ➕ Add Template
+              </button>
+            </SettingsSection>
+
+            <SettingsSection title="Tech Stack" icon="💻">
+              <div className="master-data-header">
+                <p>Manage technologies and skills that experts can select</p>
+                <button className="btn btn-secondary" onClick={fetchTechStack}>
+                  🔄 Refresh
+                </button>
+              </div>
+              <div className="tech-stack-grid">
+                {techStackCategories.map(cat => (
+                  <div key={cat.id} className="tech-stack-category">
+                    <div className="tech-stack-category-header">
+                      <span className="category-icon">{cat.icon}</span>
+                      <span className="category-name">{cat.name}</span>
+                      <span className="category-count">{cat.technologies?.length || 0}</span>
+                    </div>
+                    <div className="tech-stack-list">
+                      {cat.technologies?.slice(0, 5).map(tech => (
+                        <span key={tech.id} className={`tech-badge ${tech.certified ? 'certified' : ''}`}>
+                          {tech.name}
+                          {tech.certified && ' ✓'}
+                        </span>
+                      ))}
+                      {(cat.technologies?.length || 0) > 5 && (
+                        <span className="tech-more">+{cat.technologies.length - 5} more</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button className="btn btn-primary" style={{ marginTop: '16px' }}>
+                ➕ Add Technology
+              </button>
+            </SettingsSection>
+
+            <SettingsSection title="Topic Suggestions" icon="💡">
+              <div className="master-data-header">
+                <p>Manage auto-suggested topics based on historical data</p>
+                <button className="btn btn-secondary" onClick={fetchTopics}>
+                  🔄 Refresh
+                </button>
+              </div>
+              <div className="master-data-list">
+                {topicSuggestions.map(topic => (
+                  <div key={topic.id} className="master-data-item">
+                    <div className="master-data-item-info">
+                      <span className="item-name">{topic.tag}</span>
+                      <span className="item-count">{topic.usage_count || 0} uses</span>
+                      <span className="item-badge success">{topic.success_rate?.toFixed(0) || 0}% success</span>
+                    </div>
+                    <div className="master-data-item-actions">
+                      <button className="btn-icon" title="Edit">✏️</button>
+                      <button className="btn-icon" title="Delete">🗑️</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button className="btn btn-primary" style={{ marginTop: '16px' }}>
+                ➕ Add Topic
+              </button>
+            </SettingsSection>
+          </div>
+        )}
       </div>
 
       <style>{`
@@ -2191,6 +2386,182 @@ export default function EnhancedSettings() {
           .settings-input {
             width: 100%;
           }
+        }
+
+        /* Master Data Section Styles */
+        .master-data-section {
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+        }
+
+        .master-data-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 16px;
+          padding-bottom: 12px;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .master-data-header p {
+          margin: 0;
+          color: var(--text-secondary);
+          font-size: 0.875rem;
+        }
+
+        .master-data-list {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .master-data-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px 16px;
+          background: var(--bg-secondary);
+          border-radius: 8px;
+          transition: background 0.2s;
+        }
+
+        .master-data-item:hover {
+          background: var(--bg-tertiary);
+        }
+
+        .master-data-item-info {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .item-icon {
+          font-size: 1.25rem;
+        }
+
+        .item-name {
+          font-weight: 500;
+          color: var(--text-primary);
+        }
+
+        .item-count {
+          font-size: 0.8125rem;
+          color: var(--text-secondary);
+          padding: 2px 8px;
+          background: var(--bg-primary);
+          border-radius: 12px;
+        }
+
+        .item-badge {
+          font-size: 0.75rem;
+          padding: 2px 8px;
+          border-radius: 12px;
+          font-weight: 500;
+        }
+
+        .item-badge.active {
+          background: rgba(34, 197, 94, 0.1);
+          color: #22c55e;
+        }
+
+        .item-badge.inactive {
+          background: rgba(107, 114, 128, 0.1);
+          color: #6b7280;
+        }
+
+        .item-badge.success {
+          background: rgba(34, 197, 94, 0.1);
+          color: #22c55e;
+        }
+
+        .master-data-item-actions {
+          display: flex;
+          gap: 8px;
+        }
+
+        .btn-icon {
+          background: none;
+          border: none;
+          padding: 6px;
+          cursor: pointer;
+          border-radius: 6px;
+          transition: background 0.2s;
+        }
+
+        .btn-icon:hover {
+          background: var(--bg-primary);
+        }
+
+        /* Tech Stack Grid */
+        .tech-stack-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+          gap: 16px;
+        }
+
+        .tech-stack-category {
+          background: var(--bg-secondary);
+          border-radius: 12px;
+          padding: 16px;
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .tech-stack-category:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .tech-stack-category-header {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 12px;
+          padding-bottom: 12px;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .category-icon {
+          font-size: 1.5rem;
+        }
+
+        .category-name {
+          flex: 1;
+          font-weight: 600;
+          font-size: 0.9375rem;
+        }
+
+        .category-count {
+          font-size: 0.75rem;
+          color: var(--text-secondary);
+          background: var(--bg-primary);
+          padding: 2px 8px;
+          border-radius: 10px;
+        }
+
+        .tech-stack-list {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+
+        .tech-badge {
+          font-size: 0.75rem;
+          padding: 4px 10px;
+          background: var(--bg-primary);
+          border-radius: 12px;
+          color: var(--text-secondary);
+        }
+
+        .tech-badge.certified {
+          background: rgba(16, 185, 129, 0.1);
+          color: #10b981;
+        }
+
+        .tech-more {
+          font-size: 0.75rem;
+          color: var(--text-muted);
+          padding: 4px 8px;
         }
       `}</style>
     </div>
