@@ -1,11 +1,46 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext.jsx';
 import { useBrand } from '../context/BrandContext.jsx';
+import api from '../api';
 
 export default function Layout() {
   const { user, logout } = useApp();
   const { brand } = useBrand();
   const navigate = useNavigate();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Poll for unread notification count every 30 seconds
+  useEffect(() => {
+    if (!user?.name) return;
+
+    const fetchUnreadCount = async () => {
+      try {
+        const count = await api.notifications.getCount(user.name);
+        setUnreadCount(count?.unread || 0);
+      } catch (error) {
+        console.error('Error fetching notification count:', error);
+      }
+    };
+
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, [user?.name]);
+
+  // Listen for new notifications
+  useEffect(() => {
+    const handleNewNotification = () => {
+      if (user?.name) {
+        api.notifications.getCount(user.name).then(count => {
+          setUnreadCount(count?.unread || 0);
+        }).catch(console.error);
+      }
+    };
+
+    window.addEventListener('new-notification', handleNewNotification);
+    return () => window.removeEventListener('new-notification', handleNewNotification);
+  }, [user?.name]);
 
   const handleLogout = async () => {
     await logout();
@@ -62,6 +97,12 @@ export default function Layout() {
         </div>
 
         <div className="user-menu">
+          <NavLink to="/notifications" className="notification-bell" title="Notifications">
+            🔔
+            {unreadCount > 0 && (
+              <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+            )}
+          </NavLink>
           <span className="user-name">
             {user?.name || 'Guest'}
             <span className="user-role">{user?.role}</span>
@@ -87,7 +128,7 @@ export default function Layout() {
           to="/notifications"
           className={({ isActive }) => `tab-btn ${isActive ? 'active' : ''}`}
         >
-          Notifications
+          Notifications {unreadCount > 0 && `(${unreadCount > 99 ? '99+' : unreadCount})`}
         </NavLink>
         <NavLink
           to="/help"
@@ -129,6 +170,44 @@ export default function Layout() {
       >
         🐛
       </button>
+
+      <style>{`
+        .notification-bell {
+          position: relative;
+          font-size: 1.25rem;
+          text-decoration: none;
+          padding: 8px;
+          border-radius: 50%;
+          transition: background 0.2s;
+        }
+
+        .notification-bell:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+
+        .notification-badge {
+          position: absolute;
+          top: 2px;
+          right: 2px;
+          background: #ef4444;
+          color: white;
+          font-size: 0.625rem;
+          font-weight: bold;
+          min-width: 16px;
+          height: 16px;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0 4px;
+        }
+
+        .user-menu {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+      `}</style>
     </div>
   );
 }

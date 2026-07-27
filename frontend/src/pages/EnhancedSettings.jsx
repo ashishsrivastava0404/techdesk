@@ -72,6 +72,12 @@ export default function EnhancedSettings() {
   const [templates, setTemplates] = useState([]);
   const [topicSuggestions, setTopicSuggestions] = useState([]);
   const [techStackCategories, setTechStackCategories] = useState([]);
+  
+  // Master data loading states
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [loadingTopics, setLoadingTopics] = useState(false);
+  const [loadingTechStack, setLoadingTechStack] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -238,58 +244,77 @@ export default function EnhancedSettings() {
 
   // Master data fetch functions
   const fetchCategories = async () => {
+    setLoadingCategories(true);
     try {
       const response = await fetch('/api/ticket-hierarchy');
+      if (!response.ok) throw new Error('Failed to fetch categories');
       const data = await response.json();
       // Convert hierarchy to flat list for display
-      const catList = Object.entries(data.data || {}).map(([id, cat]) => ({
+      const catList = Object.entries(data?.data || {}).map(([id, cat]) => ({
         id,
-        name: cat.name,
-        icon: cat.icon,
-        subcategories: Object.keys(cat.subcategories || {}).map(subId => ({
+        name: cat?.name || 'Unknown',
+        icon: cat?.icon || '📁',
+        subcategories: Object.keys(cat?.subcategories || {}).map(subId => ({
           id: subId,
-          name: cat.subcategories[subId].name
+          name: cat.subcategories[subId]?.name || 'Unknown'
         }))
       }));
       setCategories(catList);
     } catch (error) {
       console.error('Error fetching categories:', error);
+      showToast('Failed to load categories', 'error');
+    } finally {
+      setLoadingCategories(false);
     }
   };
 
   const fetchTemplates = async () => {
+    setLoadingTemplates(true);
     try {
       const response = await api.categories.getTemplates();
       setTemplates(Array.isArray(response) ? response : []);
     } catch (error) {
       console.error('Error fetching templates:', error);
+      showToast('Failed to load templates', 'error');
+    } finally {
+      setLoadingTemplates(false);
     }
   };
 
   const fetchTopics = async () => {
+    setLoadingTopics(true);
     try {
       const response = await fetch('/api/topics/suggest?limit=50');
+      if (!response.ok) throw new Error('Failed to fetch topics');
       const data = await response.json();
-      setTopicSuggestions(data.topics || []);
+      setTopicSuggestions(data?.topics || []);
     } catch (error) {
       console.error('Error fetching topics:', error);
+      showToast('Failed to load topics', 'error');
+    } finally {
+      setLoadingTopics(false);
     }
   };
 
   const fetchTechStack = async () => {
+    setLoadingTechStack(true);
     try {
       const response = await fetch('/api/expert/technologies');
+      if (!response.ok) throw new Error('Failed to fetch tech stack');
       const data = await response.json();
-      if (data.success && data.categories) {
+      if (data?.success && data?.categories) {
         // Group technologies by category
         const grouped = data.categories.map(cat => ({
           ...cat,
-          technologies: data.technologies?.filter(t => t.categoryId === cat.id) || []
+          technologies: data?.technologies?.filter(t => t.categoryId === cat.id) || []
         }));
         setTechStackCategories(grouped);
       }
     } catch (error) {
       console.error('Error fetching tech stack:', error);
+      showToast('Failed to load tech stack', 'error');
+    } finally {
+      setLoadingTechStack(false);
     }
   };
 
@@ -1670,25 +1695,39 @@ export default function EnhancedSettings() {
             <SettingsSection title="Categories" icon="📁">
               <div className="master-data-header">
                 <p>Manage ticket categories and subcategories</p>
-                <button className="btn btn-secondary" onClick={() => fetchCategories()}>
-                  🔄 Refresh
+                <button className="btn btn-secondary" onClick={fetchCategories} disabled={loadingCategories}>
+                  {loadingCategories ? '⏳ Loading...' : '🔄 Refresh'}
                 </button>
               </div>
-              <div className="master-data-list">
-                {categories.map(cat => (
-                  <div key={cat.id} className="master-data-item">
-                    <div className="master-data-item-info">
-                      <span className="item-icon">{cat.icon || '📁'}</span>
-                      <span className="item-name">{cat.name}</span>
-                      <span className="item-count">{cat.subcategories?.length || 0} subcategories</span>
+              {loadingCategories ? (
+                <div className="master-data-loading">
+                  <div className="loading-spinner"></div>
+                  <p>Loading categories...</p>
+                </div>
+              ) : categories.length === 0 ? (
+                <div className="master-data-empty">
+                  <p>No categories found</p>
+                  <button className="btn btn-primary">
+                    ➕ Create First Category
+                  </button>
+                </div>
+              ) : (
+                <div className="master-data-list">
+                  {categories.map(cat => (
+                    <div key={cat.id} className="master-data-item">
+                      <div className="master-data-item-info">
+                        <span className="item-icon">{cat.icon || '📁'}</span>
+                        <span className="item-name">{cat.name}</span>
+                        <span className="item-count">{(cat.subcategories?.length || 0)} subcategories</span>
+                      </div>
+                      <div className="master-data-item-actions">
+                        <button className="btn-icon" title="Edit">✏️</button>
+                        <button className="btn-icon" title="Delete">🗑️</button>
+                      </div>
                     </div>
-                    <div className="master-data-item-actions">
-                      <button className="btn-icon" title="Edit">✏️</button>
-                      <button className="btn-icon" title="Delete">🗑️</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
               <button className="btn btn-primary" style={{ marginTop: '16px' }}>
                 ➕ Add Category
               </button>
@@ -1697,27 +1736,41 @@ export default function EnhancedSettings() {
             <SettingsSection title="Templates" icon="📝">
               <div className="master-data-header">
                 <p>Manage issue templates for faster ticket creation</p>
-                <button className="btn btn-secondary" onClick={fetchTemplates}>
-                  🔄 Refresh
+                <button className="btn btn-secondary" onClick={fetchTemplates} disabled={loadingTemplates}>
+                  {loadingTemplates ? '⏳ Loading...' : '🔄 Refresh'}
                 </button>
               </div>
-              <div className="master-data-list">
-                {templates.map(tmpl => (
-                  <div key={tmpl.id} className="master-data-item">
-                    <div className="master-data-item-info">
-                      <span className="item-name">{tmpl.name}</span>
-                      <span className="item-count">{tmpl.use_count || 0} uses</span>
-                      <span className={`item-badge ${tmpl.is_active ? 'active' : 'inactive'}`}>
-                        {tmpl.is_active ? 'Active' : 'Inactive'}
-                      </span>
+              {loadingTemplates ? (
+                <div className="master-data-loading">
+                  <div className="loading-spinner"></div>
+                  <p>Loading templates...</p>
+                </div>
+              ) : templates.length === 0 ? (
+                <div className="master-data-empty">
+                  <p>No templates found</p>
+                  <button className="btn btn-primary">
+                    ➕ Create First Template
+                  </button>
+                </div>
+              ) : (
+                <div className="master-data-list">
+                  {templates.map(tmpl => (
+                    <div key={tmpl.id} className="master-data-item">
+                      <div className="master-data-item-info">
+                        <span className="item-name">{tmpl.name || 'Unnamed Template'}</span>
+                        <span className="item-count">{(tmpl.use_count || 0)} uses</span>
+                        <span className={`item-badge ${tmpl.is_active ? 'active' : 'inactive'}`}>
+                          {tmpl.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                      <div className="master-data-item-actions">
+                        <button className="btn-icon" title="Edit">✏️</button>
+                        <button className="btn-icon" title="Preview">👁️</button>
+                      </div>
                     </div>
-                    <div className="master-data-item-actions">
-                      <button className="btn-icon" title="Edit">✏️</button>
-                      <button className="btn-icon" title="Preview">👁️</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
               <button className="btn btn-primary" style={{ marginTop: '16px' }}>
                 ➕ Add Template
               </button>
@@ -1726,32 +1779,46 @@ export default function EnhancedSettings() {
             <SettingsSection title="Tech Stack" icon="💻">
               <div className="master-data-header">
                 <p>Manage technologies and skills that experts can select</p>
-                <button className="btn btn-secondary" onClick={fetchTechStack}>
-                  🔄 Refresh
+                <button className="btn btn-secondary" onClick={fetchTechStack} disabled={loadingTechStack}>
+                  {loadingTechStack ? '⏳ Loading...' : '🔄 Refresh'}
                 </button>
               </div>
-              <div className="tech-stack-grid">
-                {techStackCategories.map(cat => (
-                  <div key={cat.id} className="tech-stack-category">
-                    <div className="tech-stack-category-header">
-                      <span className="category-icon">{cat.icon}</span>
-                      <span className="category-name">{cat.name}</span>
-                      <span className="category-count">{cat.technologies?.length || 0}</span>
+              {loadingTechStack ? (
+                <div className="master-data-loading">
+                  <div className="loading-spinner"></div>
+                  <p>Loading technologies...</p>
+                </div>
+              ) : techStackCategories.length === 0 ? (
+                <div className="master-data-empty">
+                  <p>No technologies found</p>
+                  <button className="btn btn-primary">
+                    ➕ Add First Technology
+                  </button>
+                </div>
+              ) : (
+                <div className="tech-stack-grid">
+                  {techStackCategories.map(cat => (
+                    <div key={cat.id} className="tech-stack-category">
+                      <div className="tech-stack-category-header">
+                        <span className="category-icon">{cat.icon || '💻'}</span>
+                        <span className="category-name">{cat.name || 'Unknown'}</span>
+                        <span className="category-count">{(cat.technologies?.length || 0)}</span>
+                      </div>
+                      <div className="tech-stack-list">
+                        {(cat.technologies || []).slice(0, 5).map(tech => (
+                          <span key={tech.id} className={`tech-badge ${tech.certified ? 'certified' : ''}`}>
+                            {tech.name || 'Unknown'}
+                            {tech.certified && ' ✓'}
+                          </span>
+                        ))}
+                        {(cat.technologies?.length || 0) > 5 && (
+                          <span className="tech-more">+{(cat.technologies.length - 5)} more</span>
+                        )}
+                      </div>
                     </div>
-                    <div className="tech-stack-list">
-                      {cat.technologies?.slice(0, 5).map(tech => (
-                        <span key={tech.id} className={`tech-badge ${tech.certified ? 'certified' : ''}`}>
-                          {tech.name}
-                          {tech.certified && ' ✓'}
-                        </span>
-                      ))}
-                      {(cat.technologies?.length || 0) > 5 && (
-                        <span className="tech-more">+{cat.technologies.length - 5} more</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
               <button className="btn btn-primary" style={{ marginTop: '16px' }}>
                 ➕ Add Technology
               </button>
@@ -1760,25 +1827,39 @@ export default function EnhancedSettings() {
             <SettingsSection title="Topic Suggestions" icon="💡">
               <div className="master-data-header">
                 <p>Manage auto-suggested topics based on historical data</p>
-                <button className="btn btn-secondary" onClick={fetchTopics}>
-                  🔄 Refresh
+                <button className="btn btn-secondary" onClick={fetchTopics} disabled={loadingTopics}>
+                  {loadingTopics ? '⏳ Loading...' : '🔄 Refresh'}
                 </button>
               </div>
-              <div className="master-data-list">
-                {topicSuggestions.map(topic => (
-                  <div key={topic.id} className="master-data-item">
-                    <div className="master-data-item-info">
-                      <span className="item-name">{topic.tag}</span>
-                      <span className="item-count">{topic.usage_count || 0} uses</span>
-                      <span className="item-badge success">{topic.success_rate?.toFixed(0) || 0}% success</span>
+              {loadingTopics ? (
+                <div className="master-data-loading">
+                  <div className="loading-spinner"></div>
+                  <p>Loading topics...</p>
+                </div>
+              ) : topicSuggestions.length === 0 ? (
+                <div className="master-data-empty">
+                  <p>No topic suggestions found</p>
+                  <button className="btn btn-primary">
+                    ➕ Add First Topic
+                  </button>
+                </div>
+              ) : (
+                <div className="master-data-list">
+                  {topicSuggestions.map(topic => (
+                    <div key={topic.id} className="master-data-item">
+                      <div className="master-data-item-info">
+                        <span className="item-name">{topic.tag || 'Unnamed Topic'}</span>
+                        <span className="item-count">{(topic.usage_count || 0)} uses</span>
+                        <span className="item-badge success">{Number(topic.success_rate || 0).toFixed(0)}% success</span>
+                      </div>
+                      <div className="master-data-item-actions">
+                        <button className="btn-icon" title="Edit">✏️</button>
+                        <button className="btn-icon" title="Delete">🗑️</button>
+                      </div>
                     </div>
-                    <div className="master-data-item-actions">
-                      <button className="btn-icon" title="Edit">✏️</button>
-                      <button className="btn-icon" title="Delete">🗑️</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
               <button className="btn btn-primary" style={{ marginTop: '16px' }}>
                 ➕ Add Topic
               </button>
@@ -2562,6 +2643,63 @@ export default function EnhancedSettings() {
           font-size: 0.75rem;
           color: var(--text-muted);
           padding: 4px 8px;
+        }
+
+        /* Loading and Empty States */
+        .master-data-loading {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 40px 20px;
+          text-align: center;
+        }
+
+        .master-data-loading .loading-spinner {
+          width: 40px;
+          height: 40px;
+          border: 3px solid var(--line);
+          border-top-color: var(--accent-color);
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin-bottom: 16px;
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+
+        .master-data-loading p {
+          color: var(--text-secondary);
+          margin: 0;
+        }
+
+        .master-data-empty {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 40px 20px;
+          text-align: center;
+          background: var(--bg-secondary);
+          border-radius: 12px;
+          border: 2px dashed var(--line);
+        }
+
+        .master-data-empty p {
+          color: var(--text-secondary);
+          margin: 0 0 16px 0;
+          font-size: 0.9375rem;
+        }
+
+        .master-data-empty .btn {
+          margin-top: 8px;
+        }
+
+        /* Button disabled state */
+        .master-data-header .btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
         }
       `}</style>
     </div>
