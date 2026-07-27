@@ -2,7 +2,8 @@ import { Router } from 'express';
 import pool from '../db/index.js';
 import { maskSettingsForFrontend, loadApiKeysFromDatabase, isMasked, syncToAWS } from '../services/settingsLoader.js';
 import { 
-  logFinancialTransaction, 
+  logFinancialTransaction,
+  getFinancialAuditLogs, 
   TransactionTypes, 
   TransactionActions 
 } from '../services/financialAudit.js';
