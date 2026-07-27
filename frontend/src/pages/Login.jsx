@@ -61,8 +61,7 @@ export default function Login() {
           localStorage.setItem('auth_token', event.data.token);
           // Navigate to dashboard
           navigate(from, { replace: true });
-          window.location.reload();
-        } else if (event.data?.type === 'GOOGLE_AUTH_ERROR') {
+          } else if (event.data?.type === 'GOOGLE_AUTH_ERROR') {
           window.removeEventListener('message', handleMessage);
           popup?.close();
           setError(event.data.error || 'Google authentication failed');

@@ -52,9 +52,8 @@ function AppRoutes() {
   
   if (loading) {
     return (
-      <div className="app-loading" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+      <div className="app-loading" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', opacity: 1, transition: 'opacity 0.2s' }}>
         <div className="loading-spinner"></div>
-        <p>Loading...</p>
       </div>
     );
   }
