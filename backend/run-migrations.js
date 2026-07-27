@@ -41,16 +41,18 @@ async function runMigrations() {
   };
 
   try {
-    // topic_suggestions - add last_used_at
+    // Add columns to existing tables
     await addColumn('topic_suggestions', 'last_used_at', 'TIMESTAMP NULL DEFAULT NULL');
-    
-    // tickets - add first_response_at
     await addColumn('tickets', 'first_response_at', 'TIMESTAMP NULL DEFAULT NULL');
-    
-    // crm_contacts - add user_type
     await addColumn('crm_contacts', 'user_type', "ENUM('customer', 'tech', 'other') DEFAULT 'customer'");
     
-    // tech_earnings - rename user_name to tech_name if needed
+    // conversations table - add missing columns
+    await addColumn('conversations', 'customer_id', 'INT');
+    await addColumn('conversations', 'tech_id', 'INT');
+    await addColumn('conversations', 'customer_name', 'VARCHAR(255)');
+    await addColumn('conversations', 'tech_name', 'VARCHAR(255)');
+    
+    // Rename user_name to tech_name in earnings tables if needed
     try {
       const [cols] = await connection.query("DESCRIBE tech_earnings");
       const hasTechName = cols.some(c => c.Field === 'tech_name');
@@ -62,10 +64,9 @@ async function runMigrations() {
         console.log('✓ tech_name exists in tech_earnings');
       }
     } catch (err) {
-      console.log(`⚠ tech_earnings check: ${err.code}`);
+      console.log(`⚠ tech_earnings: ${err.code}`);
     }
     
-    // tech_payouts - rename user_name to tech_name if needed
     try {
       const [cols] = await connection.query("DESCRIBE tech_payouts");
       const hasTechName = cols.some(c => c.Field === 'tech_name');
@@ -77,10 +78,10 @@ async function runMigrations() {
         console.log('✓ tech_name exists in tech_payouts');
       }
     } catch (err) {
-      console.log(`⚠ tech_payouts check: ${err.code}`);
+      console.log(`⚠ tech_payouts: ${err.code}`);
     }
     
-    // Create expert_skills table
+    // Create missing tables
     await createTable('expert_skills', `
       CREATE TABLE IF NOT EXISTS expert_skills (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -96,7 +97,6 @@ async function runMigrations() {
       )
     `);
     
-    // Create expert_stats table
     await createTable('expert_stats', `
       CREATE TABLE IF NOT EXISTS expert_stats (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -111,7 +111,6 @@ async function runMigrations() {
       )
     `);
     
-    // Create tech_stack table
     await createTable('tech_stack', `
       CREATE TABLE IF NOT EXISTS tech_stack (
         id VARCHAR(100) PRIMARY KEY,
@@ -122,7 +121,6 @@ async function runMigrations() {
       )
     `);
     
-    // Create currencies table if not exists (for currency service)
     await createTable('currencies', `
       CREATE TABLE IF NOT EXISTS currencies (
         code VARCHAR(3) PRIMARY KEY,
@@ -137,17 +135,21 @@ async function runMigrations() {
     `);
     
     // Insert default currencies if empty
-    const [rows] = await connection.query('SELECT COUNT(*) as count FROM currencies');
-    if (rows[0].count === 0) {
-      await connection.query(`
-        INSERT INTO currencies (code, symbol, name, decimal_places, exchange_rate_to_usd) VALUES
-        ('USD', '$', 'US Dollar', 2, 1.000000),
-        ('EUR', '€', 'Euro', 2, 0.850000),
-        ('GBP', '£', 'British Pound', 2, 0.730000),
-        ('INR', '₹', 'Indian Rupee', 2, 74.500000),
-        ('JPY', '¥', 'Japanese Yen', 0, 110.000000)
-      `);
-      console.log('✓ Inserted default currencies');
+    try {
+      const [rows] = await connection.query('SELECT COUNT(*) as count FROM currencies');
+      if (rows[0].count === 0) {
+        await connection.query(`
+          INSERT INTO currencies (code, symbol, name, decimal_places, exchange_rate_to_usd) VALUES
+          ('USD', '$', 'US Dollar', 2, 1.000000),
+          ('EUR', '€', 'Euro', 2, 0.850000),
+          ('GBP', '£', 'British Pound', 2, 0.730000),
+          ('INR', '₹', 'Indian Rupee', 2, 74.500000),
+          ('JPY', '¥', 'Japanese Yen', 0, 110.000000)
+        `);
+        console.log('✓ Inserted default currencies');
+      }
+    } catch (err) {
+      console.log(`⚠ currencies insert: ${err.code}`);
     }
 
     console.log('\n✅ Migrations complete!');

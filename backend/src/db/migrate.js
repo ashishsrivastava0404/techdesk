@@ -879,7 +879,10 @@ async function runMigrations() {
       await connection.query(`
         CREATE TABLE IF NOT EXISTS conversations (
           id INT AUTO_INCREMENT PRIMARY KEY,
-          user_name VARCHAR(255) NOT NULL,
+          customer_id INT,
+          tech_id INT,
+          customer_name VARCHAR(255),
+          tech_name VARCHAR(255),
           title VARCHAR(255),
           messages TEXT,
           status ENUM('active', 'resolved') DEFAULT 'active',
