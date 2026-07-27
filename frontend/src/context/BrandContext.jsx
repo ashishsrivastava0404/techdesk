@@ -64,4 +64,4 @@ export function BrandProvider({ children }) {
   );
 }
 
-export const useBrand = () => useContext(BrandContext);
+export function useBrand() { return useContext(BrandContext); }
