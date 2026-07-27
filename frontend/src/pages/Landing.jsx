@@ -1,11 +1,40 @@
 import { Link } from 'react-router-dom';
 import { useBrand } from '../context/BrandContext.jsx';
+import HeroSlides from '../components/HeroSlides.jsx';
 
 export default function Landing() {
   const { brand } = useBrand();
   
   return (
     <div className="landing-page">
+      {/* Hero Slides */}
+      <section className="hero-slides-section">
+        <HeroSlides />
+      </section>
+
+      {/* Features Highlights */}
+      <section className="features-highlights">
+        <div className="feature-item">
+          <span className="feature-icon">⚡</span>
+          <span className="feature-text">Fast Setup</span>
+        </div>
+        <div className="feature-divider"></div>
+        <div className="feature-item">
+          <span className="feature-icon">🔒</span>
+          <span className="feature-text">Secure</span>
+        </div>
+        <div className="feature-divider"></div>
+        <div className="feature-item">
+          <span className="feature-icon">🌍</span>
+          <span className="feature-text">Global Support</span>
+        </div>
+        <div className="feature-divider"></div>
+        <div className="feature-item">
+          <span className="feature-icon">💯</span>
+          <span className="feature-text">Satisfaction</span>
+        </div>
+      </section>
+
       {/* Hero Section */}
       <section className="hero">
         <div className="hero-content">
@@ -209,6 +238,60 @@ export default function Landing() {
           <p>&copy; {new Date().getFullYear()} {brand.company_name || brand.app_name || 'TechDesk'}. All rights reserved.</p>
         </div>
       </footer>
+
+      <style>{`
+        .hero-slides-section {
+          padding: 40px 20px 20px;
+          background: linear-gradient(180deg, #f8fafc 0%, #fff 100%);
+        }
+
+        .features-highlights {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 30px;
+          padding: 30px 20px;
+          background: white;
+          margin-top: -10px;
+        }
+
+        .feature-item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .feature-icon {
+          font-size: 24px;
+        }
+
+        .feature-text {
+          font-size: 16px;
+          font-weight: 600;
+          color: #333;
+        }
+
+        .feature-divider {
+          width: 1px;
+          height: 30px;
+          background: #e5e7eb;
+        }
+
+        @media (max-width: 768px) {
+          .features-highlights {
+            flex-wrap: wrap;
+            gap: 20px;
+          }
+          
+          .feature-divider {
+            display: none;
+          }
+          
+          .feature-text {
+            font-size: 14px;
+          }
+        }
+      `}</style>
     </div>
   );
 }
