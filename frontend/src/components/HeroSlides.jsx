@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 // Slide data
@@ -70,6 +71,7 @@ const AUTO_PLAY_INTERVAL = 6000;
 
 export default function HeroSlides() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -111,6 +113,39 @@ export default function HeroSlides() {
 
   const slide = SLIDES[currentSlide];
 
+  const handleCTA = (ctaText) => {
+    switch(ctaText) {
+      case 'Start Free Trial':
+      case 'Get Started':
+      case 'Try It Free':
+        navigate('/register');
+        break;
+      case 'Watch Demo':
+        navigate('/demo');
+        break;
+      case 'Explore Features':
+        navigate('/features');
+        break;
+      case 'View Pricing':
+        navigate('/pricing');
+        break;
+      case 'Learn More':
+        navigate('/about');
+        break;
+      case 'See How It Works':
+        navigate('/how-it-works');
+        break;
+      case 'Join as Tech':
+        navigate('/register?role=tech');
+        break;
+      case 'View Templates':
+        navigate('/templates');
+        break;
+      default:
+        navigate('/');
+    }
+  };
+
   return (
     <div className="hero-slides-container">
       {/* Main Slide */}
@@ -150,11 +185,11 @@ export default function HeroSlides() {
 
           {/* CTAs */}
           <div className="slide-ctas">
-            <button className="cta-primary">
+            <button className="cta-primary" onClick={() => handleCTA(slide.cta)}>
               {slide.cta}
               <span className="cta-arrow">→</span>
             </button>
-            <button className="cta-secondary">
+            <button className="cta-secondary" onClick={() => handleCTA(slide.secondaryCta)}>
               {slide.secondaryCta}
             </button>
           </div>
