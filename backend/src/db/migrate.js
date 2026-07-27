@@ -5,7 +5,11 @@
  * Usage: node src/db/migrate.js
  */
 
+import dotenv from 'dotenv';
 import mysql from 'mysql2/promise';
+
+// Load environment variables
+dotenv.config();
 
 // Create connection without database first
 const dbConfig = {
@@ -17,9 +21,12 @@ const dbConfig = {
 
 async function runMigrations() {
   console.log('🔄 Starting database migrations...\n');
+  console.log('📦 Connecting to MySQL...');
+  console.log(`   Host: ${dbConfig.host}`);
+  console.log(`   User: ${dbConfig.user}`);
 
   // First, ensure the database exists
-  console.log('📦 Checking if database exists...');
+  console.log('\n📦 Creating database if needed...');
   const tempConnection = await mysql.createConnection(dbConfig);
   
   try {
@@ -31,6 +38,7 @@ async function runMigrations() {
 
   // Now connect to the actual database
   dbConfig.database = 'promote';
+  console.log('\n🔗 Connecting to promote database...');
   const connection = await mysql.createConnection(dbConfig);
   
   try {
