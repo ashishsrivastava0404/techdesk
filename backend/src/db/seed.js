@@ -240,7 +240,7 @@ async function seedDatabase() {
     console.log('⚙️ Seeding platform settings...');
     
     await connection.query(`
-      INSERT IGNORE INTO platform_settings (setting_key, setting_value) VALUES
+      INSERT IGNORE INTO platform_settings (key_name, value) VALUES
       ('platform_name', 'TechDesk'),
       ('platform_tagline', 'Expert Technical Support on Demand'),
       ('support_email', 'support@techdesk.com'),
