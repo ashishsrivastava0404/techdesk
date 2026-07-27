@@ -59,6 +59,13 @@ Welcome to the TechDesk documentation. This folder contains comprehensive guides
 
 ## Recent Updates
 
+### v1.4.0 - Master Data Management
+- Added Master Data section to Admin Panel
+- Categories management with hierarchy view
+- Templates management with usage tracking
+- Tech Stack management with certified badges
+- Topic suggestions management
+
 ### v1.3.0 - Expert Profile & Expertise System
 - Added ExpertProfile.md with complete expert management docs
 - Added TechStack.js with 100+ technologies across 10 categories
