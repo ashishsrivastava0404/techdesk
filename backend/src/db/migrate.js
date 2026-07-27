@@ -5,12 +5,33 @@
  * Usage: node src/db/migrate.js
  */
 
-import pool from './index.js';
+import mysql from 'mysql2/promise';
+
+// Create connection without database first
+const dbConfig = {
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: 'mysql' // Connect to default mysql database first
+};
 
 async function runMigrations() {
   console.log('🔄 Starting database migrations...\n');
 
-  const connection = await pool.getConnection();
+  // First, ensure the database exists
+  console.log('📦 Checking if database exists...');
+  const tempConnection = await mysql.createConnection(dbConfig);
+  
+  try {
+    await tempConnection.query(`CREATE DATABASE IF NOT EXISTS promote`);
+    console.log('   ✓ Database "promote" ready');
+  } finally {
+    await tempConnection.end();
+  }
+
+  // Now connect to the actual database
+  dbConfig.database = 'promote';
+  const connection = await mysql.createConnection(dbConfig);
   
   try {
     // ============================================
@@ -200,8 +221,7 @@ async function runMigrations() {
     console.error('\n❌ Migration error:', error.message);
     throw error;
   } finally {
-    connection.release();
-    await pool.end();
+    await connection.end();
   }
 }
 
