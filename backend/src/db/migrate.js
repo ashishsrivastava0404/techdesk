@@ -490,6 +490,40 @@ async function runMigrations() {
     }
 
     // ============================================
+    // SUPPORT REPORTS TABLE
+    // ============================================
+    console.log('\n📋 Checking support_reports table...');
+
+    const [reportTables] = await connection.query(`SHOW TABLES LIKE 'support_reports'`);
+
+    if (reportTables.length === 0) {
+      console.log('   → Creating support_reports table...');
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS support_reports (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_id INT,
+          user_name VARCHAR(255),
+          user_email VARCHAR(255),
+          user_role ENUM('customer', 'tech', 'admin') DEFAULT 'customer',
+          report_type VARCHAR(100) NOT NULL,
+          subject VARCHAR(255) NOT NULL,
+          description TEXT NOT NULL,
+          page_url VARCHAR(500),
+          browser_info TEXT,
+          priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
+          status ENUM('open', 'in_progress', 'resolved', 'closed') DEFAULT 'open',
+          assigned_to VARCHAR(255),
+          resolution_notes TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('   ✓ support_reports table created');
+    } else {
+      console.log('   ✓ support_reports table exists');
+    }
+
+// ============================================
     // CHATBOT CONVERSATIONS TABLE
     // ============================================
     console.log('\n🤖 Checking chatbot_conversations table...');
@@ -513,6 +547,271 @@ async function runMigrations() {
     }
 
     // ============================================
+    // ADMIN LOGS TABLE
+    // ============================================
+    console.log('\n📝 Checking admin_logs table...');
+    const [adminLogTables] = await connection.query(`SHOW TABLES LIKE 'admin_logs'`);
+    if (adminLogTables.length === 0) {
+      console.log('   → Creating admin_logs table...');
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS admin_logs (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          admin_name VARCHAR(255),
+          action VARCHAR(100) NOT NULL,
+          target_type VARCHAR(100),
+          target_id INT,
+          details JSON,
+          ip_address VARCHAR(45),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('   ✓ admin_logs table created');
+    } else {
+      console.log('   ✓ admin_logs table exists');
+    }
+
+    // ============================================
+    // AGENT REQUESTS TABLE
+    // ============================================
+    console.log('\n🤝 Checking agent_requests table...');
+    const [agentTables] = await connection.query(`SHOW TABLES LIKE 'agent_requests'`);
+    if (agentTables.length === 0) {
+      console.log('   → Creating agent_requests table...');
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS agent_requests (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_name VARCHAR(255) NOT NULL,
+          email VARCHAR(255) NOT NULL,
+          role ENUM('customer', 'tech') NOT NULL,
+          status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+          notes TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('   ✓ agent_requests table created');
+    } else {
+      console.log('   ✓ agent_requests table exists');
+    }
+
+    // ============================================
+    // HIRE REQUESTS TABLE
+    // ============================================
+    console.log('\n💼 Checking hire_requests table...');
+    const [hireTables] = await connection.query(`SHOW TABLES LIKE 'hire_requests'`);
+    if (hireTables.length === 0) {
+      console.log('   → Creating hire_requests table...');
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS hire_requests (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          customer_name VARCHAR(255) NOT NULL,
+          tech_name VARCHAR(255) NOT NULL,
+          ticket_id INT,
+          message TEXT,
+          status ENUM('pending', 'accepted', 'declined', 'completed') DEFAULT 'pending',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('   ✓ hire_requests table created');
+    } else {
+      console.log('   ✓ hire_requests table exists');
+    }
+
+    // ============================================
+    // TICKET ATTACHMENTS TABLE
+    // ============================================
+    console.log('\n📎 Checking ticket_attachments table...');
+    const [attachTables] = await connection.query(`SHOW TABLES LIKE 'ticket_attachments'`);
+    if (attachTables.length === 0) {
+      console.log('   → Creating ticket_attachments table...');
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS ticket_attachments (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          ticket_id INT NOT NULL,
+          user_name VARCHAR(255) NOT NULL,
+          file_name VARCHAR(255) NOT NULL,
+          file_url VARCHAR(500) NOT NULL,
+          file_type VARCHAR(100),
+          file_size INT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('   ✓ ticket_attachments table created');
+    } else {
+      console.log('   ✓ ticket_attachments table exists');
+    }
+
+    // ============================================
+    // TICKET COMMENTS TABLE
+    // ============================================
+    console.log('\n💬 Checking ticket_comments table...');
+    const [commentTables] = await connection.query(`SHOW TABLES LIKE 'ticket_comments'`);
+    if (commentTables.length === 0) {
+      console.log('   → Creating ticket_comments table...');
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS ticket_comments (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          ticket_id INT NOT NULL,
+          user_name VARCHAR(255) NOT NULL,
+          user_role ENUM('customer', 'tech', 'admin') DEFAULT 'customer',
+          message TEXT NOT NULL,
+          message_type ENUM('comment', 'note', 'resolution', 'internal') DEFAULT 'comment',
+          parent_id INT,
+          is_internal BOOLEAN DEFAULT FALSE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('   ✓ ticket_comments table created');
+    } else {
+      console.log('   ✓ ticket_comments table exists');
+    }
+
+    // ============================================
+    // TICKET HISTORY TABLE
+    // ============================================
+    console.log('\n📜 Checking ticket_history table...');
+    const [historyTables] = await connection.query(`SHOW TABLES LIKE 'ticket_history'`);
+    if (historyTables.length === 0) {
+      console.log('   → Creating ticket_history table...');
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS ticket_history (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          ticket_id INT NOT NULL,
+          user_name VARCHAR(255) NOT NULL,
+          action VARCHAR(100) NOT NULL,
+          field_changed VARCHAR(100),
+          old_value TEXT,
+          new_value TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('   ✓ ticket_history table created');
+    } else {
+      console.log('   ✓ ticket_history table exists');
+    }
+
+    // ============================================
+    // TICKET MESSAGES TABLE
+    // ============================================
+    console.log('\n✉️ Checking ticket_messages table...');
+    const [msgTables] = await connection.query(`SHOW TABLES LIKE 'ticket_messages'`);
+    if (msgTables.length === 0) {
+      console.log('   → Creating ticket_messages table...');
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS ticket_messages (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          ticket_id INT NOT NULL,
+          user_name VARCHAR(255) NOT NULL,
+          content TEXT NOT NULL,
+          message_type ENUM('message', 'note', 'system') DEFAULT 'message',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('   ✓ ticket_messages table created');
+    } else {
+      console.log('   ✓ ticket_messages table exists');
+    }
+
+    // ============================================
+    // TECH EARNINGS TABLE
+    // ============================================
+    console.log('\n💵 Checking tech_earnings table...');
+    const [earnTables] = await connection.query(`SHOW TABLES LIKE 'tech_earnings'`);
+    if (earnTables.length === 0) {
+      console.log('   → Creating tech_earnings table...');
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS tech_earnings (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_name VARCHAR(255) NOT NULL,
+          ticket_id INT,
+          amount DECIMAL(10,2) NOT NULL,
+          type ENUM('earning', 'bonus', 'refund') DEFAULT 'earning',
+          status ENUM('pending', 'available', 'withdrawn') DEFAULT 'pending',
+          description TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('   ✓ tech_earnings table created');
+    } else {
+      console.log('   ✓ tech_earnings table exists');
+    }
+
+    // ============================================
+    // CSAT SURVEYS TABLE
+    // ============================================
+    console.log('\n📊 Checking csat_surveys table...');
+    const [surveyTables] = await connection.query(`SHOW TABLES LIKE 'csat_surveys'`);
+    if (surveyTables.length === 0) {
+      console.log('   → Creating csat_surveys table...');
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS csat_surveys (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          ticket_id INT NOT NULL,
+          customer_name VARCHAR(255) NOT NULL,
+          tech_name VARCHAR(255),
+          score INT NOT NULL,
+          feedback TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('   ✓ csat_surveys table created');
+    } else {
+      console.log('   ✓ csat_surveys table exists');
+    }
+
+    // ============================================
+    // CUSTOMER INVOICES TABLE
+    // ============================================
+    console.log('\n🧾 Checking customer_invoices table...');
+    const [invTables] = await connection.query(`SHOW TABLES LIKE 'customer_invoices'`);
+    if (invTables.length === 0) {
+      console.log('   → Creating customer_invoices table...');
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS customer_invoices (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_name VARCHAR(255) NOT NULL,
+          ticket_id INT,
+          amount DECIMAL(10,2) NOT NULL,
+          status ENUM('pending', 'paid', 'cancelled') DEFAULT 'pending',
+          stripe_invoice_id VARCHAR(255),
+          invoice_url VARCHAR(500),
+          due_date DATE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('   ✓ customer_invoices table created');
+    } else {
+      console.log('   ✓ customer_invoices table exists');
+    }
+
+    // ============================================
+    // CONVERSATIONS TABLE
+    // ============================================
+    console.log('\n💭 Checking conversations table...');
+    const [convTables] = await connection.query(`SHOW TABLES LIKE 'conversations'`);
+    if (convTables.length === 0) {
+      console.log('   → Creating conversations table...');
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS conversations (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_name VARCHAR(255) NOT NULL,
+          title VARCHAR(255),
+          messages TEXT,
+          status ENUM('active', 'resolved') DEFAULT 'active',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('   ✓ conversations table created');
+    } else {
+      console.log('   ✓ conversations table exists');
+    }
+
+// ============================================
     // PAYMENTS TABLE
     // ============================================
     console.log('\n💳 Checking payments table...');
