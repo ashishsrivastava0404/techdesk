@@ -167,12 +167,22 @@ async function runMigrations() {
           tag VARCHAR(255) NOT NULL,
           usage_count INT DEFAULT 0,
           success_rate DECIMAL(5,2) DEFAULT 0,
-          avg_resolution_hours DECIMAL(10,2) DEFAULT 0
+          avg_resolution_hours DECIMAL(10,2) DEFAULT 0,
+          last_used_at TIMESTAMP NULL DEFAULT NULL
         )
       `);
       console.log('   ✓ topic_suggestions table created');
     } else {
       console.log('   ✓ topic_suggestions table exists');
+      // Add missing columns
+      try {
+        await connection.query(`ALTER TABLE topic_suggestions ADD COLUMN last_used_at TIMESTAMP NULL DEFAULT NULL`);
+        console.log('   → Added last_used_at column');
+      } catch (err) {
+        if (err.code !== 'ER_DUP_FIELDNAME') {
+          // Column might already exist, ignore error
+        }
+      }
     }
 
     // ============================================

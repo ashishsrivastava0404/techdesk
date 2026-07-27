@@ -7,7 +7,7 @@ import { Router } from 'express';
 import { expertService } from '../services/expertService.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
-import { getAllTechnologies, getTechnologiesByCategory, EXPERTISE_LEVELS } from '../constants/techStack.js';
+import { getAllTechnologies, getTechnologiesByCategory, EXPERTISE_LEVELS, TECH_STACK } from '../constants/techStack.js';
 
 const router = Router();
 
@@ -28,7 +28,7 @@ router.get('/technologies', asyncHandler(async (req, res) => {
   }
   
   const technologies = getAllTechnologies();
-  const categories = Object.entries(require('../constants/techStack.js').TECH_STACK).map(([id, cat]) => ({
+  const categories = Object.entries(TECH_STACK).map(([id, cat]) => ({
     id,
     name: cat.name,
     icon: cat.icon,
