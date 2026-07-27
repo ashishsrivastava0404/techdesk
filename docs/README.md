@@ -58,10 +58,19 @@ Welcome to the TechDesk documentation. This folder contains comprehensive guides
 - Total tests: **841 tests passing**
 
 ### Sample Data
+- Run migrations first: `cd backend && npm run migrate`
 - Populate database: `cd backend && npm run seed`
 - Sample data includes: users, tickets, categories, templates, tech stack, and more
 
 ## Recent Updates
+
+### v1.6.1 - Responsiveness Fixes
+- Added database migration script for schema synchronization
+- Fixed frontend event handling with proper onClick handlers
+- Added stopPropagation() to prevent event bubbling
+- Added responsive CSS breakpoints for mobile views
+- Fixed z-index and pointer-events blocking issues
+- All Master Data buttons now fully functional
 
 ### v1.6.0 - Sample Data
 - Added database seed script with comprehensive sample data
