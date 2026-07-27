@@ -41,18 +41,14 @@ async function runMigrations() {
   };
 
   try {
-    // Add columns to existing tables
     await addColumn('topic_suggestions', 'last_used_at', 'TIMESTAMP NULL DEFAULT NULL');
     await addColumn('tickets', 'first_response_at', 'TIMESTAMP NULL DEFAULT NULL');
     await addColumn('crm_contacts', 'user_type', "ENUM('customer', 'tech', 'other') DEFAULT 'customer'");
-    
-    // conversations table - add missing columns
     await addColumn('conversations', 'customer_id', 'INT');
     await addColumn('conversations', 'tech_id', 'INT');
     await addColumn('conversations', 'customer_name', 'VARCHAR(255)');
     await addColumn('conversations', 'tech_name', 'VARCHAR(255)');
-    
-    // Rename user_name to tech_name in earnings tables if needed
+
     try {
       const [cols] = await connection.query("DESCRIBE tech_earnings");
       const hasTechName = cols.some(c => c.Field === 'tech_name');
@@ -63,10 +59,8 @@ async function runMigrations() {
       } else if (hasTechName) {
         console.log('✓ tech_name exists in tech_earnings');
       }
-    } catch (err) {
-      console.log(`⚠ tech_earnings: ${err.code}`);
-    }
-    
+    } catch (err) { console.log(`⚠ tech_earnings: ${err.code}`); }
+
     try {
       const [cols] = await connection.query("DESCRIBE tech_payouts");
       const hasTechName = cols.some(c => c.Field === 'tech_name');
@@ -77,80 +71,20 @@ async function runMigrations() {
       } else if (hasTechName) {
         console.log('✓ tech_name exists in tech_payouts');
       }
-    } catch (err) {
-      console.log(`⚠ tech_payouts: ${err.code}`);
-    }
-    
-    // Create missing tables
-    await createTable('expert_skills', `
-      CREATE TABLE IF NOT EXISTS expert_skills (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT NOT NULL,
-        tech_id VARCHAR(100) NOT NULL,
-        expertise_level ENUM('beginner', 'intermediate', 'advanced', 'expert', 'certified') DEFAULT 'beginner',
-        years_experience INT DEFAULT 0,
-        certification_proof TEXT,
-        is_verified BOOLEAN DEFAULT FALSE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE KEY unique_user_tech (user_id, tech_id)
-      )
-    `);
-    
-    await createTable('expert_stats', `
-      CREATE TABLE IF NOT EXISTS expert_stats (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT NOT NULL UNIQUE,
-        total_tickets_resolved INT DEFAULT 0,
-        total_rating DECIMAL(10,2) DEFAULT 0,
-        avg_rating DECIMAL(3,2) DEFAULT 0,
-        avg_resolution_time INT DEFAULT 0,
-        last_active TIMESTAMP NULL DEFAULT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )
-    `);
-    
-    await createTable('tech_stack', `
-      CREATE TABLE IF NOT EXISTS tech_stack (
-        id VARCHAR(100) PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        category VARCHAR(100) NOT NULL,
-        certified BOOLEAN DEFAULT FALSE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    
-    await createTable('currencies', `
-      CREATE TABLE IF NOT EXISTS currencies (
-        code VARCHAR(3) PRIMARY KEY,
-        symbol VARCHAR(10) NOT NULL,
-        name VARCHAR(100) NOT NULL,
-        decimal_places INT DEFAULT 2,
-        exchange_rate_to_usd DECIMAL(15,6) DEFAULT 1,
-        is_active BOOLEAN DEFAULT TRUE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )
-    `);
-    
-    // Insert default currencies if empty
+    } catch (err) { console.log(`⚠ tech_payouts: ${err.code}`); }
+
+    await createTable('expert_skills', `CREATE TABLE IF NOT EXISTS expert_skills (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, tech_id VARCHAR(100) NOT NULL, expertise_level ENUM('beginner', 'intermediate', 'advanced', 'expert', 'certified') DEFAULT 'beginner', years_experience INT DEFAULT 0, certification_proof TEXT, is_verified BOOLEAN DEFAULT FALSE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, UNIQUE KEY unique_user_tech (user_id, tech_id))`);
+    await createTable('expert_stats', `CREATE TABLE IF NOT EXISTS expert_stats (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL UNIQUE, total_tickets_resolved INT DEFAULT 0, total_rating DECIMAL(10,2) DEFAULT 0, avg_rating DECIMAL(3,2) DEFAULT 0, avg_resolution_time INT DEFAULT 0, last_active TIMESTAMP NULL DEFAULT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)`);
+    await createTable('tech_stack', `CREATE TABLE IF NOT EXISTS tech_stack (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255) NOT NULL, category VARCHAR(100) NOT NULL, certified BOOLEAN DEFAULT FALSE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
+    await createTable('currencies', `CREATE TABLE IF NOT EXISTS currencies (code VARCHAR(3) PRIMARY KEY, symbol VARCHAR(10) NOT NULL, name VARCHAR(100) NOT NULL, decimal_places INT DEFAULT 2, exchange_rate_to_usd DECIMAL(15,6) DEFAULT 1, is_active BOOLEAN DEFAULT TRUE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)`);
+
     try {
       const [rows] = await connection.query('SELECT COUNT(*) as count FROM currencies');
       if (rows[0].count === 0) {
-        await connection.query(`
-          INSERT INTO currencies (code, symbol, name, decimal_places, exchange_rate_to_usd) VALUES
-          ('USD', '$', 'US Dollar', 2, 1.000000),
-          ('EUR', '€', 'Euro', 2, 0.850000),
-          ('GBP', '£', 'British Pound', 2, 0.730000),
-          ('INR', '₹', 'Indian Rupee', 2, 74.500000),
-          ('JPY', '¥', 'Japanese Yen', 0, 110.000000)
-        `);
+        await connection.query(`INSERT INTO currencies (code, symbol, name, decimal_places, exchange_rate_to_usd) VALUES ('USD', '$', 'US Dollar', 2, 1.000000), ('EUR', '€', 'Euro', 2, 0.850000), ('GBP', '£', 'British Pound', 2, 0.730000), ('INR', '₹', 'Indian Rupee', 2, 74.500000), ('JPY', '¥', 'Japanese Yen', 0, 110.000000)`);
         console.log('✓ Inserted default currencies');
       }
-    } catch (err) {
-      console.log(`⚠ currencies insert: ${err.code}`);
-    }
+    } catch (err) { console.log(`⚠ currencies insert: ${err.code}`); }
 
     console.log('\n✅ Migrations complete!');
   } finally {
