@@ -2,6 +2,15 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useApp } from '../context/AppContext.jsx';
 
 /**
+ * Get redirect path based on user role
+ */
+function getRoleBasedRedirect(user) {
+  if (user.role === 'admin') return '/admin';
+  if (user.role === 'tech') return '/available';
+  return '/dashboard';
+}
+
+/**
  * Protected Route - requires authentication
  * Redirects to login if not authenticated
  */
@@ -26,13 +35,7 @@ export function ProtectedRoute({ children, allowedRoles }) {
   // Check role-based access if specified
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     // Redirect to appropriate dashboard based on role
-    if (user.role === 'admin') {
-      return <Navigate to="/admin" replace />;
-    } else if (user.role === 'tech') {
-      return <Navigate to="/dashboard" replace />;
-    } else {
-      return <Navigate to="/dashboard" replace />;
-    }
+    return <Navigate to={getRoleBasedRedirect(user)} replace />;
   }
 
   return children;
@@ -56,13 +59,7 @@ export function PublicRoute({ children }) {
 
   if (user) {
     // Redirect to appropriate dashboard based on role
-    if (user.role === 'admin') {
-      return <Navigate to="/admin" replace />;
-    } else if (user.role === 'tech') {
-      return <Navigate to="/available" replace />;
-    } else {
-      return <Navigate to="/dashboard" replace />;
-    }
+    return <Navigate to={getRoleBasedRedirect(user)} replace />;
   }
 
   return children;
@@ -89,7 +86,8 @@ export function AdminRoute({ children }) {
   }
 
   if (user.role !== 'admin') {
-    return <Navigate to="/dashboard" replace />;
+    // Redirect techs to /available, customers to /dashboard
+    return <Navigate to={getRoleBasedRedirect(user)} replace />;
   }
 
   return children;
