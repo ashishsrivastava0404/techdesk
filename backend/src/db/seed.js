@@ -31,9 +31,9 @@ async function seedDatabase() {
     await connection.query(`
       INSERT IGNORE INTO users (name, email, password_hash, password_salt, role, status, bio, hourly_rate) VALUES
       ('Admin User', 'admin@techdesk.com', ?, ?, 'admin', 'active', 'System administrator', 0.00),
-      ('John Smith', 'john@example.com', ?, ?, 'active', 'Software developer interested in DevOps', 0.00),
-      ('Sarah Johnson', 'sarah@example.com', ?, ?, 'active', 'Product manager at TechCorp', 0.00),
-      ('Mike Wilson', 'mike@example.com', ?, ?, 'active', 'Startup founder', 0.00),
+      ('John Smith', 'john@example.com', ?, ?, 'customer', 'active', 'Software developer interested in DevOps', 0.00),
+      ('Sarah Johnson', 'sarah@example.com', ?, ?, 'customer', 'active', 'Product manager at TechCorp', 0.00),
+      ('Mike Wilson', 'mike@example.com', ?, ?, 'customer', 'active', 'Startup founder', 0.00),
       ('Emily Chen', 'emily@example.com', ?, ?, 'tech', 'active', 'Full-stack developer with 5 years experience in React and Node.js', 75.00),
       ('David Lee', 'david@example.com', ?, ?, 'tech', 'active', 'DevOps engineer specializing in AWS and Kubernetes', 85.00),
       ('Lisa Brown', 'lisa@example.com', ?, ?, 'tech', 'active', 'Backend developer expert in Python and Django', 70.00),
