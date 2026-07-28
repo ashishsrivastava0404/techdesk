@@ -391,12 +391,15 @@ async function runMigrations() {
       await connection.query(`
         CREATE TABLE IF NOT EXISTS crm_contacts (
           id INT AUTO_INCREMENT PRIMARY KEY,
-          name VARCHAR(255) NOT NULL,
+          user_name VARCHAR(255) NOT NULL,
+          user_type ENUM('customer', 'tech') NOT NULL,
+          company VARCHAR(255),
           email VARCHAR(255),
           phone VARCHAR(50),
-          company VARCHAR(255),
-          status ENUM('lead', 'active', 'inactive') DEFAULT 'lead',
+          address TEXT,
+          tags JSON,
           notes TEXT,
+          lifetime_value DECIMAL(10,2) DEFAULT 0,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )
@@ -405,7 +408,13 @@ async function runMigrations() {
     } else {
       console.log('   ✓ crm_contacts table exists');
       try {
-        await connection.query(`ALTER TABLE crm_contacts ADD COLUMN user_type ENUM('customer', 'tech', 'other') DEFAULT 'customer'`);
+        await connection.query(`ALTER TABLE crm_contacts ADD COLUMN user_name VARCHAR(255) DEFAULT NULL`);
+        console.log('   → Added user_name column');
+      } catch (err) {
+        if (err.code !== 'ER_DUP_FIELDNAME') {}
+      }
+      try {
+        await connection.query(`ALTER TABLE crm_contacts ADD COLUMN user_type ENUM('customer', 'tech') DEFAULT 'customer'`);
         console.log('   → Added user_type column');
       } catch (err) {
         if (err.code !== 'ER_DUP_FIELDNAME') {}
@@ -553,9 +562,12 @@ async function runMigrations() {
       await connection.query(`
         CREATE TABLE IF NOT EXISTS chatbot_conversations (
           id INT AUTO_INCREMENT PRIMARY KEY,
-          user_name VARCHAR(255) NOT NULL,
-          messages TEXT,
-          status ENUM('active', 'completed') DEFAULT 'active',
+          session_id VARCHAR(100) DEFAULT 'default',
+          user_name VARCHAR(255),
+          user_message TEXT NOT NULL,
+          bot_response TEXT,
+          faq_matched VARCHAR(255),
+          action_taken VARCHAR(100),
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `);
