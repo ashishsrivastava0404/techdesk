@@ -337,7 +337,7 @@ async function seedDatabase() {
     console.log('🤖 Seeding chatbot conversations...');
     
     await connection.query(`
-      INSERT IGNORE INTO chatbot_conversations (name, messages, status) VALUES
+      INSERT IGNORE INTO chatbot_conversations (user_name, messages, status) VALUES
       ('John Smith', '[{"role":"user","content":"How do I submit a ticket?"},{"role":"bot","content":"You can submit a ticket by clicking the Submit Ticket button..."}]', 'completed'),
       ('Sarah Johnson', '[{"role":"user","content":"What technologies do you support?"},{"role":"bot","content":"We support all major technologies including React, Node.js, Python..."}]', 'completed'),
       ('Mike Wilson', '[{"role":"user","content":"How do credits work?"},{"role":"bot","content":"Credits are used to pay for technical support. You can purchase them..."}]', 'active')
