@@ -8,7 +8,7 @@ const router = Router();
 
 // Get tickets with filters
 router.get('/', authenticate, async (req, res) => {
-  const { status, tech_name, customer_name, environment, priority, category, subcategory, search } = req.query;
+  const { status, tech_name, customer_name, environment, priority, category, subcategory, search, ticket_type } = req.query;
   
   let query = 'SELECT * FROM tickets WHERE 1=1';
   const params = [];
@@ -18,6 +18,8 @@ router.get('/', authenticate, async (req, res) => {
     query += ' AND customer_name = ?';
     params.push(req.user.name);
   } else if (req.user.role === 'tech') {
+    // Techs can ONLY see technical tickets
+    query += " AND ticket_type = 'technical'";
     if (!tech_name && !customer_name) {
       query += ' AND (tech_name = ? OR status IN ("open", "pending_assignment"))';
       params.push(req.user.name);
@@ -220,7 +222,7 @@ router.post('/', async (req, res) => {
 // Update ticket
 router.patch('/:id', async (req, res) => {
   const { id } = req.params;
-  const { status, tech_name, priority, category, subcategory, tags, estimated_hours, actual_hours, actor_name, actor_role, subject, short_description, long_description } = req.body;
+  const { status, tech_name, assigned_to_admin, priority, category, subcategory, tags, estimated_hours, actual_hours, actor_name, actor_role, subject, short_description, long_description } = req.body;
   
   try {
     // Get current ticket for history
@@ -238,6 +240,8 @@ router.patch('/:id', async (req, res) => {
     query += ' AND customer_name = ?';
     params.push(req.user.name);
   } else if (req.user.role === 'tech') {
+    // Techs can ONLY see technical tickets
+    query += " AND ticket_type = 'technical'";
     if (!tech_name && !customer_name) {
       query += ' AND (tech_name = ? OR status IN ("open", "pending_assignment"))';
       params.push(req.user.name);
@@ -544,6 +548,8 @@ router.get('/export', async (req, res) => {
     query += ' AND customer_name = ?';
     params.push(req.user.name);
   } else if (req.user.role === 'tech') {
+    // Techs can ONLY see technical tickets
+    query += " AND ticket_type = 'technical'";
     if (!tech_name && !customer_name) {
       query += ' AND (tech_name = ? OR status IN ("open", "pending_assignment"))';
       params.push(req.user.name);

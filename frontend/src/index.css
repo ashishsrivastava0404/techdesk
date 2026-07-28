@@ -411,6 +411,16 @@ textarea {
   color: var(--muted);
 }
 
+.badge-business {
+  background: #0891b2;
+  color: white;
+}
+
+.badge-technical {
+  background: #7c3aed;
+  color: white;
+}
+
 .badge-row {
   display: flex;
   gap: 6px;

@@ -256,9 +256,11 @@ async function runMigrations() {
           short_description TEXT DEFAULT NULL,
           long_description TEXT DEFAULT NULL,
           priority ENUM('low', 'normal', 'high', 'urgent', 'critical') DEFAULT 'normal',
+          ticket_type ENUM('business', 'technical') DEFAULT 'technical',
           status ENUM('open', 'claimed', 'in_progress', 'resolved', 'closed') DEFAULT 'open',
           customer_name VARCHAR(255),
           tech_name VARCHAR(255) DEFAULT NULL,
+          assigned_to_admin VARCHAR(255) DEFAULT NULL,
           category VARCHAR(255) DEFAULT NULL,
           base_pay DECIMAL(10,2) DEFAULT 0,
           environment ENUM('dev', 'staging', 'production') DEFAULT 'dev',
@@ -284,6 +286,19 @@ async function runMigrations() {
       `);
       
       const colMap = columns.map(c => c.COLUMN_NAME);
+      
+      if (!colMap.includes('ticket_type')) {
+        console.log('   → Adding ticket_type column...');
+        await connection.query(`ALTER TABLE tickets ADD COLUMN ticket_type ENUM('business', 'technical') DEFAULT 'technical'`);
+        console.log('   ✓ ticket_type column added');
+      }
+      
+      if (!colMap.includes('assigned_to_admin')) {
+        console.log('   → Adding assigned_to_admin column...');
+        await connection.query(`ALTER TABLE tickets ADD COLUMN assigned_to_admin VARCHAR(255) DEFAULT NULL AFTER tech_name`);
+        console.log('   ✓ assigned_to_admin column added');
+      }
+      
       if (!colMap.includes('tags')) {
         console.log('   → Adding tags column...');
         await connection.query(`ALTER TABLE tickets ADD COLUMN tags TEXT`);

@@ -21,6 +21,11 @@ export default function TicketCard({ ticket, actions, showTech = false, onResolv
           </div>
         </div>
         <div className="badge-row">
+          {ticket.ticket_type && (
+            <span className={`badge ${ticket.ticket_type === 'business' ? 'badge-business' : 'badge-technical'}`}>
+              {ticket.ticket_type === 'business' ? '💼 Business' : '🔧 Technical'}
+            </span>
+          )}
           <span className={`badge badge-env-${ticket.environment}`}>
             {ticket.environment}
           </span>

@@ -297,6 +297,11 @@ export default function TicketDetail({ ticket, onClose, onUpdate }) {
           <div style={{ marginBottom: '20px' }}>
             <h2 style={{ fontFamily: 'var(--display)', fontSize: '20px', marginBottom: '8px' }}>{ticket.title}</h2>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
+              {ticket.ticket_type && (
+                <span className={`badge ${ticket.ticket_type === 'business' ? 'badge-business' : 'badge-technical'}`}>
+                  {ticket.ticket_type === 'business' ? '💼 Business' : '🔧 Technical'}
+                </span>
+              )}
               <span className={`badge badge-env-${ticket.environment}`}>{ticket.environment}</span>
               <span className={`badge badge-status-${ticket.status}`}>{ticket.status.replace('_', ' ')}</span>
               <span className="badge" style={{ background: priorityColors[ticket.priority], color: 'white' }}>{ticket.category}</span>

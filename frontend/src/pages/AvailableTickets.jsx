@@ -48,10 +48,23 @@ export default function AvailableTickets() {
 
   return (
     <div className="view-container">
-      <h2 className="view-title">Available Tickets</h2>
+      <h2 className="view-title">🔧 Technical Support Tickets</h2>
       <p className="view-sub">
-        Pick up tickets that match your tier. Claim and resolve them to earn ratings.
+        Pick up technical tickets that match your expertise. Claim and resolve bugs, infrastructure issues, or code problems.
       </p>
+      
+      <div style={{
+        padding: '12px 16px',
+        background: 'var(--amber-dim)',
+        borderRadius: '8px',
+        marginBottom: '16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px'
+      }}>
+        <span>ℹ️</span>
+        <small>Only technical tickets are shown here. For account, billing, or login issues, please contact admin.</small>
+      </div>
 
       {tickets.length === 0 ? (
         <div className="empty">

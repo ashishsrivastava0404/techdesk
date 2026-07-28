@@ -25,6 +25,7 @@ export default function AdminDashboard() {
   const [financialLogs, setFinancialLogs] = useState([]);
   const [supportReports, setSupportReports] = useState([]);
   const [supportStats, setSupportStats] = useState({ open: 0, in_progress: 0, resolved: 0, urgent: 0 });
+  const [businessTickets, setBusinessTickets] = useState([]);
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -34,6 +35,7 @@ export default function AdminDashboard() {
     if (path.includes('/payments')) return 'payments';
     if (path.includes('/credits')) return 'credits';
     if (path.includes('/analytics')) return 'analytics';
+    if (path.includes('/business-tickets')) return 'business-tickets';
     if (path.includes('/financial-audit')) return 'financial-audit';
     if (path.includes('/support-reports')) return 'support-reports';
     if (path.includes('/settings') && !path.includes('/platform-settings')) return 'settings';
@@ -47,6 +49,7 @@ export default function AdminDashboard() {
       'payments': '/admin/payments',
       'credits': '/admin/credits',
       'analytics': '/admin/analytics',
+      'business-tickets': '/admin/business-tickets',
       'financial-audit': '/admin/financial-audit',
       'support-reports': '/admin/support-reports',
       'settings': '/admin/settings'
@@ -92,6 +95,9 @@ export default function AdminDashboard() {
       } else if (tab === 'settings') {
         const data = await api.admin.getSettings();
         setSettings(data);
+      } else if (tab === 'business-tickets') {
+        const data = await api.tickets.list({ ticket_type: 'business' });
+        setBusinessTickets(data);
       } else if (tab === 'financial-audit') {
         const data = await api.admin.getFinancialLogs();
         setFinancialLogs(data);
@@ -170,6 +176,7 @@ export default function AdminDashboard() {
     { id: 'payments', label: 'Payments & Payouts', path: '/admin/payments' },
     { id: 'credits', label: 'Credits', path: '/admin/credits' },
     { id: 'analytics', label: 'Analytics', path: '/admin/analytics' },
+    { id: 'business-tickets', label: '💼 Business Tickets', path: '/admin/business-tickets' },
     { id: 'financial-audit', label: '💰 Financial Audit', path: '/admin/financial-audit' },
     { id: 'support-reports', label: '📋 Support Reports', path: '/admin/support-reports' },
     { id: 'settings', label: 'Settings', path: '/admin/settings' }
@@ -626,6 +633,111 @@ export default function AdminDashboard() {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {tab === 'business-tickets' && (
+            <div>
+              <div style={{ marginBottom: '24px' }}>
+                <h3 style={{ marginBottom: '8px' }}>💼 Business & Account Tickets</h3>
+                <p style={{ color: 'var(--muted)', margin: 0 }}>
+                  Handle account, billing, and login issues from customers and technicians.
+                </p>
+              </div>
+
+              {businessTickets.length === 0 ? (
+                <div className="panel">
+                  <div className="empty">
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎉</div>
+                    <h4>No Business Tickets</h4>
+                    <p>All account and billing issues have been resolved!</p>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {businessTickets.map(ticket => (
+                    <div key={ticket.id} className="panel" style={{
+                      borderLeft: ticket.priority === 'urgent' || ticket.priority === 'critical' 
+                        ? '4px solid var(--red)' 
+                        : ticket.priority === 'high'
+                          ? '4px solid var(--orange)'
+                          : '4px solid var(--line)'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                        <div>
+                          <span className={`badge badge-${ticket.priority === 'critical' ? 'red' : ticket.priority === 'urgent' ? 'amber' : ticket.priority === 'high' ? 'orange' : 'default'}`}>
+                            {ticket.priority}
+                          </span>
+                          <span className="badge badge-blue" style={{ marginLeft: '8px' }}>
+                            💼 {ticket.ticket_type}
+                          </span>
+                          <span className={`badge badge-${ticket.status === 'open' ? 'green' : ticket.status === 'in_progress' ? 'blue' : 'muted'}`} style={{ marginLeft: '8px' }}>
+                            {ticket.status}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '12px', color: 'var(--muted)' }}>
+                          #{ticket.id} • {new Date(ticket.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                      
+                      <h4 style={{ marginBottom: '8px' }}>{ticket.title}</h4>
+                      <p style={{ color: 'var(--muted)', marginBottom: '12px', fontSize: '14px' }}>
+                        {ticket.description?.substring(0, 200)}{ticket.description?.length > 200 ? '...' : ''}
+                      </p>
+                      
+                      <div style={{ display: 'flex', gap: '24px', fontSize: '13px', color: 'var(--muted)' }}>
+                        <span>👤 {ticket.customer_name}</span>
+                        {ticket.assigned_to_admin && <span>👔 Assigned: {ticket.assigned_to_admin}</span>}
+                        {ticket.environment && <span>🌐 {ticket.environment}</span>}
+                        {ticket.category && <span>📁 {ticket.category}</span>}
+                      </div>
+
+                      <div style={{ marginTop: '16px', display: 'flex', gap: '12px' }}>
+                        {ticket.status === 'open' && (
+                          <button
+                            className="btn btn-primary btn-sm"
+                            onClick={async () => {
+                              try {
+                                await api.tickets.update(ticket.id, {
+                                  status: 'in_progress',
+                                  assigned_to_admin: user.name
+                                });
+                                showToast('Ticket assigned to you');
+                                loadData();
+                              } catch (err) {
+                                showToast('Failed to assign ticket');
+                              }
+                            }}
+                          >
+                            Take Ticket
+                          </button>
+                        )}
+                        {ticket.status === 'in_progress' && (
+                          <button
+                            className="btn btn-success btn-sm"
+                            onClick={async () => {
+                              try {
+                                await api.tickets.update(ticket.id, {
+                                  status: 'resolved'
+                                });
+                                showToast('Ticket resolved');
+                                loadData();
+                              } catch (err) {
+                                showToast('Failed to resolve ticket');
+                              }
+                            }}
+                          >
+                            Mark Resolved
+                          </button>
+                        )}
+                        <Link to={`/ticket/${ticket.id}`} className="btn btn-secondary btn-sm">
+                          View Details
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

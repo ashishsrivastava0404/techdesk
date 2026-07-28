@@ -30,6 +30,7 @@ export default function SubmitTicket() {
     short_description: '',
     long_description: '',
     description: '',
+    ticket_type: 'technical', // 'technical' or 'business'
     environment: 'dev',
     priority: 'normal',
     category: '',      // Top-level category ID
@@ -193,6 +194,13 @@ export default function SubmitTicket() {
     setForm(f => ({ ...f, subcategory: '', topic: '' }));
   }, [form.category]);
 
+  // Reset ticket_type when category changes to 'account' or 'billing' (business)
+  useEffect(() => {
+    if (form.category === 'account' || form.category === 'billing') {
+      setForm(f => ({ ...f, ticket_type: 'business' }));
+    }
+  }, [form.category]);
+
   // Reset topic when subcategory changes
   useEffect(() => {
     setForm(f => ({ ...f, topic: '' }));
@@ -203,6 +211,13 @@ export default function SubmitTicket() {
       loadTemplates(form.category);
     } else {
       setTemplates([]);
+    }
+  }, [form.category]);
+
+  // Reset ticket_type when category changes to 'account' or 'billing' (business)
+  useEffect(() => {
+    if (form.category === 'account' || form.category === 'billing') {
+      setForm(f => ({ ...f, ticket_type: 'business' }));
     }
   }, [form.category]);
 
@@ -765,6 +780,41 @@ export default function SubmitTicket() {
             <small style={{ color: 'var(--text-muted)' }}>
               Click suggestions above to add tags automatically
             </small>
+          </div>
+
+          {/* Ticket Type Selector */}
+          <div className="field">
+            <label>Ticket Type</label>
+            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+              <label className={`type-opt ${form.ticket_type === 'technical' ? 'active' : ''}`}>
+                <input
+                  type="radio"
+                  name="ticket_type"
+                  value="technical"
+                  checked={form.ticket_type === 'technical'}
+                  onChange={(e) => setForm(f => ({ ...f, ticket_type: e.target.value }))}
+                />
+                <span style={{ fontSize: '20px' }}>🔧</span>
+                <div>
+                  <strong>Technical Issue</strong>
+                  <small>Bug, code, or infrastructure problem</small>
+                </div>
+              </label>
+              <label className={`type-opt ${form.ticket_type === 'business' ? 'active' : ''}`}>
+                <input
+                  type="radio"
+                  name="ticket_type"
+                  value="business"
+                  checked={form.ticket_type === 'business'}
+                  onChange={(e) => setForm(f => ({ ...f, ticket_type: e.target.value }))}
+                />
+                <span style={{ fontSize: '20px' }}>💼</span>
+                <div>
+                  <strong>Business/Account</strong>
+                  <small>Login, billing, or account issue</small>
+                </div>
+              </label>
+            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
