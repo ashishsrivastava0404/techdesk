@@ -1,9 +1,46 @@
 import { useState, useEffect } from 'react';
-import { api } from '../api/index.js';
+
+const CATEGORY_MAP = {
+  'submit': 'tickets',
+  'claim': 'tickets',
+  'payment': 'payment',
+  'pay': 'payment',
+  'payout': 'payment',
+  'rating': 'rating',
+  'review': 'rating',
+  'sla': 'sla',
+  'response': 'sla',
+  'deadline': 'sla',
+  'priority': 'sla',
+  'category': 'tickets',
+  'type': 'tickets',
+  'leaderboard': 'leaderboard',
+  'rank': 'leaderboard',
+  'template': 'templates',
+  'format': 'templates',
+  'discussion': 'tickets',
+  'message': 'tickets',
+  'cancel': 'tickets',
+  'close': 'tickets',
+  'reset': 'account',
+  'forgot': 'account',
+  'login': 'account'
+};
+
+const CATEGORY_DISPLAY = {
+  'all': 'All Topics',
+  'tickets': 'Tickets',
+  'payment': 'Payments',
+  'rating': 'Ratings',
+  'sla': 'SLA',
+  'leaderboard': 'Leaderboard',
+  'templates': 'Templates',
+  'account': 'Account'
+};
 
 export default function HelpCenter() {
   const [articles, setArticles] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState(['all']);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedArticle, setSelectedArticle] = useState(null);
@@ -13,27 +50,40 @@ export default function HelpCenter() {
     loadArticles();
   }, []);
 
+  const getArticleCategory = (keywords) => {
+    if (!keywords || !keywords.length) return 'tickets';
+    const firstKeyword = keywords[0].toLowerCase();
+    return CATEGORY_MAP[firstKeyword] || 'tickets';
+  };
+
   const loadArticles = async () => {
     setLoading(true);
     try {
       const response = await fetch('/api/chatbot/faqs');
       if (!response.ok) throw new Error('Failed to fetch');
       const data = await response.json();
-      setArticles(data || []);
       
-      // Extract unique categories from keywords
-      const cats = [...new Set(data.map(a => a.keywords?.[0]).filter(Boolean))];
-      setCategories(cats);
+      // Add category to each article
+      const articlesWithCategory = (data || []).map(article => ({
+        ...article,
+        category: getArticleCategory(article.keywords)
+      }));
+      
+      setArticles(articlesWithCategory);
+      
+      // Extract unique categories
+      const cats = [...new Set(articlesWithCategory.map(a => a.category))];
+      setCategories(['all', ...cats]);
     } catch (error) {
       console.error('Error loading articles:', error);
       // Set default articles so Help Center is not empty
       setArticles([
-        { id: 1, question: 'How do I submit a ticket?', preview: 'Learn how to submit support tickets...', keywords: ['tickets'] },
-        { id: 2, question: 'How do I get paid?', preview: 'Learn about payment and payouts...', keywords: ['payment'] },
-        { id: 3, question: 'How do ratings work?', preview: 'Understand the rating system...', keywords: ['rating'] },
-        { id: 4, question: 'What is SLA?', preview: 'Learn about Service Level Agreements...', keywords: ['sla'] }
+        { question: 'How do I submit a ticket?', preview: 'Learn how to submit support tickets...', keywords: ['submit'], category: 'tickets' },
+        { question: 'How do I get paid?', preview: 'Learn about payment and payouts...', keywords: ['payment'], category: 'payment' },
+        { question: 'How do ratings work?', preview: 'Understand the rating system...', keywords: ['rating'], category: 'rating' },
+        { question: 'What is SLA?', preview: 'Learn about Service Level Agreements...', keywords: ['sla'], category: 'sla' }
       ]);
-      setCategories(['tickets', 'payment', 'rating', 'sla']);
+      setCategories(['all', 'tickets', 'payment', 'rating', 'sla']);
     } finally {
       setLoading(false);
     }
@@ -41,10 +91,11 @@ export default function HelpCenter() {
 
   const filteredArticles = articles.filter(article => {
     const matchesCategory = selectedCategory === 'all' || 
-      article.keywords?.includes(selectedCategory);
+      article.category === selectedCategory;
     const matchesSearch = !searchQuery || 
       article.question?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      article.preview?.toLowerCase().includes(searchQuery.toLowerCase());
+      article.preview?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      article.keywords?.some(k => k.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesCategory && matchesSearch;
   });
 
@@ -219,14 +270,14 @@ export default function HelpCenter() {
             >
               All Topics
             </button>
-            {['tickets', 'payment', 'rating', 'sla', 'getting'].map(cat => (
+            {categories.filter(c => c !== 'all').map(cat => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
                 className={`btn ${selectedCategory === cat ? 'btn-primary' : 'btn-ghost'}`}
                 style={{ borderRadius: '20px', textTransform: 'capitalize' }}
               >
-                {cat}
+                {CATEGORY_DISPLAY[cat] || cat}
               </button>
             ))}
           </div>
@@ -234,7 +285,7 @@ export default function HelpCenter() {
 
         {/* Articles */}
         <h3 style={{ fontFamily: 'var(--display)', marginBottom: '16px' }}>
-          {selectedCategory === 'all' ? 'All Articles' : `${selectedCategory} Articles`}
+          {selectedCategory === 'all' ? 'All Articles' : `${CATEGORY_DISPLAY[selectedCategory] || selectedCategory} Articles`}
           <span style={{ fontSize: '14px', color: 'var(--muted)', marginLeft: '8px' }}>
             ({filteredArticles.length})
           </span>
