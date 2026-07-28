@@ -3,11 +3,42 @@ import { api } from '../api/index.js';
 
 const AppContext = createContext(null);
 
+// Idle timeout in milliseconds (15 minutes)
+const IDLE_TIMEOUT = 15 * 60 * 1000;
+// Warning before logout (1 minute before)
+const IDLE_WARNING = 14 * 60 * 1000;
+
 export function AppProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [toasts, setToasts] = useState([]);
+  const [showIdleWarning, setShowIdleWarning] = useState(false);
   const authChecked = useRef(false);
+  const lastActivity = useRef(Date.now());
+  const idleTimer = useRef(null);
+  const warningTimer = useRef(null);
+
+  // Reset idle timer on user activity
+  const resetIdleTimer = useCallback(() => {
+    lastActivity.current = Date.now();
+    setShowIdleWarning(false);
+    
+    if (warningTimer.current) clearTimeout(warningTimer.current);
+    if (idleTimer.current) clearTimeout(idleTimer.current);
+    
+    if (user) {
+      // Set warning timer (14 minutes)
+      warningTimer.current = setTimeout(() => {
+        setShowIdleWarning(true);
+      }, IDLE_WARNING);
+      
+      // Set logout timer (15 minutes)
+      idleTimer.current = setTimeout(() => {
+        logout();
+        showToast('Session expired due to inactivity. Please login again.');
+      }, IDLE_TIMEOUT);
+    }
+  }, [user, showToast]);
 
   // Check for existing auth session on mount
   useEffect(() => {
@@ -15,6 +46,51 @@ export function AppProvider({ children }) {
     authChecked.current = true;
     checkAuth();
   }, []);
+
+  // Set up idle detection when user is logged in
+  useEffect(() => {
+    if (!user) {
+      if (idleTimer.current) clearTimeout(idleTimer.current);
+      if (warningTimer.current) clearTimeout(warningTimer.current);
+      setShowIdleWarning(false);
+      return;
+    }
+
+    // Activity events to track
+    const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+    
+    // Throttle the reset function
+    let throttleTimeout = null;
+    const throttledReset = () => {
+      if (!throttleTimeout) {
+        throttleTimeout = setTimeout(() => {
+          resetIdleTimer();
+          throttleTimeout = null;
+        }, 1000); // Max once per second
+      }
+    };
+
+    events.forEach(event => {
+      window.addEventListener(event, throttledReset, { passive: true });
+    });
+
+    // Start the idle timer
+    resetIdleTimer();
+
+    return () => {
+      events.forEach(event => {
+        window.removeEventListener(event, throttledReset);
+      });
+      if (idleTimer.current) clearTimeout(idleTimer.current);
+      if (warningTimer.current) clearTimeout(warningTimer.current);
+      if (throttleTimeout) clearTimeout(throttleTimeout);
+    };
+  }, [user, resetIdleTimer]);
+
+  // Continue session (reset idle timer)
+  const continueSession = useCallback(() => {
+    resetIdleTimer();
+  }, [resetIdleTimer]);
 
   const checkAuth = async () => {
     try {
@@ -36,18 +112,23 @@ export function AppProvider({ children }) {
   const login = useCallback(async (email, password) => {
     const response = await api.auth.login(email, password);
     setUser(response.user);
+    resetIdleTimer();
     return response;
-  }, []);
+  }, [resetIdleTimer]);
 
   // Register function
   const register = useCallback(async (email, password, name, role) => {
     const response = await api.auth.register(email, password, name, role);
     setUser(response.user);
+    resetIdleTimer();
     return response;
-  }, []);
+  }, [resetIdleTimer]);
 
   // Logout function
   const logout = useCallback(async () => {
+    if (idleTimer.current) clearTimeout(idleTimer.current);
+    if (warningTimer.current) clearTimeout(warningTimer.current);
+    setShowIdleWarning(false);
     await api.auth.logout();
     setUser(null);
   }, []);
@@ -113,9 +194,24 @@ export function AppProvider({ children }) {
       setRole,
       showToast,
       requireAuth,
-      requireName
+      requireName,
+      continueSession
     }}>
       {children}
+      {/* Idle Warning Modal */}
+      {showIdleWarning && (
+        <div className="idle-warning-overlay">
+          <div className="idle-warning-modal">
+            <h3>Session Timeout Warning</h3>
+            <p>Your session will expire in 1 minute due to inactivity.</p>
+            <p>Click "Continue Session" to stay logged in.</p>
+            <div className="idle-warning-buttons">
+              <button onClick={logout} className="btn-secondary">Logout Now</button>
+              <button onClick={continueSession} className="btn-primary">Continue Session</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="toast-container">
         {toasts.map(t => (
           <div key={t.id} className="toast">{t.message}</div>

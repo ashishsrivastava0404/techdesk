@@ -1696,3 +1696,73 @@ textarea {
   font-size: 32px;
   margin: 0 auto 16px;
 }
+
+/* Idle Warning Modal */
+.idle-warning-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(4px);
+}
+
+.idle-warning-modal {
+  background: white;
+  padding: 32px;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.idle-warning-modal h3 {
+  margin: 0 0 16px;
+  color: #f59e0b;
+  font-size: 1.5rem;
+}
+
+.idle-warning-modal p {
+  color: #6b7280;
+  margin: 8px 0;
+}
+
+.idle-warning-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.idle-warning-buttons button {
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.idle-warning-buttons .btn-secondary {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.idle-warning-buttons .btn-secondary:hover {
+  background: #d1d5db;
+}
+
+.idle-warning-buttons .btn-primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.idle-warning-buttons .btn-primary:hover {
+  background: #2563eb;
+}
