@@ -775,6 +775,44 @@ async function runMigrations() {
     }
 
     // ============================================
+    // ATTACHMENTS TABLE (without ticket_ prefix)
+    // ============================================
+    console.log('\n📎 Checking attachments table...');
+    const [plainAttachTables] = await connection.query(`SHOW TABLES LIKE 'attachments'`);
+    if (plainAttachTables.length === 0) {
+      console.log('   → Creating attachments table...');
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS attachments (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          ticket_id INT NOT NULL,
+          filename VARCHAR(255) NOT NULL,
+          stored_filename VARCHAR(255) NOT NULL,
+          file_path VARCHAR(500) NOT NULL,
+          file_size INT,
+          mime_type VARCHAR(100),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      console.log('   ✓ attachments table created');
+    } else {
+      console.log('   ✓ attachments table exists');
+      
+      // Check if id is AUTO_INCREMENT
+      const [attachColumns] = await connection.query(`
+        SELECT COLUMN_NAME, EXTRA
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'attachments'
+      `);
+      const hasAutoInc = attachColumns.find(c => c.COLUMN_NAME === 'id' && c.EXTRA === 'auto_increment');
+      if (!hasAutoInc) {
+        console.log('   → Modifying attachments id to AUTO_INCREMENT...');
+        await connection.query(`ALTER TABLE attachments MODIFY COLUMN id INT AUTO_INCREMENT`);
+        console.log('   ✓ attachments id set to AUTO_INCREMENT');
+      }
+    }
+
+    // ============================================
     // TICKET COMMENTS TABLE
     // ============================================
     console.log('\n💬 Checking ticket_comments table...');
@@ -822,6 +860,33 @@ async function runMigrations() {
       console.log('   ✓ ticket_history table created');
     } else {
       console.log('   ✓ ticket_history table exists');
+      
+      // Add missing columns for actor_name and actor_role
+      const [histColumns] = await connection.query(`
+        SELECT COLUMN_NAME
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'ticket_history'
+      `);
+      const histColMap = histColumns.map(c => c.COLUMN_NAME);
+      
+      if (!histColMap.includes('actor_name')) {
+        console.log('   → Adding actor_name column...');
+        await connection.query(`ALTER TABLE ticket_history ADD COLUMN actor_name VARCHAR(255)`);
+        console.log('   ✓ actor_name column added');
+      }
+      
+      if (!histColMap.includes('actor_role')) {
+        console.log('   → Adding actor_role column...');
+        await connection.query(`ALTER TABLE ticket_history ADD COLUMN actor_role VARCHAR(50)`);
+        console.log('   ✓ actor_role column added');
+      }
+      
+      if (!histColMap.includes('metadata')) {
+        console.log('   → Adding metadata column...');
+        await connection.query(`ALTER TABLE ticket_history ADD COLUMN metadata JSON`);
+        console.log('   ✓ metadata column added');
+      }
     }
 
     // ============================================
