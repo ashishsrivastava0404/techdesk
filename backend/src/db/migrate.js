@@ -322,6 +322,12 @@ async function runMigrations() {
         await connection.query(`ALTER TABLE tickets ADD COLUMN sla_due_at TIMESTAMP NULL DEFAULT NULL`);
         console.log('   ✓ sla_due_at column added');
       }
+
+      if (!colMap.includes('estimated_hours')) {
+        console.log('   → Adding estimated_hours column...');
+        await connection.query(`ALTER TABLE tickets ADD COLUMN estimated_hours DECIMAL(5,2) DEFAULT NULL`);
+        console.log('   ✓ estimated_hours column added');
+      }
     }
 
     // ============================================
