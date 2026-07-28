@@ -160,13 +160,13 @@ async function seedDatabase() {
       ('API returning 500 error on user endpoint', 'Getting Internal Server Error when calling the /api/users endpoint. Error started after the last deployment.', 'high', 'open', 'John Smith', 'Software Development', 50.00, 'production', '["api", "error", "urgent"]', NULL),
       ('Need help setting up Docker compose', 'I want to set up a multi-container Docker application with PostgreSQL, Redis, and Node.js. Need help with the compose file.', 'normal', 'open', 'Sarah Johnson', 'DevOps & Infrastructure', 35.00, 'staging', '["docker", "compose"]', NULL),
       ('Database query optimization needed', 'Our user search query is taking over 5 seconds. We have indexes but need help optimizing the query plan.', 'high', 'in_progress', 'Mike Wilson', 'Database', 60.00, 'production', '["database", "performance", "optimization"]', 5),
-      ('React app memory leak issue', 'The React dashboard memory usage keeps growing until the browser crashes. Need help identifying the leak.', 'urgent', 'open', 'Emily Chen', 'Software Development', 75.00, 'production', '["react", "memory-leak"]', NULL),
-      ('AWS Lambda cold start optimization', 'Our Lambda functions have slow cold starts affecting user experience. Looking for optimization strategies.', 'normal', 'open', 'David Lee', 'Cloud Services', 55.00, 'staging', '["aws", "lambda", "performance"]', NULL),
-      ('Mobile app crashing on iOS 17', 'Our React Native app crashes immediately on iOS 17 devices. Works fine on iOS 16.', 'critical', 'open', 'James Taylor', 'Mobile Development', 100.00, 'production', '["ios", "crash", "react-native"]', NULL),
-      ('Implement OAuth2 authentication', 'Need to add OAuth2 authentication to our Node.js API. Should support Google and GitHub providers.', 'normal', 'open', 'Sarah Johnson', 'Security', 80.00, 'staging', '["oauth2", "authentication", "google"]', NULL),
-      ('Help with Kubernetes ingress setup', 'Having trouble configuring ingress controller with SSL termination. Getting 502 errors.', 'high', 'in_progress', 'Mike Wilson', 'DevOps & Infrastructure', 70.00, 'production', '["kubernetes", "ingress", "ssl"]', 4),
-      ('GraphQL subscription not working', 'Real-time subscriptions disconnect after a few minutes. Using Apollo Server with Redis.', 'normal', 'open', 'Emily Chen', 'API Integration', 45.00, 'staging', '["graphql", "subscriptions", "redis"]', NULL),
-      ('PostgreSQL backup strategy review', 'Need expert review of our PostgreSQL backup and recovery strategy. Current RTO might be too high.', 'normal', 'open', 'Anna Martinez', 'Database', 40.00, 'production', '["postgresql", "backup", "recovery"]', NULL)
+      ('React app memory leak issue', 'The React dashboard memory usage keeps growing until the browser crashes. Need help identifying the leak.', 'urgent', 'open', 'John Smith', 'Software Development', 75.00, 'production', '["react", "memory-leak"]', NULL),
+      ('AWS Lambda cold start optimization', 'Our Lambda functions have slow cold starts affecting user experience. Looking for optimization strategies.', 'normal', 'open', 'Sarah Johnson', 'Cloud Services', 55.00, 'staging', '["aws", "lambda", "performance"]', NULL),
+      ('Mobile app crashing on iOS 17', 'Our React Native app crashes immediately on iOS 17 devices. Works fine on iOS 16.', 'critical', 'open', 'Mike Wilson', 'Mobile Development', 100.00, 'production', '["ios", "crash", "react-native"]', NULL),
+      ('Implement OAuth2 authentication', 'Need to add OAuth2 authentication to our Node.js API. Should support Google and GitHub providers.', 'normal', 'open', 'John Smith', 'Security', 80.00, 'staging', '["oauth2", "authentication", "google"]', NULL),
+      ('Help with Kubernetes ingress setup', 'Having trouble configuring ingress controller with SSL termination. Getting 502 errors.', 'high', 'in_progress', 'Sarah Johnson', 'DevOps & Infrastructure', 70.00, 'production', '["kubernetes", "ingress", "ssl"]', 4),
+      ('GraphQL subscription not working', 'Real-time subscriptions disconnect after a few minutes. Using Apollo Server with Redis.', 'normal', 'open', 'Mike Wilson', 'API Integration', 45.00, 'staging', '["graphql", "subscriptions", "redis"]', NULL),
+      ('PostgreSQL backup strategy review', 'Need expert review of our PostgreSQL backup and recovery strategy. Current RTO might be too high.', 'normal', 'open', 'John Smith', 'Database', 40.00, 'production', '["postgresql", "backup", "recovery"]', NULL)
     `);
     
     console.log('   ✓ 10 tickets created\n');
@@ -224,12 +224,9 @@ async function seedDatabase() {
       ('Mike Wilson', 'credit', 750.00, 750.00, 'Initial deposit'),
       ('Mike Wilson', 'debit', 60.00, 690.00, 'Ticket payment - DB optimization'),
       ('Mike Wilson', 'debit', 70.00, 620.00, 'Ticket payment - K8s ingress'),
-      ('Emily Chen', 'credit', 200.00, 200.00, 'Initial credits'),
-      ('David Lee', 'credit', 500.00, 500.00, 'Initial credits'),
-      ('Lisa Brown', 'credit', 400.00, 400.00, 'Initial credits'),
-      ('James Taylor', 'credit', 350.00, 350.00, 'Initial credits'),
-      ('Anna Martinez', 'credit', 600.00, 600.00, 'Initial credits'),
-      ('Chris Anderson', 'credit', 450.00, 450.00, 'Initial credits')
+      ('Emily Chen', 'credit', 40.00, 40.00, 'Ticket #4 completed - React memory leak'),
+      ('David Lee', 'credit', 56.00, 56.00, 'Ticket #8 completed - K8s ingress setup'),
+      ('Lisa Brown', 'credit', 48.00, 48.00, 'Ticket #3 completed - DB optimization')
     `);
     
     console.log('   ✓ 14 credit transactions created\n');
