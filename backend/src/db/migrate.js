@@ -304,6 +304,24 @@ async function runMigrations() {
         await connection.query(`ALTER TABLE tickets ADD COLUMN tags TEXT`);
         console.log('   ✓ tags column added');
       }
+
+      if (!colMap.includes('subcategory')) {
+        console.log('   → Adding subcategory column...');
+        await connection.query(`ALTER TABLE tickets ADD COLUMN subcategory VARCHAR(255) DEFAULT NULL`);
+        console.log('   ✓ subcategory column added');
+      }
+
+      if (!colMap.includes('topic')) {
+        console.log('   → Adding topic column...');
+        await connection.query(`ALTER TABLE tickets ADD COLUMN topic VARCHAR(255) DEFAULT NULL`);
+        console.log('   ✓ topic column added');
+      }
+
+      if (!colMap.includes('sla_due_at')) {
+        console.log('   → Adding sla_due_at column...');
+        await connection.query(`ALTER TABLE tickets ADD COLUMN sla_due_at TIMESTAMP NULL DEFAULT NULL`);
+        console.log('   ✓ sla_due_at column added');
+      }
     }
 
     // ============================================
