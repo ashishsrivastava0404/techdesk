@@ -5,11 +5,12 @@ import { useBrand } from '../context/BrandContext.jsx';
 import { api } from '../api/index.js';
 
 export default function Dashboard() {
-  const { user, requireName } = useApp();
+  const { user, showToast } = useApp();
   const { brand } = useBrand();
   const appName = brand.app_name || 'TechDesk';
   const [stats, setStats] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     if (user?.name) {
@@ -33,6 +34,43 @@ export default function Dashboard() {
       setLeaderboard(data.slice(0, 3));
     } catch (error) {
       console.error('Error loading leaderboard:', error);
+    }
+  };
+
+  const handleExportCSV = async () => {
+    setExporting(true);
+    try {
+      const params = new URLSearchParams();
+      
+      // Export based on user role
+      if (user.role === 'tech') {
+        params.append('tech_name', user.name);
+      } else {
+        params.append('customer_name', user.name);
+      }
+      
+      const response = await fetch(`/api/tickets/export?${params}`);
+      
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `tickets_export_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      showToast('Export completed');
+    } catch (error) {
+      showToast('Failed to export tickets');
+      console.error('Export error:', error);
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -129,12 +167,19 @@ export default function Dashboard() {
         </>
       )}
 
-      <div style={{ marginTop: '24px' }}>
+      <div style={{ marginTop: '24px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
         <Link to={isTech ? '/available' : '/submit'}>
           <button className="btn btn-primary">
             {isTech ? 'View Available Tickets' : 'Submit New Ticket'}
           </button>
         </Link>
+        <button
+          className="btn btn-ghost"
+          onClick={handleExportCSV}
+          disabled={exporting}
+        >
+          {exporting ? 'Exporting...' : '📊 Export to CSV'}
+        </button>
       </div>
     </div>
   );

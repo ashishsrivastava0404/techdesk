@@ -110,7 +110,8 @@ export async function initDatabase() {
       tech_id INT DEFAULT NULL,
       base_pay DECIMAL(10,2) DEFAULT 25.00,
       category VARCHAR(100) DEFAULT 'general',
-      subcategory VARCHAR(100) DEFAULT NULL,
+      subcategory VARCHAR(255) DEFAULT NULL,
+      topic VARCHAR(255) DEFAULT NULL,
       tags JSON,
       estimated_hours DECIMAL(5,2) DEFAULT NULL,
       actual_hours DECIMAL(5,2) DEFAULT NULL,
@@ -217,6 +218,21 @@ export async function initDatabase() {
       comment TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (ticket_id) REFERENCES tickets(id)
+    )
+  `);
+
+  // Attachments table
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS attachments (
+      id VARCHAR(20) PRIMARY KEY,
+      ticket_id INT NOT NULL,
+      filename VARCHAR(255) NOT NULL,
+      stored_filename VARCHAR(255) NOT NULL,
+      file_path VARCHAR(500) NOT NULL,
+      file_size INT NOT NULL,
+      mime_type VARCHAR(100) NOT NULL,
+      uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
     )
   `);
 

@@ -412,4 +412,179 @@ router.get('/:id/suggested-agents', async (req, res) => {
   }
 });
 
+// Ticket Drafts - Save draft
+router.post('/draft', async (req, res) => {
+  const { draft_id, title, description, short_description, long_description, environment, priority, category, subcategory, topic, tags } = req.body;
+  
+  try {
+    if (!draft_id) {
+      return res.status(400).json({ error: 'draft_id is required' });
+    }
+
+    // Store draft in memory or database (using simple JSON file for persistence)
+    const fs = await import('fs/promises');
+    const path = await import('path');
+    
+    const draftsDir = path.join(process.cwd(), 'data', 'drafts');
+    await fs.mkdir(draftsDir, { recursive: true });
+    
+    const draftData = {
+      draft_id,
+      title: title || '',
+      description: description || '',
+      short_description: short_description || '',
+      long_description: long_description || '',
+      environment: environment || 'dev',
+      priority: priority || 'normal',
+      category: category || 'general',
+      subcategory: subcategory || '',
+      topic: topic || '',
+      tags: tags || [],
+      saved_at: new Date().toISOString()
+    };
+    
+    await fs.writeFile(
+      path.join(draftsDir, `${draft_id}.json`),
+      JSON.stringify(draftData, null, 2)
+    );
+    
+    res.json({ success: true, message: 'Draft saved successfully', draft: draftData });
+  } catch (error) {
+    console.error('Error saving draft:', error);
+    res.status(500).json({ error: 'Failed to save draft' });
+  }
+});
+
+// Ticket Drafts - Get draft
+router.get('/draft/:draft_id', async (req, res) => {
+  const { draft_id } = req.params;
+  
+  try {
+    const fs = await import('fs/promises');
+    const path = await import('path');
+    
+    const draftPath = path.join(process.cwd(), 'data', 'drafts', `${draft_id}.json`);
+    
+    try {
+      const data = await fs.readFile(draftPath, 'utf8');
+      const draft = JSON.parse(data);
+      res.json(draft);
+    } catch (err) {
+      if (err.code === 'ENOENT') {
+        res.status(404).json({ error: 'Draft not found' });
+      } else {
+        throw err;
+      }
+    }
+  } catch (error) {
+    console.error('Error getting draft:', error);
+    res.status(500).json({ error: 'Failed to get draft' });
+  }
+});
+
+// Ticket Drafts - Delete draft
+router.delete('/draft/:draft_id', async (req, res) => {
+  const { draft_id } = req.params;
+  
+  try {
+    const fs = await import('fs/promises');
+    const path = await import('path');
+    
+    const draftPath = path.join(process.cwd(), 'data', 'drafts', `${draft_id}.json`);
+    
+    try {
+      await fs.unlink(draftPath);
+      res.json({ success: true, message: 'Draft deleted successfully' });
+    } catch (err) {
+      if (err.code === 'ENOENT') {
+        res.status(404).json({ error: 'Draft not found' });
+      } else {
+        throw err;
+      }
+    }
+  } catch (error) {
+    console.error('Error deleting draft:', error);
+    res.status(500).json({ error: 'Failed to delete draft' });
+  }
+});
+
+// Export tickets to CSV
+router.get('/export', async (req, res) => {
+  const { status, category, priority, date_from, date_to, customer_name } = req.query;
+  
+  try {
+    let query = 'SELECT id, title, description, environment, priority, status, customer_name, tech_name, category, subcategory, created_at, resolved_at FROM tickets WHERE 1=1';
+    const params = [];
+    
+    if (status) {
+      if (status === 'open') {
+        query += " AND status IN ('open', 'claimed', 'in_progress', 'pending_assignment')";
+      } else {
+        query += ' AND status = ?';
+        params.push(status);
+      }
+    }
+    
+    if (category) {
+      query += ' AND category = ?';
+      params.push(category);
+    }
+    
+    if (priority) {
+      query += ' AND priority = ?';
+      params.push(priority);
+    }
+    
+    if (customer_name) {
+      query += ' AND customer_name = ?';
+      params.push(customer_name);
+    }
+    
+    if (date_from) {
+      query += ' AND created_at >= ?';
+      params.push(date_from);
+    }
+    
+    if (date_to) {
+      query += ' AND created_at <= ?';
+      params.push(date_to);
+    }
+    
+    query += ' ORDER BY created_at DESC';
+    
+    const [rows] = await pool.query(query, params);
+    
+    // Generate CSV
+    const headers = ['ID', 'Title', 'Description', 'Environment', 'Priority', 'Status', 'Customer', 'Tech', 'Category', 'Subcategory', 'Created', 'Resolved'];
+    const csvRows = [headers.join(',')];
+    
+    for (const row of rows) {
+      const values = [
+        row.id,
+        `"${(row.title || '').replace(/"/g, '""')}"`,
+        `"${(row.description || '').replace(/"/g, '""')}"`,
+        row.environment,
+        row.priority,
+        row.status,
+        `"${(row.customer_name || '').replace(/"/g, '""')}"`,
+        `"${(row.tech_name || '').replace(/"/g, '""')}"`,
+        row.category,
+        row.subcategory || '',
+        row.created_at ? new Date(row.created_at).toISOString() : '',
+        row.resolved_at ? new Date(row.resolved_at).toISOString() : ''
+      ];
+      csvRows.push(values.join(','));
+    }
+    
+    const csv = csvRows.join('\n');
+    
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=tickets_export_${new Date().toISOString().split('T')[0]}.csv`);
+    res.send(csv);
+  } catch (error) {
+    console.error('Error exporting tickets:', error);
+    res.status(500).json({ error: 'Failed to export tickets' });
+  }
+});
+
 export default router;

@@ -43,6 +43,8 @@ async function runMigrations() {
   try {
     await addColumn('topic_suggestions', 'last_used_at', 'TIMESTAMP NULL DEFAULT NULL');
     await addColumn('tickets', 'first_response_at', 'TIMESTAMP NULL DEFAULT NULL');
+    await addColumn('tickets', 'subcategory', 'VARCHAR(255) DEFAULT NULL');
+    await addColumn('tickets', 'topic', 'VARCHAR(255) DEFAULT NULL');
     await addColumn('crm_contacts', 'user_type', "ENUM('customer', 'tech', 'other') DEFAULT 'customer'");
     await addColumn('conversations', 'customer_id', 'INT');
     await addColumn('conversations', 'tech_id', 'INT');
@@ -82,6 +84,7 @@ async function runMigrations() {
     await createTable('conversations', `CREATE TABLE IF NOT EXISTS conversations (id INT AUTO_INCREMENT PRIMARY KEY, ticket_id INT NOT NULL, customer_id INT NOT NULL, tech_id INT DEFAULT NULL, customer_name VARCHAR(255), tech_name VARCHAR(255), updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE)`);
     await createTable('messages', `CREATE TABLE IF NOT EXISTS messages (id INT AUTO_INCREMENT PRIMARY KEY, conversation_id INT NOT NULL, sender_id INT NOT NULL, message_type ENUM('text', 'file', 'system') DEFAULT 'text', content TEXT NOT NULL, attachment_url VARCHAR(500), is_read BOOLEAN DEFAULT FALSE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE)`);
     await createTable('ticket_comments', `CREATE TABLE IF NOT EXISTS ticket_comments (id INT AUTO_INCREMENT PRIMARY KEY, ticket_id INT NOT NULL, user_id INT NOT NULL, user_display_name VARCHAR(255), parent_id INT DEFAULT NULL, message TEXT NOT NULL, message_type ENUM('comment', 'reply', 'note', 'status_change', 'system') DEFAULT 'comment', is_internal BOOLEAN DEFAULT FALSE, is_read BOOLEAN DEFAULT FALSE, attachments JSON, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE, FOREIGN KEY (parent_id) REFERENCES ticket_comments(id) ON DELETE SET NULL)`);
+    await createTable('attachments', `CREATE TABLE IF NOT EXISTS attachments (id VARCHAR(20) PRIMARY KEY, ticket_id INT NOT NULL, filename VARCHAR(255) NOT NULL, stored_filename VARCHAR(255) NOT NULL, file_path VARCHAR(500) NOT NULL, file_size INT NOT NULL, mime_type VARCHAR(100) NOT NULL, uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE)`);
 
     try {
       const [rows] = await connection.query('SELECT COUNT(*) as count FROM currencies');

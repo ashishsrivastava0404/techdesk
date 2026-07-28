@@ -32,6 +32,8 @@ import topicsRouter from './routes/topics.js';
 import agentRequestsRouter from './routes/agentRequests.js';
 import creditsRouter from './routes/credits.js';
 import expertRouter from './routes/expert.js';
+import attachmentsRouter from './routes/attachments.js';
+import searchRouter from './routes/search.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 // Initialize Sentry if configured
@@ -89,6 +91,8 @@ app.use('/api/topics', optionalAuth, apiLimiter, topicsRouter);
 app.use('/api/agents', authenticate, apiLimiter, agentRequestsRouter);
 app.use('/api/credits', authenticate, apiLimiter, creditsRouter);
 app.use('/api/expert', expertRouter);  // Expert profile & skills routes (auth handled in route)
+app.use('/api/attachments', authenticate, apiLimiter, attachmentsRouter);
+app.use('/api/search', searchRouter);  // Search & filters (auth handled per endpoint)
 
 app.get('/api/health', (req, res) => {
   res.json({ 

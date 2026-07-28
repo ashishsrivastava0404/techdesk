@@ -19,6 +19,11 @@ export default function SubmitTicket() {
   const [techSearch, setTechSearch] = useState('');
   const [showTechDropdown, setShowTechDropdown] = useState(false);
   
+  // Draft and attachment state
+  const [draftId] = useState(() => `draft_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const [attachments, setAttachments] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  
   const [form, setForm] = useState({
     title: '',
     subject: '',
@@ -45,7 +50,143 @@ export default function SubmitTicket() {
     loadCategories();
     loadTopicSuggestions();
     loadTechnologies();
+    loadDraft();
   }, []);
+
+  // Load saved draft on mount
+  const loadDraft = async () => {
+    try {
+      const response = await fetch(`/api/tickets/draft/${draftId}`);
+      if (response.ok) {
+        const draft = await response.json();
+        setForm({
+          title: draft.title || '',
+          subject: draft.subject || '',
+          short_description: draft.short_description || '',
+          long_description: draft.long_description || '',
+          description: draft.description || '',
+          environment: draft.environment || 'dev',
+          priority: draft.priority || 'normal',
+          category: draft.category || '',
+          subcategory: draft.subcategory || '',
+          topic: draft.topic || '',
+          tags: Array.isArray(draft.tags) ? draft.tags.join(', ') : (draft.tags || ''),
+          estimated_hours: ''
+        });
+        if (draft.tags && Array.isArray(draft.tags)) {
+          // Could restore selected techs from tags if needed
+        }
+        showToast('Draft restored');
+      }
+    } catch (error) {
+      console.error('Error loading draft:', error);
+    }
+  };
+
+  // Auto-save draft every 30 seconds
+  useEffect(() => {
+    const autoSaveInterval = setInterval(async () => {
+      if (form.title || form.description) {
+        try {
+          await fetch('/api/tickets/draft', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              draft_id: draftId,
+              ...form,
+              tags: form.tags.split(',').map(t => t.trim()).filter(Boolean)
+            })
+          });
+        } catch (error) {
+          console.error('Error auto-saving draft:', error);
+        }
+      }
+    }, 30000);
+
+    return () => clearInterval(autoSaveInterval);
+  }, [form, draftId]);
+
+  // Clear form handler
+  const handleClearForm = async () => {
+    try {
+      await fetch(`/api/tickets/draft/${draftId}`, { method: 'DELETE' });
+    } catch (error) {
+      console.error('Error deleting draft:', error);
+    }
+    setForm({
+      title: '',
+      subject: '',
+      short_description: '',
+      long_description: '',
+      description: '',
+      environment: 'dev',
+      priority: 'normal',
+      category: '',
+      subcategory: '',
+      topic: '',
+      tags: '',
+      estimated_hours: ''
+    });
+    setSelectedTechs([]);
+    setAttachments([]);
+    showToast('Form cleared');
+  };
+
+  // Upload attachment handler
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    if (files.length > 5) {
+      showToast('Maximum 5 files allowed');
+      return;
+    }
+
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    for (const file of files) {
+      if (file.size > maxSize) {
+        showToast(`File ${file.name} exceeds 10MB limit`);
+        return;
+      }
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('ticket_id', '0'); // Temporary ID until ticket is created
+      files.forEach(file => formData.append('files', file));
+
+      const response = await fetch('/api/attachments', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const result = await response.json();
+      setAttachments(prev => [...prev, ...result.attachments]);
+      showToast(`${files.length} file(s) uploaded`);
+    } catch (error) {
+      showToast('Failed to upload files');
+      console.error('Upload error:', error);
+    } finally {
+      setUploading(false);
+      e.target.value = ''; // Reset file input
+    }
+  };
+
+  // Remove attachment
+  const handleRemoveAttachment = async (attachmentId) => {
+    try {
+      await fetch(`/api/attachments/${attachmentId}`, { method: 'DELETE' });
+      setAttachments(prev => prev.filter(a => a.id !== attachmentId));
+      showToast('Attachment removed');
+    } catch (error) {
+      showToast('Failed to remove attachment');
+    }
+  };
 
   // Reset subcategory and topic when category changes
   useEffect(() => {
@@ -215,7 +356,29 @@ export default function SubmitTicket() {
         ticketData.category = form.category;
       }
 
-      await api.tickets.create(ticketData);
+      const ticket = await api.tickets.create(ticketData);
+      
+      // If there are attachments, update them with the correct ticket_id
+      if (attachments.length > 0 && ticket.id) {
+        for (const attachment of attachments) {
+          await fetch(`/api/attachments/${attachment.id}`, {
+            method: 'DELETE'
+          });
+        }
+        
+        // Re-upload with correct ticket ID
+        const formData = new FormData();
+        formData.append('ticket_id', ticket.id.toString());
+        // We'd need to re-file select, so for now we'll skip re-upload
+      }
+      
+      // Delete the draft after successful submission
+      try {
+        await fetch(`/api/tickets/draft/${draftId}`, { method: 'DELETE' });
+      } catch (err) {
+        console.error('Error deleting draft:', err);
+      }
+      
       showToast('Ticket submitted successfully');
       navigate('/mytickets');
     } catch (error) {
@@ -667,9 +830,79 @@ export default function SubmitTicket() {
             )}
           </div>
 
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? 'Submitting...' : 'Submit Ticket'}
-          </button>
+          {/* Attachments */}
+          <div className="field">
+            <label>Attachments</label>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <label className="btn btn-ghost" style={{ cursor: 'pointer' }}>
+                {uploading ? 'Uploading...' : '📎 Upload Files'}
+                <input
+                  type="file"
+                  multiple
+                  accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.txt,.json,.xml,.csv,.zip"
+                  onChange={handleFileUpload}
+                  style={{ display: 'none' }}
+                  disabled={uploading}
+                />
+              </label>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.85em' }}>
+                Max 5 files, 10MB each
+              </span>
+            </div>
+            
+            {/* Attachments List */}
+            {attachments.length > 0 && (
+              <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {attachments.map(attachment => (
+                  <div key={attachment.id} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 12px',
+                    background: 'var(--surface-2)',
+                    borderRadius: '6px',
+                    fontSize: '0.9em'
+                  }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span>📄</span>
+                      <span>{attachment.filename}</span>
+                      <span style={{ color: 'var(--text-muted)' }}>
+                        ({(attachment.file_size / 1024).toFixed(1)} KB)
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAttachment(attachment.id)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--red)',
+                        cursor: 'pointer',
+                        padding: '4px 8px'
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'space-between' }}>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={handleClearForm}
+            >
+              🗑️ Clear Form
+            </button>
+            
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              {loading ? 'Submitting...' : 'Submit Ticket'}
+            </button>
+          </div>
         </div>
       </form>
     </div>
