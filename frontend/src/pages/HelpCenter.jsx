@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const CATEGORY_MAP = {
   'submit': 'tickets',
@@ -45,6 +46,7 @@ export default function HelpCenter() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadArticles();
@@ -161,7 +163,7 @@ export default function HelpCenter() {
             <p style={{ color: 'var(--muted)', marginBottom: '12px' }}>
               Our chatbot is available 24/7 for instant answers, or submit a support ticket.
             </p>
-            <button className="btn btn-primary">Open Support Ticket</button>
+            <button className="btn btn-primary" onClick={() => navigate('/submit')}>Open Support Ticket</button>
           </div>
         </div>
       </div>
@@ -233,30 +235,49 @@ export default function HelpCenter() {
             { icon: '⏱️', title: 'SLA', desc: 'Response times' },
             { icon: '🤖', title: 'Chatbot', desc: 'Get instant help' },
             { icon: '📧', title: 'Contact Support', desc: 'Submit a ticket' }
-          ].map((topic, idx) => (
-            <div key={idx} style={{
-              padding: '20px',
-              background: 'var(--panel)',
-              border: '1px solid var(--line)',
-              borderRadius: '12px',
-              cursor: 'pointer',
-              transition: 'all 0.15s',
-              textAlign: 'center'
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.borderColor = 'var(--amber)';
-              e.currentTarget.style.transform = 'translateY(-2px)';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.borderColor = 'var(--line)';
-              e.currentTarget.style.transform = 'translateY(0)';
-            }}
-            >
-              <div style={{ fontSize: '28px', marginBottom: '8px' }}>{topic.icon}</div>
-              <div style={{ fontWeight: 600, marginBottom: '4px' }}>{topic.title}</div>
-              <div style={{ fontSize: '12px', color: 'var(--muted)' }}>{topic.desc}</div>
-            </div>
-          ))}
+          ].map((topic, idx) => {
+            const categoryMap = {
+              'Submitting Tickets': 'tickets',
+              'Getting Paid': 'payment',
+              'Ratings': 'rating',
+              'SLA': 'sla',
+              'Chatbot': 'tickets',
+              'Contact Support': 'tickets'
+            };
+            return (
+              <div key={idx} style={{
+                padding: '20px',
+                background: 'var(--panel)',
+                border: '1px solid var(--line)',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+                textAlign: 'center'
+              }}
+              onClick={() => {
+                const cat = categoryMap[topic.title];
+                if (topic.title === 'Submitting Tickets' || topic.title === 'Contact Support') {
+                  navigate('/submit');
+                } else if (cat) {
+                  setSelectedCategory(cat);
+                  setSearchQuery('');
+                }
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = 'var(--amber)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'var(--line)';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+              >
+                <div style={{ fontSize: '28px', marginBottom: '8px' }}>{topic.icon}</div>
+                <div style={{ fontWeight: 600, marginBottom: '4px' }}>{topic.title}</div>
+                <div style={{ fontSize: '12px', color: 'var(--muted)' }}>{topic.desc}</div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Category Filter */}
@@ -331,7 +352,7 @@ export default function HelpCenter() {
                       {article.question || article.title}
                     </div>
                     <div style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: 1.5 }}>
-                      {article.preview?.substring(0, 150)}...
+                      {(article.preview || '').substring(0, 150)}...
                     </div>
                     <div style={{ marginTop: '12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                       {(article.keywords || []).slice(0, 4).map((tag, i) => (
@@ -371,8 +392,8 @@ export default function HelpCenter() {
             Our chatbot is available 24/7 for instant answers. You can also submit a support ticket.
           </p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-            <button className="btn btn-primary">Open Support Ticket</button>
-            <button className="btn btn-ghost">Chat with Support</button>
+            <button className="btn btn-primary" onClick={() => navigate('/submit')}>Open Support Ticket</button>
+            <button className="btn btn-ghost" onClick={() => { const chatbot = document.querySelector('.chatbot-toggle'); chatbot?.click(); }}>Chat with Support</button>
           </div>
         </div>
 
