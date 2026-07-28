@@ -270,11 +270,11 @@ async function seedDatabase() {
     console.log('👤 Seeding CRM contacts...');
     
     await connection.query(`
-      INSERT IGNORE INTO crm_contacts (name, email, phone, company, status, notes) VALUES
-      ('Acme Corp', 'contact@acme.com', '+1-555-0100', 'Acme Corporation', 'active', 'Enterprise customer interested in annual plan'),
-      ('TechStart Inc', 'info@techstart.io', '+1-555-0101', 'TechStart Inc', 'active', 'Startup with 10 developers'),
-      ('Global Services', 'sales@globalservices.com', '+1-555-0102', 'Global Services LLC', 'lead', 'Looking for custom enterprise solution'),
-      ('Innovation Labs', 'hello@innovationlabs.co', '+1-555-0103', 'Innovation Labs', 'active', 'Long-term partner')
+      INSERT IGNORE INTO crm_contacts (user_name, user_type, email, phone, company, notes) VALUES
+      ('Acme Corp', 'customer', 'contact@acme.com', '+1-555-0100', 'Acme Corporation', 'Enterprise customer interested in annual plan'),
+      ('TechStart Inc', 'customer', 'info@techstart.io', '+1-555-0101', 'TechStart Inc', 'Startup with 10 developers'),
+      ('Global Services', 'customer', 'sales@globalservices.com', '+1-555-0102', 'Global Services LLC', 'Looking for custom enterprise solution'),
+      ('Innovation Labs', 'customer', 'hello@innovationlabs.co', '+1-555-0103', 'Innovation Labs', 'Long-term partner')
     `);
     
     console.log('   ✓ 4 CRM contacts created\n');
