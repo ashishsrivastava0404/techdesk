@@ -30,6 +30,17 @@ export default function ChatBot() {
     }
   });
 
+  // Ticket creation conversation state
+  const [ticketState, setTicketState] = useState({
+    active: false,
+    step: 'type', // type, title, description, confirm
+    data: {
+      ticket_type: '',
+      title: '',
+      description: ''
+    }
+  });
+
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       addBotMessage(`Hello! 👋 I'm your ${appName} support assistant. How can I help you today? Type 'help' to see common topics or browse our help center.`);
@@ -110,9 +121,17 @@ export default function ChatBot() {
     }
 
     // Check for report keywords
-    const reportKeywords = ['report bug', 'submit bug', 'report issue', 'report problem', 'file report', 'bug report', 'submit report', 'contact support', 'report something'];
+    const reportKeywords = ['report bug', 'submit bug', 'report issue', 'report problem', 'file report', 'bug report', 'submit report'];
+    const ticketKeywords = ['create ticket', 'submit ticket', 'open ticket', 'new ticket', 'raise ticket', 'contact support', 'need help'];
+    
     if (reportKeywords.some(kw => userMessage.toLowerCase().includes(kw))) {
       startReportConversation();
+      setLoading(false);
+      return;
+    }
+    
+    if (ticketKeywords.some(kw => userMessage.toLowerCase().includes(kw))) {
+      startTicketConversation();
       setLoading(false);
       return;
     }
