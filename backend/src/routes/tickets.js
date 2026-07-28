@@ -193,9 +193,9 @@ router.post('/', async (req, res) => {
     
     // Log history with full category path
     await pool.query(
-      `INSERT INTO ticket_history (ticket_id, action, actor_name, actor_role, metadata)
-       VALUES (?, 'created', ?, 'customer', ?)`,
-      [result.insertId, customer_name, JSON.stringify({ 
+      `INSERT INTO ticket_history (ticket_id, action, user_name, actor_name, actor_role, metadata)
+       VALUES (?, 'created', ?, ?, 'customer', ?)`,
+      [result.insertId, customer_name, customer_name, JSON.stringify({ 
         ticket_type: finalTicketType,
         priority, 
         environment, 
