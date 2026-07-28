@@ -167,7 +167,7 @@ router.post('/', async (req, res) => {
 
     const [result] = await pool.query(
       `INSERT INTO tickets (title, description, subject, short_description, long_description, environment, priority, ticket_type, customer_name, category, subcategory, topic, tags, estimated_hours, assigned_to_admin, sla_due_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? HOUR))`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? HOUR))`,
       [
         title, 
         description, 
