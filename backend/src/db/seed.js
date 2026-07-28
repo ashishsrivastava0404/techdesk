@@ -270,11 +270,11 @@ async function seedDatabase() {
     console.log('👤 Seeding CRM contacts...');
     
     await connection.query(`
-      INSERT IGNORE INTO crm_contacts (name, email, phone, company, notes) VALUES
-      ('Acme Corp', 'contact@acme.com', '+1-555-0100', 'Acme Corporation', 'Enterprise customer interested in annual plan'),
-      ('TechStart Inc', 'info@techstart.io', '+1-555-0101', 'TechStart Inc', 'Startup with 10 developers'),
-      ('Global Services', 'sales@globalservices.com', '+1-555-0102', 'Global Services LLC', 'Looking for custom enterprise solution'),
-      ('Innovation Labs', 'hello@innovationlabs.co', '+1-555-0103', 'Innovation Labs', 'Long-term partner')
+      INSERT IGNORE INTO crm_contacts (user_name, user_type, email, phone, company, notes) VALUES
+      ('Acme Corp', 'customer', 'contact@acme.com', '+1-555-0100', 'Acme Corporation', 'Enterprise customer interested in annual plan'),
+      ('TechStart Inc', 'customer', 'info@techstart.io', '+1-555-0101', 'TechStart Inc', 'Startup with 10 developers'),
+      ('Global Services', 'customer', 'sales@globalservices.com', '+1-555-0102', 'Global Services LLC', 'Looking for custom enterprise solution'),
+      ('Innovation Labs', 'customer', 'hello@innovationlabs.co', '+1-555-0103', 'Innovation Labs', 'Long-term partner')
     `);
     
     console.log('   ✓ 4 CRM contacts created\n');
@@ -337,10 +337,10 @@ async function seedDatabase() {
     console.log('🤖 Seeding chatbot conversations...');
     
     await connection.query(`
-      INSERT IGNORE INTO chatbot_conversations (user_name, messages, status) VALUES
-      ('John Smith', '[{"role":"user","content":"How do I submit a ticket?"},{"role":"bot","content":"You can submit a ticket by clicking the Submit Ticket button..."}]', 'completed'),
-      ('Sarah Johnson', '[{"role":"user","content":"What technologies do you support?"},{"role":"bot","content":"We support all major technologies including React, Node.js, Python..."}]', 'completed'),
-      ('Mike Wilson', '[{"role":"user","content":"How do credits work?"},{"role":"bot","content":"Credits are used to pay for technical support. You can purchase them..."}]', 'active')
+      INSERT IGNORE INTO chatbot_conversations (user_name, user_message, bot_response, faq_matched, action_taken) VALUES
+      ('John Smith', 'How do I submit a ticket?', 'You can submit a ticket by clicking the Submit Ticket button on your dashboard.', 'submit-ticket', 'redirect'),
+      ('Sarah Johnson', 'What technologies do you support?', 'We support all major technologies including React, Node.js, Python, Docker, Kubernetes, AWS, and more!', 'technologies', 'respond'),
+      ('Mike Wilson', 'How do credits work?', 'Credits are used to pay for technical support. You can purchase them from your dashboard.', 'credits', 'redirect')
     `);
     
     console.log('   ✓ 3 chatbot conversations created\n');
