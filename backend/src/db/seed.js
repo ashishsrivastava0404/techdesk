@@ -320,7 +320,7 @@ async function seedDatabase() {
     console.log('🔔 Seeding notifications...');
     
     await connection.query(`
-      INSERT IGNORE INTO notifications (name, type, title, message, link, is_read) VALUES
+      INSERT IGNORE INTO notifications (user_name, type, title, message, link, is_read) VALUES
       ('Emily Chen', 'ticket', 'New ticket assigned', 'You have been assigned to ticket #3', '/tickets/3', FALSE),
       ('Emily Chen', 'rating', 'New rating received', 'John Smith gave you a 5-star rating!', '/tickets/3', FALSE),
       ('David Lee', 'ticket', 'Ticket update', 'Ticket #8 has been updated', '/tickets/8', FALSE),
