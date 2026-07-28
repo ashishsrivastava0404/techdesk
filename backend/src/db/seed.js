@@ -215,7 +215,7 @@ async function seedDatabase() {
     console.log('💰 Seeding credit transactions...');
     
     await connection.query(`
-      INSERT IGNORE INTO credit_transactions (name, type, amount, balance_after, reason) VALUES
+      INSERT IGNORE INTO credit_transactions (user_name, type, amount, balance_after, reason) VALUES
       ('John Smith', 'credit', 500.00, 500.00, 'Initial deposit'),
       ('John Smith', 'debit', 50.00, 450.00, 'Ticket payment - API error fix'),
       ('Sarah Johnson', 'credit', 1000.00, 1000.00, 'Initial deposit'),
