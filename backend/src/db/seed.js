@@ -31,9 +31,9 @@ async function seedDatabase() {
     await connection.query(`
       INSERT IGNORE INTO users (name, email, password_hash, password_salt, role, status, bio, hourly_rate) VALUES
       ('Admin User', 'admin@techdesk.com', ?, ?, 'admin', 'active', 'System administrator', 0.00),
-      ('John Smith', 'john@example.com', ?, ?, 'customer', 'active', 'Software developer interested in DevOps', 0.00),
-      ('Sarah Johnson', 'sarah@example.com', ?, ?, 'customer', 'active', 'Product manager at TechCorp', 0.00),
-      ('Mike Wilson', 'mike@example.com', ?, ?, 'customer', 'active', 'Startup founder', 0.00),
+      ('John Smith', 'john@example.com', ?, ?, 'active', 'Software developer interested in DevOps', 0.00),
+      ('Sarah Johnson', 'sarah@example.com', ?, ?, 'active', 'Product manager at TechCorp', 0.00),
+      ('Mike Wilson', 'mike@example.com', ?, ?, 'active', 'Startup founder', 0.00),
       ('Emily Chen', 'emily@example.com', ?, ?, 'tech', 'active', 'Full-stack developer with 5 years experience in React and Node.js', 75.00),
       ('David Lee', 'david@example.com', ?, ?, 'tech', 'active', 'DevOps engineer specializing in AWS and Kubernetes', 85.00),
       ('Lisa Brown', 'lisa@example.com', ?, ?, 'tech', 'active', 'Backend developer expert in Python and Django', 70.00),
@@ -215,7 +215,7 @@ async function seedDatabase() {
     console.log('💰 Seeding credit transactions...');
     
     await connection.query(`
-      INSERT IGNORE INTO credit_transactions (user_name, type, amount, balance_after, reason) VALUES
+      INSERT IGNORE INTO credit_transactions (name, type, amount, balance_after, reason) VALUES
       ('John Smith', 'credit', 500.00, 500.00, 'Initial deposit'),
       ('John Smith', 'debit', 50.00, 450.00, 'Ticket payment - API error fix'),
       ('Sarah Johnson', 'credit', 1000.00, 1000.00, 'Initial deposit'),
@@ -270,11 +270,11 @@ async function seedDatabase() {
     console.log('👤 Seeding CRM contacts...');
     
     await connection.query(`
-      INSERT IGNORE INTO crm_contacts (user_name, user_type, email, phone, company, notes) VALUES
-      ('Acme Corp', 'customer', 'contact@acme.com', '+1-555-0100', 'Acme Corporation', 'Enterprise customer interested in annual plan'),
-      ('TechStart Inc', 'customer', 'info@techstart.io', '+1-555-0101', 'TechStart Inc', 'Startup with 10 developers'),
-      ('Global Services', 'customer', 'sales@globalservices.com', '+1-555-0102', 'Global Services LLC', 'Looking for custom enterprise solution'),
-      ('Innovation Labs', 'customer', 'hello@innovationlabs.co', '+1-555-0103', 'Innovation Labs', 'Long-term partner')
+      INSERT IGNORE INTO crm_contacts (name, email, phone, company, notes) VALUES
+      ('Acme Corp', 'contact@acme.com', '+1-555-0100', 'Acme Corporation', 'Enterprise customer interested in annual plan'),
+      ('TechStart Inc', 'info@techstart.io', '+1-555-0101', 'TechStart Inc', 'Startup with 10 developers'),
+      ('Global Services', 'sales@globalservices.com', '+1-555-0102', 'Global Services LLC', 'Looking for custom enterprise solution'),
+      ('Innovation Labs', 'hello@innovationlabs.co', '+1-555-0103', 'Innovation Labs', 'Long-term partner')
     `);
     
     console.log('   ✓ 4 CRM contacts created\n');
@@ -320,7 +320,7 @@ async function seedDatabase() {
     console.log('🔔 Seeding notifications...');
     
     await connection.query(`
-      INSERT IGNORE INTO notifications (user_name, type, title, message, link, is_read) VALUES
+      INSERT IGNORE INTO notifications (name, type, title, message, link, is_read) VALUES
       ('Emily Chen', 'ticket', 'New ticket assigned', 'You have been assigned to ticket #3', '/tickets/3', FALSE),
       ('Emily Chen', 'rating', 'New rating received', 'John Smith gave you a 5-star rating!', '/tickets/3', FALSE),
       ('David Lee', 'ticket', 'Ticket update', 'Ticket #8 has been updated', '/tickets/8', FALSE),
@@ -337,7 +337,7 @@ async function seedDatabase() {
     console.log('🤖 Seeding chatbot conversations...');
     
     await connection.query(`
-      INSERT IGNORE INTO chatbot_conversations (user_name, messages, status) VALUES
+      INSERT IGNORE INTO chatbot_conversations (name, messages, status) VALUES
       ('John Smith', '[{"role":"user","content":"How do I submit a ticket?"},{"role":"bot","content":"You can submit a ticket by clicking the Submit Ticket button..."}]', 'completed'),
       ('Sarah Johnson', '[{"role":"user","content":"What technologies do you support?"},{"role":"bot","content":"We support all major technologies including React, Node.js, Python..."}]', 'completed'),
       ('Mike Wilson', '[{"role":"user","content":"How do credits work?"},{"role":"bot","content":"Credits are used to pay for technical support. You can purchase them..."}]', 'active')
