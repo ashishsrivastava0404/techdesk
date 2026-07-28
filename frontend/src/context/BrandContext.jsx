@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '../api/index.js';
-import { useApp } from './AppContext.jsx';
 
 const BrandContext = createContext({
   brand: {
@@ -30,16 +29,6 @@ export function BrandProvider({ children }) {
     cookies_url: '/cookies'
   });
   const [loading, setLoading] = useState(true);
-  const { user } = useApp();
-
-  useEffect(() => {
-    // Only load admin settings if user is admin
-    if (user?.role === 'admin') {
-      loadBrandSettings();
-    } else {
-      setLoading(false);
-    }
-  }, [user]);
 
   const loadBrandSettings = async () => {
     try {
@@ -58,12 +47,16 @@ export function BrandProvider({ children }) {
         });
       }
     } catch (error) {
-      // Silently fail for non-admin users - use default brand settings
+      // Silently fail - use default brand settings
       console.log('Brand settings not available (admin only)');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadBrandSettings();
+  }, []);
 
   return (
     <BrandContext.Provider value={{ brand, loading, reloadBrand: loadBrandSettings }}>
