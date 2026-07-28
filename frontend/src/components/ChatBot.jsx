@@ -307,6 +307,94 @@ export default function ChatBot() {
     addBotMessage("Report cancelled. Is there anything else I can help you with?");
   };
 
+  // Start ticket creation conversation
+  const startTicketConversation = () => {
+    setTicketState({
+      active: true,
+      step: 'type',
+      data: { ticket_type: '', title: '', description: '' }
+    });
+    addBotMessage("🎫 I'd be happy to help you create a support ticket!\n\n**What type of issue do you have?**\n\n1️⃣ **Technical Issue** 🔧 - Bug, code problem, or infrastructure issue\n2️⃣ **Business/Account** 💼 - Login, billing, or account issue");
+  };
+
+  const handleTicketType = (input) => {
+    const typeMap = {
+      '1': 'technical', 'technical': 'technical', 'bug': 'technical', 'code': 'technical',
+      '2': 'business', 'business': 'business', 'account': 'business', 'billing': 'business', 'login': 'business'
+    };
+    const type = typeMap[input.toLowerCase()];
+    if (type) {
+      setTicketState(prev => ({ ...prev, step: 'title', data: { ...prev.data, ticket_type: type } }));
+      const typeLabel = type === 'technical' ? '🔧 Technical Issue' : '💼 Business/Account Issue';
+      addBotMessage(`Got it! This will be a **${typeLabel}** ticket.\n\n**What's the title of your issue?**`);
+    } else {
+      addBotMessage("Please enter 1 or 2:\n\n1️⃣ Technical Issue\n2️⃣ Business/Account");
+    }
+  };
+
+  const handleTicketTitle = (input) => {
+    if (input.trim().length < 5) {
+      addBotMessage("Please provide a more descriptive title (at least 5 characters).");
+      return;
+    }
+    setTicketState(prev => ({ ...prev, step: 'description', data: { ...prev.data, title: input.trim() } }));
+    addBotMessage(`**${input.trim()}**\n\n**Now describe your issue in more detail:**`);
+  };
+
+  const handleTicketDescription = (input) => {
+    if (input.trim().length < 20) {
+      addBotMessage("Please provide more details (at least 20 characters).");
+      return;
+    }
+    setTicketState(prev => ({ ...prev, step: 'confirm', data: { ...prev.data, description: input.trim() } }));
+    const typeLabel = ticketState.data.ticket_type === 'technical' ? '🔧 Technical' : '💼 Business';
+    addBotMessage(`**📋 Ticket Summary:**\n\n**Type:** ${typeLabel}\n**Title:** ${ticketState.data.title}\n**Description:** ${input.trim().substring(0, 100)}...\n\n**Is this correct?**\n\n1️⃣ Yes, submit\n2️⃣ No, edit\n3️⃣ Cancel`);
+  };
+
+  const handleTicketConfirm = async (input) => {
+    if (input.toLowerCase() === '1' || input.toLowerCase().includes('yes')) {
+      await submitTicket();
+    } else if (input.toLowerCase() === '2' || input.toLowerCase().includes('edit')) {
+      setTicketState({ active: true, step: 'type', data: { ticket_type: '', title: '', description: '' } });
+      addBotMessage("Let's start over.\n\n**What type of issue?**\n\n1️⃣ Technical Issue 🔧\n2️⃣ Business/Account 💼");
+    } else {
+      cancelTicket();
+    }
+  };
+
+  const cancelTicket = () => {
+    setTicketState({ active: false, step: 'type', data: { ticket_type: '', title: '', description: '' } });
+    addBotMessage("Ticket creation cancelled. Is there anything else I can help you with?");
+  };
+
+  const submitTicket = async () => {
+    try {
+      const response = await fetch('/api/tickets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: ticketState.data.title,
+          description: ticketState.data.description,
+          ticket_type: ticketState.data.ticket_type,
+          customer_name: user?.name || 'Guest',
+          priority: 'normal',
+          environment: 'production'
+        })
+      });
+
+      if (response.ok) {
+        const ticket = await response.json();
+        const typeLabel = ticketState.data.ticket_type === 'technical' ? '🔧 Technical' : '💼 Business';
+        addBotMessage(`✅ **Ticket Created!**\n\n**#${ticket.id}**\n**Type:** ${typeLabel}\n\n${ticketState.data.ticket_type === 'technical' ? 'A technician will claim this soon.' : 'An admin will review your request.'}`);
+      } else {
+        addBotMessage("❌ Failed to create ticket. Please try again or use the Submit page.");
+      }
+    } catch (error) {
+      addBotMessage("❌ Error creating ticket. Please try again.");
+    }
+    cancelTicket();
+  };
+
   const quickReplies = [
     { text: 'How do I submit a ticket?', icon: '🎫' },
     { text: 'How do I get paid?', icon: '💰' },

@@ -540,7 +540,7 @@ router.get('/export', async (req, res) => {
   const { status, category, priority, date_from, date_to, customer_name } = req.query;
   
   try {
-    let query = 'SELECT id, title, description, environment, priority, status, customer_name, tech_name, category, subcategory, created_at, resolved_at FROM tickets WHERE 1=1';
+    let query = 'SELECT id, title, description, environment, priority, status, customer_name, tech_name, category, subcategory, ticket_type, assigned_to_admin, created_at, resolved_at FROM tickets WHERE 1=1';
     const params = [];
   
   // Role-based filtering

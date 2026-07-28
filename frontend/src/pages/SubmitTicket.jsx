@@ -365,6 +365,7 @@ export default function SubmitTicket() {
         short_description: form.short_description || null,
         long_description: form.long_description || null,
         description: form.description,
+        ticket_type: form.ticket_type || 'technical', // Include ticket type
         environment: form.environment,
         priority: form.priority,
         tags: tagArray,
