@@ -252,6 +252,17 @@ export default function SubmitTicket() {
     setShowTechDropdown(false);
   };
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('.tech-dropdown-container')) {
+        setShowTechDropdown(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
   const removeTech = (techId) => {
     setSelectedTechs(selectedTechs.filter(t => t.id !== techId));
   };
@@ -574,7 +585,7 @@ export default function SubmitTicket() {
             )}
             
             {/* Tech Search Input */}
-            <div style={{ position: 'relative' }}>
+            <div className="tech-dropdown-container" style={{ position: 'relative' }}>
               <input
                 type="text"
                 value={techSearch}
@@ -597,7 +608,7 @@ export default function SubmitTicket() {
                   background: 'var(--surface-1)',
                   border: '1px solid var(--border-color)',
                   borderRadius: '8px',
-                  zIndex: 20,
+                  zIndex: 1000,
                   maxHeight: '300px',
                   overflow: 'auto',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
