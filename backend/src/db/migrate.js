@@ -784,7 +784,7 @@ async function runMigrations() {
       await connection.query(`
         CREATE TABLE IF NOT EXISTS attachments (
           id INT AUTO_INCREMENT PRIMARY KEY,
-          ticket_id INT NOT NULL,
+          ticket_id INT DEFAULT NULL,
           filename VARCHAR(255) NOT NULL,
           stored_filename VARCHAR(255) NOT NULL,
           file_path VARCHAR(500) NOT NULL,
@@ -809,6 +809,20 @@ async function runMigrations() {
         console.log('   → Modifying attachments id to AUTO_INCREMENT...');
         await connection.query(`ALTER TABLE attachments MODIFY COLUMN id INT AUTO_INCREMENT`);
         console.log('   ✓ attachments id set to AUTO_INCREMENT');
+      }
+      
+      // Make ticket_id nullable and drop FK constraint if exists
+      try {
+        await connection.query(`ALTER TABLE attachments MODIFY COLUMN ticket_id INT DEFAULT NULL`);
+        console.log('   → Made ticket_id nullable');
+      } catch (e) {}
+      
+      // Drop FK constraint if exists
+      try {
+        await connection.query(`ALTER TABLE attachments DROP FOREIGN KEY attachments_ibfk_1`);
+        console.log('   → Dropped FK constraint');
+      } catch (e) {
+        // FK might not exist
       }
     }
 
@@ -886,6 +900,12 @@ async function runMigrations() {
         console.log('   → Adding metadata column...');
         await connection.query(`ALTER TABLE ticket_history ADD COLUMN metadata JSON`);
         console.log('   ✓ metadata column added');
+      }
+      
+      if (!histColMap.includes('user_name')) {
+        console.log('   → Adding user_name column...');
+        await connection.query(`ALTER TABLE ticket_history ADD COLUMN user_name VARCHAR(255)`);
+        console.log('   ✓ user_name column added');
       }
     }
 
