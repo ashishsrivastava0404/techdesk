@@ -103,9 +103,11 @@ export async function initDatabase() {
       long_description TEXT DEFAULT NULL,
       environment ENUM('dev', 'staging') DEFAULT 'dev',
       priority ENUM('low', 'normal', 'high', 'urgent', 'critical') DEFAULT 'normal',
+      ticket_type ENUM('business', 'technical') DEFAULT 'technical',
       status ENUM('open', 'claimed', 'in_progress', 'resolved', 'closed', 'rejected', 'pending_assignment') DEFAULT 'open',
       customer_name VARCHAR(255) NOT NULL,
       tech_name VARCHAR(255) DEFAULT NULL,
+      assigned_to_admin VARCHAR(255) DEFAULT NULL,
       customer_id INT DEFAULT NULL,
       tech_id INT DEFAULT NULL,
       base_pay DECIMAL(10,2) DEFAULT 25.00,
@@ -125,6 +127,25 @@ export async function initDatabase() {
       resolved_at TIMESTAMP NULL DEFAULT NULL
     )
   `);
+
+  // Add missing columns for existing databases (if tickets table already exists)
+  try {
+    await connection.query(`
+      ALTER TABLE tickets
+      ADD COLUMN IF NOT EXISTS ticket_type ENUM('business', 'technical') DEFAULT 'technical'
+      AFTER priority
+    `);
+    await connection.query(`
+      ALTER TABLE tickets
+      ADD COLUMN IF NOT EXISTS assigned_to_admin VARCHAR(255) DEFAULT NULL
+      AFTER tech_name
+    `);
+    // Add indexes
+    await connection.query(`ALTER TABLE tickets ADD INDEX IF NOT EXISTS idx_ticket_type (ticket_type)`);
+    await connection.query(`ALTER TABLE tickets ADD INDEX IF NOT EXISTS idx_assigned_admin (assigned_to_admin)`);
+  } catch (err) {
+    // Columns/indexes may already exist, ignore errors
+  }
 
   // Category hierarchies table (nested categories/sub-categories)
   await connection.query(`

@@ -464,7 +464,7 @@ router.get('/:id/suggested-agents', async (req, res) => {
 });
 
 // Ticket Drafts - Save draft
-router.post('/draft', async (req, res) => {
+router.post('/draft', authenticate, async (req, res) => {
   const { draft_id, title, description, short_description, long_description, environment, priority, category, subcategory, topic, tags } = req.body;
   
   try {
@@ -507,7 +507,7 @@ router.post('/draft', async (req, res) => {
 });
 
 // Ticket Drafts - Get draft
-router.get('/draft/:draft_id', async (req, res) => {
+router.get('/draft/:draft_id', authenticate, async (req, res) => {
   const { draft_id } = req.params;
   
   try {
@@ -534,7 +534,7 @@ router.get('/draft/:draft_id', async (req, res) => {
 });
 
 // Ticket Drafts - Delete draft
-router.delete('/draft/:draft_id', async (req, res) => {
+router.delete('/draft/:draft_id', authenticate, async (req, res) => {
   const { draft_id } = req.params;
   
   try {
