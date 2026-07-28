@@ -2,6 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext.jsx';
 import { api } from '../api/index.js';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 export default function TicketDetail({ ticket, onClose, onUpdate }) {
   const { user, showToast } = useApp();
   const [comments, setComments] = useState([]);
@@ -32,7 +38,7 @@ export default function TicketDetail({ ticket, onClose, onUpdate }) {
     try {
       // Try to load from new comments API first, fallback to discussions
       try {
-        const response = await fetch(`/api/tickets/${ticket.id}/comments?includeInternal=true`);
+        const response = await fetch(`/api/tickets/${ticket.id}/comments?includeInternal=true`, { headers: getAuthHeaders() });
         const data = await response.json();
         if (data.success) {
           setComments(data.data || []);
@@ -67,7 +73,7 @@ export default function TicketDetail({ ticket, onClose, onUpdate }) {
       try {
         const response = await fetch(`/api/tickets/${ticket.id}/comments`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
           body: JSON.stringify({
             message: newMessage,
             message_type: 'comment',

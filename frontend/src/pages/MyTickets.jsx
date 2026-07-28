@@ -6,6 +6,12 @@ import RatingModal from '../components/RatingModal.jsx';
 
 const FILTERS = ['all', 'open', 'claimed', 'resolved', 'closed'];
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 export default function MyTickets() {
   const { user, showToast, requireName } = useApp();
   const [tickets, setTickets] = useState([]);
@@ -41,7 +47,7 @@ export default function MyTickets() {
   // Load filter options from backend
   const loadFilters = async () => {
     try {
-      const response = await fetch('/api/search/filters');
+      const response = await fetch('/api/search/filters', { headers: getAuthHeaders() });
       if (response.ok) {
         const data = await response.json();
         setFilters({

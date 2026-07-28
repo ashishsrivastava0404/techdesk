@@ -4,6 +4,12 @@ import { useApp } from '../context/AppContext.jsx';
 import { useBrand } from '../context/BrandContext.jsx';
 import { api } from '../api/index.js';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 export default function Dashboard() {
   const { user, showToast } = useApp();
   const { brand } = useBrand();
@@ -49,7 +55,7 @@ export default function Dashboard() {
         params.append('customer_name', user.name);
       }
       
-      const response = await fetch(`/api/tickets/export?${params}`);
+      const response = await fetch(`/api/tickets/export?${params}`, { headers: getAuthHeaders() });
       
       if (!response.ok) {
         throw new Error('Export failed');

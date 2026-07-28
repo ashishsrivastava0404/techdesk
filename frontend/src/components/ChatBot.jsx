@@ -3,6 +3,12 @@ import { useApp } from '../context/AppContext.jsx';
 import { useBrand } from '../context/BrandContext.jsx';
 import { api } from '../api/index.js';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 export default function ChatBot() {
   const { user, showToast } = useApp();
   const { brand } = useBrand();
@@ -371,7 +377,7 @@ export default function ChatBot() {
     try {
       const response = await fetch('/api/tickets', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({
           title: ticketState.data.title,
           description: ticketState.data.description,
