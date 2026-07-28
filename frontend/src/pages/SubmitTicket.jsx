@@ -485,7 +485,7 @@ export default function SubmitTicket() {
           {/* Category Hierarchy Selection */}
           <div className="field">
             <label>Category Hierarchy</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            <div className="category-hierarchy">
               {/* Category */}
               <select
                 value={form.category}
@@ -538,7 +538,7 @@ export default function SubmitTicket() {
             
             {/* Selected Path Display */}
             {form.category && (
-              <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-muted)' }}>
+              <div className="selected-path">
                 <strong>Selected:</strong> {' '}
                 {categoryHierarchy[form.category]?.icon} {categoryHierarchy[form.category]?.name}
                 {form.subcategory && ` → ${categoryHierarchy[form.category]?.subcategories?.[form.subcategory]?.name}`}
