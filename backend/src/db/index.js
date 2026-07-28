@@ -130,21 +130,41 @@ export async function initDatabase() {
 
   // Add missing columns for existing databases (if tickets table already exists)
   try {
-    await connection.query(`
-      ALTER TABLE tickets
-      ADD COLUMN IF NOT EXISTS ticket_type ENUM('business', 'technical') DEFAULT 'technical'
-      AFTER priority
+    // Check if ticket_type column exists
+    const [columns] = await connection.query(`
+      SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tickets' AND COLUMN_NAME = 'ticket_type'
     `);
-    await connection.query(`
-      ALTER TABLE tickets
-      ADD COLUMN IF NOT EXISTS assigned_to_admin VARCHAR(255) DEFAULT NULL
-      AFTER tech_name
+    if (columns.length === 0) {
+      await connection.query(`
+        ALTER TABLE tickets
+        ADD COLUMN ticket_type ENUM('business', 'technical') DEFAULT 'technical'
+        AFTER priority
+      `);
+    }
+
+    // Check if assigned_to_admin column exists
+    const [adminColumns] = await connection.query(`
+      SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tickets' AND COLUMN_NAME = 'assigned_to_admin'
     `);
-    // Add indexes
-    await connection.query(`ALTER TABLE tickets ADD INDEX IF NOT EXISTS idx_ticket_type (ticket_type)`);
-    await connection.query(`ALTER TABLE tickets ADD INDEX IF NOT EXISTS idx_assigned_admin (assigned_to_admin)`);
+    if (adminColumns.length === 0) {
+      await connection.query(`
+        ALTER TABLE tickets
+        ADD COLUMN assigned_to_admin VARCHAR(255) DEFAULT NULL
+        AFTER tech_name
+      `);
+    }
+
+    // Add indexes (ignore errors if they already exist)
+    try {
+      await connection.query(`ALTER TABLE tickets ADD INDEX idx_ticket_type (ticket_type)`);
+    } catch (e) { /* index may exist */ }
+    try {
+      await connection.query(`ALTER TABLE tickets ADD INDEX idx_assigned_admin (assigned_to_admin)`);
+    } catch (e) { /* index may exist */ }
   } catch (err) {
-    // Columns/indexes may already exist, ignore errors
+    console.error('Error adding ticket columns:', err);
   }
 
   // Category hierarchies table (nested categories/sub-categories)
