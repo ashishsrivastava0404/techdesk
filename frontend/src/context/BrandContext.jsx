@@ -31,6 +31,13 @@ export function BrandProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   const loadBrandSettings = async () => {
+    // Only load if user is logged in (has token)
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+    
     try {
       const data = await api.admin.getSettings();
       if (data) {
@@ -48,7 +55,6 @@ export function BrandProvider({ children }) {
       }
     } catch (error) {
       // Silently fail - use default brand settings
-      console.log('Brand settings not available (admin only)');
     } finally {
       setLoading(false);
     }
