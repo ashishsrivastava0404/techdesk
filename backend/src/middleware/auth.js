@@ -1,13 +1,22 @@
 import jwt from 'jsonwebtoken';
 
+const DEBUG = process.env.DEBUG === 'true' || process.env.NODE_ENV !== 'production';
+
 /**
  * JWT Authentication Middleware
  * Verifies JWT token from Authorization header
  */
 export function authenticate(req, res, next) {
   const authHeader = req.headers.authorization;
-  
+
+  if (DEBUG) {
+    console.log(`[AUTH] ${req.method} ${req.path} - Checking authentication...`);
+  }
+
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (DEBUG) {
+      console.log(`[AUTH] ${req.method} ${req.path} - ❌ No token provided`);
+    }
     return res.status(401).json({ error: 'Authentication required' });
   }
 
@@ -16,10 +25,19 @@ export function authenticate(req, res, next) {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
+    if (DEBUG) {
+      console.log(`[AUTH] ${req.method} ${req.path} - ✅ Authenticated as: ${decoded.name} (${decoded.role})`);
+    }
     next();
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
+      if (DEBUG) {
+        console.log(`[AUTH] ${req.method} ${req.path} - ❌ Token expired`);
+      }
       return res.status(401).json({ error: 'Token expired' });
+    }
+    if (DEBUG) {
+      console.log(`[AUTH] ${req.method} ${req.path} - ❌ Invalid token: ${error.message}`);
     }
     return res.status(401).json({ error: 'Invalid token' });
   }
@@ -30,8 +48,11 @@ export function authenticate(req, res, next) {
  */
 export function optionalAuth(req, res, next) {
   const authHeader = req.headers.authorization;
-  
+
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (DEBUG) {
+      console.log(`[AUTH] ${req.method} ${req.path} - No token (optional)`);
+    }
     return next();
   }
 
@@ -40,10 +61,15 @@ export function optionalAuth(req, res, next) {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
+    if (DEBUG) {
+      console.log(`[AUTH] ${req.method} ${req.path} - ✅ Optional auth as: ${decoded.name}`);
+    }
   } catch (error) {
-    // Ignore invalid tokens for optional auth
+    if (DEBUG) {
+      console.log(`[AUTH] ${req.method} ${req.path} - Invalid token (ignored): ${error.message}`);
+    }
   }
-  
+
   next();
 }
 
@@ -84,13 +110,22 @@ export function generateRefreshToken(user) {
 export function requireRole(...roles) {
   return (req, res, next) => {
     if (!req.user) {
+      if (DEBUG) {
+        console.log(`[ROLE] ${req.method} ${req.path} - ❌ No user (authenticate first)`);
+      }
       return res.status(401).json({ error: 'Authentication required' });
     }
 
     if (!roles.includes(req.user.role)) {
+      if (DEBUG) {
+        console.log(`[ROLE] ${req.method} ${req.path} - ❌ Forbidden: ${req.user.role} not in [${roles.join(', ')}]`);
+      }
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
 
+    if (DEBUG) {
+      console.log(`[ROLE] ${req.method} ${req.path} - ✅ Allowed for ${req.user.role}`);
+    }
     next();
   };
 }
@@ -130,14 +165,21 @@ export function checkOwnership(getResource) {
       }
 
       // Check ownership
-      const isOwner = 
+      const isOwner =
         resource.customer_name === req.user.name ||
         resource.tech_name === req.user.name ||
         resource.user_name === req.user.name ||
         resource.name === req.user.name;
 
       if (!isOwner) {
+        if (DEBUG) {
+          console.log(`[OWNERSHIP] ${req.method} ${req.path} - ❌ User ${req.user.name} doesn't own resource`);
+        }
         return res.status(403).json({ error: 'Not authorized to access this resource' });
+      }
+
+      if (DEBUG) {
+        console.log(`[OWNERSHIP] ${req.method} ${req.path} - ✅ User owns resource`);
       }
 
       req.resource = resource;

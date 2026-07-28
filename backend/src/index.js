@@ -8,6 +8,21 @@ import { startCleanupTimer } from './db/memoryFallback.js';
 import { loadApiKeysFromDatabase } from './services/settingsLoader.js';
 import { authenticate, optionalAuth } from './middleware/auth.js';
 import { apiLimiter, authLimiter, paymentLimiter } from './middleware/rateLimiter.js';
+
+const DEBUG = process.env.DEBUG === 'true' || process.env.NODE_ENV !== 'production';
+
+// Request logger middleware
+const requestLogger = (req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    const statusColor = res.statusCode >= 400 ? '❌' : res.statusCode >= 300 ? '➡️' : '✅';
+    if (DEBUG || res.statusCode >= 400) {
+      console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} ${res.statusCode} ${duration}ms ${statusColor}`);
+    }
+  });
+  next();
+};
 import usersRouter from './routes/users.js';
 import authRouter from './routes/auth.js';
 import ticketsRouter from './routes/tickets.js';
@@ -58,6 +73,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.use(requestLogger);
 app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
