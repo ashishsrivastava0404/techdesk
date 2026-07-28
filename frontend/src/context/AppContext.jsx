@@ -35,10 +35,10 @@ export function AppProvider({ children }) {
       // Set logout timer (15 minutes)
       idleTimer.current = setTimeout(() => {
         logout();
-        showToast('Session expired due to inactivity. Please login again.');
+        console.log('Session expired due to inactivity. Please login again.');
       }, IDLE_TIMEOUT);
     }
-  }, [user, showToast]);
+  }, [user]);
 
   // Check for existing auth session on mount
   useEffect(() => {
