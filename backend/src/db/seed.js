@@ -285,12 +285,12 @@ async function seedDatabase() {
     console.log('💬 Seeding CRM interactions...');
     
     await connection.query(`
-      INSERT IGNORE INTO crm_interactions (contact_id, type, subject, content, outcome) VALUES
-      (1, 'call', 'Onboarding call', 'Discussed enterprise features and pricing', 'Interested in annual plan'),
-      (1, 'email', 'Follow-up', 'Sent proposal document', 'Awaiting response'),
-      (2, 'meeting', 'Product demo', 'Demo of DevOps integration features', 'Very positive feedback'),
-      (3, 'call', 'Initial contact', 'Qualification call for enterprise needs', 'Scheduled technical review'),
-      (4, 'email', 'Partnership renewal', 'Discussed new partnership terms', 'Ready to sign')
+      INSERT IGNORE INTO crm_interactions (contact_id, type, subject, content) VALUES
+      (1, 'call', 'Onboarding call', 'Discussed enterprise features and pricing'),
+      (1, 'email', 'Follow-up', 'Sent proposal document'),
+      (2, 'meeting', 'Product demo', 'Demo of DevOps integration features'),
+      (3, 'call', 'Initial contact', 'Qualification call for enterprise needs'),
+      (4, 'email', 'Partnership renewal', 'Discussed new partnership terms')
     `);
     
     console.log('   ✓ 5 CRM interactions created\n');
