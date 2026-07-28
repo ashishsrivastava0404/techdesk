@@ -70,6 +70,11 @@ router.get('/', authenticate, async (req, res) => {
     const searchTerm = `%${search}%`;
     params.push(searchTerm, searchTerm, searchTerm);
   }
+
+  if (ticket_type) {
+    query += ' AND ticket_type = ?';
+    params.push(ticket_type);
+  }
   
   query += ' ORDER BY FIELD(priority, "critical", "urgent", "high", "normal", "low"), created_at DESC';
   
@@ -113,11 +118,21 @@ router.post('/', async (req, res) => {
     topic,
     tags, 
     estimated_hours,
+    ticket_type = 'technical',
     auto_route = true // Whether to auto-route to agents
   } = req.body;
   
   if (!title || !description || !customer_name) {
     return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  // Validate ticket_type
+  const validTicketTypes = ['technical', 'business'];
+  const finalTicketType = validTicketTypes.includes(ticket_type) ? ticket_type : 'technical';
+
+  // Techs can only create business tickets
+  if (req.user.role === 'tech' && finalTicketType === 'technical') {
+    return res.status(403).json({ error: 'Technicians can only create business tickets' });
   }
   
   // Validate category path if provided
@@ -151,8 +166,8 @@ router.post('/', async (req, res) => {
       : null;
 
     const [result] = await pool.query(
-      `INSERT INTO tickets (title, description, subject, short_description, long_description, environment, priority, customer_name, category, subcategory, topic, tags, estimated_hours, sla_due_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? HOUR))`,
+      `INSERT INTO tickets (title, description, subject, short_description, long_description, environment, priority, ticket_type, customer_name, category, subcategory, topic, tags, estimated_hours, assigned_to_admin, sla_due_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? HOUR))`,
       [
         title, 
         description, 
@@ -161,12 +176,14 @@ router.post('/', async (req, res) => {
         long_description || null,
         environment || 'dev', 
         priority || 'normal', 
+        finalTicketType,
         customer_name, 
         category || 'general',
         subcategory || null,
         topic || null,
         JSON.stringify(tags || []), 
         estimated_hours || null, 
+        finalTicketType === 'business' ? req.user.name : null,
         slaHours
       ]
     );
@@ -179,6 +196,7 @@ router.post('/', async (req, res) => {
       `INSERT INTO ticket_history (ticket_id, action, actor_name, actor_role, metadata)
        VALUES (?, 'created', ?, 'customer', ?)`,
       [result.insertId, customer_name, JSON.stringify({ 
+        ticket_type: finalTicketType,
         priority, 
         environment, 
         category, 
@@ -294,6 +312,12 @@ router.patch('/:id', async (req, res) => {
       if (tech_name && !ticket.first_response_at) {
         updates.push('first_response_at = NOW()');
       }
+    }
+
+    if (assigned_to_admin !== undefined) {
+      updates.push('assigned_to_admin = ?');
+      params.push(assigned_to_admin);
+      historyEntries.push({ field: 'assigned_to_admin', old: ticket.assigned_to_admin, new: assigned_to_admin });
     }
 
     if (priority !== undefined) {
