@@ -464,29 +464,14 @@ export default function SubmitTicket() {
                 placeholder="Start typing to see suggestions..."
               />
               {showSuggestions && filteredSuggestions.length > 0 && (
-                <div style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: 0,
-                  right: 0,
-                  background: 'var(--surface-1)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '4px',
-                  zIndex: 10,
-                  maxHeight: '200px',
-                  overflow: 'auto'
-                }}>
+                <div className="suggestions-dropdown">
                   {filteredSuggestions.map((s, i) => (
                     <div
                       key={i}
                       onClick={() => selectSuggestion(s.tag)}
-                      style={{
-                        padding: '8px 12px',
-                        cursor: 'pointer',
-                        borderBottom: '1px solid var(--border-color)'
-                      }}
+                      className="suggestion-item"
                     >
-                      <span style={{ fontWeight: 500 }}>{s.tag}</span>
+                      <span className="tag-label">{s.tag}</span>
                       <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginLeft: '8px' }}>
                         {s.success_rate}% success rate
                       </span>
@@ -573,34 +558,13 @@ export default function SubmitTicket() {
             
             {/* Selected Technologies Tags */}
             {selectedTechs.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+              <div className="tech-tags">
                 {selectedTechs.map((tech) => (
-                  <span
-                    key={tech.id}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      padding: '4px 10px',
-                      background: 'var(--primary-color)',
-                      color: 'white',
-                      borderRadius: '16px',
-                      fontSize: '12px'
-                    }}
-                  >
+                  <span key={tech.id} className="tech-tag">
                     {tech.name}
                     <button
                       type="button"
                       onClick={() => removeTech(tech.id)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: 'white',
-                        cursor: 'pointer',
-                        padding: 0,
-                        fontSize: '16px',
-                        lineHeight: 1
-                      }}
                     >
                       ×
                     </button>
@@ -625,33 +589,13 @@ export default function SubmitTicket() {
               
               {/* Tech Dropdown */}
               {showTechDropdown && filteredTechnologies.length > 0 && (
-                <div style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: 0,
-                  right: 0,
-                  background: 'var(--surface-1)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '8px',
-                  zIndex: 1000,
-                  maxHeight: '300px',
-                  overflow: 'auto',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                }}>
+                <div className="tech-dropdown">
                   {/* Category Headers */}
                   {techCategories
                     .filter(cat => filteredTechnologies.some(t => t.categoryId === cat.id))
                     .map(cat => (
                       <div key={cat.id}>
-                        <div style={{
-                          padding: '8px 12px',
-                          background: 'var(--surface-2)',
-                          fontWeight: 600,
-                          fontSize: '12px',
-                          color: 'var(--text-muted)',
-                          position: 'sticky',
-                          top: 0
-                        }}>
+                        <div className="tech-category-header">
                           {cat.icon} {cat.name}
                         </div>
                         {filteredTechnologies
@@ -660,16 +604,9 @@ export default function SubmitTicket() {
                             <div
                               key={tech.id}
                               onClick={() => addTech(tech)}
-                              style={{
-                                padding: '10px 12px',
-                                cursor: 'pointer',
-                                borderBottom: '1px solid var(--border-color)',
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center'
-                              }}
+                              className="tech-item"
                             >
-                              <span style={{ fontWeight: 500 }}>{tech.name}</span>
+                              <span>{tech.name}</span>
                               <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                                 {tech.certified && (
                                   <span style={{ color: '#10b981' }}>✓ Certified</span>
