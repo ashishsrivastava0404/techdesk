@@ -64,20 +64,23 @@ export default function SubmitTicket() {
   const loadDraft = async () => {
     try {
       const response = await fetch(`/api/tickets/draft/${draftId}`, { headers: getAuthHeaders() });
-      if (response.ok) {
-        const draft = await response.json();
-        setForm({
-          title: draft.title || '',
-          subject: draft.subject || '',
-          short_description: draft.short_description || '',
-          long_description: draft.long_description || '',
-          description: draft.description || '',
-          environment: draft.environment || 'dev',
-          priority: draft.priority || 'normal',
-          category: draft.category || '',
-          subcategory: draft.subcategory || '',
-          topic: draft.topic || '',
-          tags: Array.isArray(draft.tags) ? draft.tags.join(', ') : (draft.tags || ''),
+      if (!response.ok) {
+        // Draft not found is expected - ignore 404
+        return;
+      }
+      const draft = await response.json();
+      setForm({
+        title: draft.title || '',
+        subject: draft.subject || '',
+        short_description: draft.short_description || '',
+        long_description: draft.long_description || '',
+        description: draft.description || '',
+        environment: draft.environment || 'dev',
+        priority: draft.priority || 'normal',
+        category: draft.category || '',
+        subcategory: draft.subcategory || '',
+        topic: draft.topic || '',
+        tags: Array.isArray(draft.tags) ? draft.tags.join(', ') : (draft.tags || ''),
           estimated_hours: ''
         });
         if (draft.tags && Array.isArray(draft.tags)) {
