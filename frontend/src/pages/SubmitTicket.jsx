@@ -3,6 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext.jsx';
 import { api } from '../api/index.js';
 
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 export default function SubmitTicket() {
   const { user, showToast, requireName } = useApp();
   const navigate = useNavigate();
@@ -57,7 +63,7 @@ export default function SubmitTicket() {
   // Load saved draft on mount
   const loadDraft = async () => {
     try {
-      const response = await fetch(`/api/tickets/draft/${draftId}`);
+      const response = await fetch(`/api/tickets/draft/${draftId}`, { headers: getAuthHeaders() });
       if (response.ok) {
         const draft = await response.json();
         setForm({
@@ -91,7 +97,7 @@ export default function SubmitTicket() {
         try {
           await fetch('/api/tickets/draft', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
             body: JSON.stringify({
               draft_id: draftId,
               ...form,
@@ -110,7 +116,7 @@ export default function SubmitTicket() {
   // Clear form handler
   const handleClearForm = async () => {
     try {
-      await fetch(`/api/tickets/draft/${draftId}`, { method: 'DELETE' });
+      await fetch(`/api/tickets/draft/${draftId}`, { method: 'DELETE', headers: getAuthHeaders() });
     } catch (error) {
       console.error('Error deleting draft:', error);
     }
@@ -159,6 +165,7 @@ export default function SubmitTicket() {
 
       const response = await fetch('/api/attachments', {
         method: 'POST',
+        headers: getAuthHeaders(),
         body: formData
       });
 
@@ -181,7 +188,7 @@ export default function SubmitTicket() {
   // Remove attachment
   const handleRemoveAttachment = async (attachmentId) => {
     try {
-      await fetch(`/api/attachments/${attachmentId}`, { method: 'DELETE' });
+      await fetch(`/api/attachments/${attachmentId}`, { method: 'DELETE', headers: getAuthHeaders() });
       setAttachments(prev => prev.filter(a => a.id !== attachmentId));
       showToast('Attachment removed');
     } catch (error) {
@@ -389,7 +396,8 @@ export default function SubmitTicket() {
       if (attachments.length > 0 && ticket.id) {
         for (const attachment of attachments) {
           await fetch(`/api/attachments/${attachment.id}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: getAuthHeaders()
           });
         }
         
@@ -401,7 +409,7 @@ export default function SubmitTicket() {
       
       // Delete the draft after successful submission
       try {
-        await fetch(`/api/tickets/draft/${draftId}`, { method: 'DELETE' });
+        await fetch(`/api/tickets/draft/${draftId}`, { method: 'DELETE', headers: getAuthHeaders() });
       } catch (err) {
         console.error('Error deleting draft:', err);
       }
