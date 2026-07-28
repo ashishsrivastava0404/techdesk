@@ -106,6 +106,8 @@ export async function initDatabase() {
       status ENUM('open', 'claimed', 'in_progress', 'resolved', 'closed', 'rejected', 'pending_assignment') DEFAULT 'open',
       customer_name VARCHAR(255) NOT NULL,
       tech_name VARCHAR(255) DEFAULT NULL,
+      customer_id INT DEFAULT NULL,
+      tech_id INT DEFAULT NULL,
       base_pay DECIMAL(10,2) DEFAULT 25.00,
       category VARCHAR(100) DEFAULT 'general',
       subcategory VARCHAR(100) DEFAULT NULL,
@@ -646,6 +648,36 @@ export async function initDatabase() {
       faq_matched VARCHAR(255),
       action_taken VARCHAR(100),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Conversations table (for in-app messaging)
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS conversations (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      ticket_id INT NOT NULL,
+      customer_id INT NOT NULL,
+      tech_id INT DEFAULT NULL,
+      customer_name VARCHAR(255),
+      tech_name VARCHAR(255),
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Messages table (for in-app messaging)
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS messages (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      conversation_id INT NOT NULL,
+      sender_id INT NOT NULL,
+      message_type ENUM('text', 'file', 'system') DEFAULT 'text',
+      content TEXT NOT NULL,
+      attachment_url VARCHAR(500),
+      is_read BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
     )
   `);
 

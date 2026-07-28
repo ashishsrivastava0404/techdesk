@@ -46,6 +46,8 @@ async function runMigrations() {
     await addColumn('crm_contacts', 'user_type', "ENUM('customer', 'tech', 'other') DEFAULT 'customer'");
     await addColumn('conversations', 'customer_id', 'INT');
     await addColumn('conversations', 'tech_id', 'INT');
+    await addColumn('tickets', 'customer_id', 'INT');
+    await addColumn('tickets', 'tech_id', 'INT');
     await addColumn('conversations', 'customer_name', 'VARCHAR(255)');
     await addColumn('conversations', 'tech_name', 'VARCHAR(255)');
 
@@ -77,6 +79,8 @@ async function runMigrations() {
     await createTable('expert_stats', `CREATE TABLE IF NOT EXISTS expert_stats (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL UNIQUE, total_tickets_resolved INT DEFAULT 0, total_rating DECIMAL(10,2) DEFAULT 0, avg_rating DECIMAL(3,2) DEFAULT 0, avg_resolution_time INT DEFAULT 0, last_active TIMESTAMP NULL DEFAULT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)`);
     await createTable('tech_stack', `CREATE TABLE IF NOT EXISTS tech_stack (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255) NOT NULL, category VARCHAR(100) NOT NULL, certified BOOLEAN DEFAULT FALSE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
     await createTable('currencies', `CREATE TABLE IF NOT EXISTS currencies (code VARCHAR(3) PRIMARY KEY, symbol VARCHAR(10) NOT NULL, name VARCHAR(100) NOT NULL, decimal_places INT DEFAULT 2, exchange_rate_to_usd DECIMAL(15,6) DEFAULT 1, is_active BOOLEAN DEFAULT TRUE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)`);
+    await createTable('conversations', `CREATE TABLE IF NOT EXISTS conversations (id INT AUTO_INCREMENT PRIMARY KEY, ticket_id INT NOT NULL, customer_id INT NOT NULL, tech_id INT DEFAULT NULL, customer_name VARCHAR(255), tech_name VARCHAR(255), updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE)`);
+    await createTable('messages', `CREATE TABLE IF NOT EXISTS messages (id INT AUTO_INCREMENT PRIMARY KEY, conversation_id INT NOT NULL, sender_id INT NOT NULL, message_type ENUM('text', 'file', 'system') DEFAULT 'text', content TEXT NOT NULL, attachment_url VARCHAR(500), is_read BOOLEAN DEFAULT FALSE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE)`);
 
     try {
       const [rows] = await connection.query('SELECT COUNT(*) as count FROM currencies');
