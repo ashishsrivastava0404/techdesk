@@ -11,7 +11,10 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = location.state?.from?.pathname || '/';
+  // Handle redirect from protected routes
+  const params = new URLSearchParams(location.search);
+  const redirectParam = params.get('redirect');
+  const from = redirectParam || location.state?.from?.pathname || '/';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,13 +24,11 @@ export default function Login() {
     try {
       const response = await login(email, password);
       // Redirect based on role
-      if (response.user.role === 'admin') {
-        navigate('/admin', { replace: true });
-      } else if (response.user.role === 'tech') {
-        navigate('/available', { replace: true });
-      } else {
-        navigate('/dashboard', { replace: true });
-      }
+      // Redirect to original destination or role-based default
+      const destination = from !== '/' ? from : 
+        response.user.role === 'admin' ? '/admin' :
+        response.user.role === 'tech' ? '/available' : '/dashboard';
+      navigate(destination, { replace: true });
     } catch (err) {
       setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
