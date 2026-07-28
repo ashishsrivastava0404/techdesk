@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useApp } from '../context/AppContext.jsx';
 
 const CATEGORY_MAP = {
   'submit': 'tickets',
@@ -40,6 +41,7 @@ const CATEGORY_DISPLAY = {
 };
 
 export default function HelpCenter() {
+  const { user } = useApp();
   const [articles, setArticles] = useState([]);
   const [categories, setCategories] = useState(['all']);
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -47,6 +49,9 @@ export default function HelpCenter() {
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  // Check if user is a tech (techs can only create business tickets)
+  const isTech = user?.role === 'tech';
 
   useEffect(() => {
     loadArticles();
@@ -161,9 +166,13 @@ export default function HelpCenter() {
           <div style={{ marginTop: '24px' }}>
             <h4 style={{ fontFamily: 'var(--display)', marginBottom: '12px' }}>Need more help?</h4>
             <p style={{ color: 'var(--muted)', marginBottom: '12px' }}>
-              Our chatbot is available 24/7 for instant answers, or submit a support ticket.
+              {isTech 
+                ? 'For technical issues, use the Available Tickets page. For account or billing issues, submit a request below.'
+                : 'Our chatbot is available 24/7 for instant answers, or submit a support ticket.'}
             </p>
-            <button className="btn btn-primary" onClick={() => navigate('/submit')}>Open Support Ticket</button>
+            <button className="btn btn-primary" onClick={() => navigate('/submit')}>
+              {isTech ? '💼 Submit Request' : '🎫 Open Support Ticket'}
+            </button>
           </div>
         </div>
       </div>
@@ -229,21 +238,13 @@ export default function HelpCenter() {
           marginBottom: '32px'
         }}>
           {[
-            { icon: '🎫', title: 'Submitting Tickets', desc: 'How to create tickets' },
-            { icon: '💰', title: 'Getting Paid', desc: 'Payment and payouts' },
-            { icon: '⭐', title: 'Ratings', desc: 'Build your reputation' },
-            { icon: '⏱️', title: 'SLA', desc: 'Response times' },
-            { icon: '🤖', title: 'Chatbot', desc: 'Get instant help' },
-            { icon: '📧', title: 'Contact Support', desc: 'Submit a ticket' }
+            { icon: '🎫', title: isTech ? 'Submit Request' : 'Submitting Tickets', desc: isTech ? 'Account & billing issues' : 'How to create tickets', action: 'submit' },
+            { icon: '💰', title: 'Getting Paid', desc: 'Payment and payouts', action: 'payment' },
+            { icon: '⭐', title: 'Ratings', desc: 'Build your reputation', action: 'rating' },
+            { icon: '⏱️', title: 'SLA', desc: 'Response times', action: 'sla' },
+            { icon: '🤖', title: 'Chatbot', desc: 'Get instant help', action: 'chatbot' },
+            { icon: '📧', title: 'Contact Admin', desc: 'Business issues', action: 'submit' }
           ].map((topic, idx) => {
-            const categoryMap = {
-              'Submitting Tickets': 'tickets',
-              'Getting Paid': 'payment',
-              'Ratings': 'rating',
-              'SLA': 'sla',
-              'Chatbot': 'tickets',
-              'Contact Support': 'tickets'
-            };
             return (
               <div key={idx} style={{
                 padding: '20px',
@@ -255,11 +256,13 @@ export default function HelpCenter() {
                 textAlign: 'center'
               }}
               onClick={() => {
-                const cat = categoryMap[topic.title];
-                if (topic.title === 'Submitting Tickets' || topic.title === 'Contact Support') {
+                if (topic.action === 'submit') {
                   navigate('/submit');
-                } else if (cat) {
-                  setSelectedCategory(cat);
+                } else if (topic.action === 'chatbot') {
+                  const chatbot = document.querySelector('.chatbot-toggle');
+                  chatbot?.click();
+                } else {
+                  setSelectedCategory(topic.action);
                   setSearchQuery('');
                 }
               }}
@@ -386,13 +389,17 @@ export default function HelpCenter() {
         }}>
           <div style={{ fontSize: '40px', marginBottom: '12px' }}>💬</div>
           <h3 style={{ fontFamily: 'var(--display)', marginBottom: '8px' }}>
-            Still need help?
+            {isTech ? 'Need Account Support?' : 'Still need help?'}
           </h3>
           <p style={{ color: 'var(--muted)', marginBottom: '16px', maxWidth: '400px', margin: '0 auto 16px' }}>
-            Our chatbot is available 24/7 for instant answers. You can also submit a support ticket.
+            {isTech 
+              ? 'For technical issues, browse available tickets. For account, billing, or login issues, submit a request.'
+              : 'Our chatbot is available 24/7 for instant answers. You can also submit a support ticket.'}
           </p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-            <button className="btn btn-primary" onClick={() => navigate('/submit')}>Open Support Ticket</button>
+            <button className="btn btn-primary" onClick={() => navigate('/submit')}>
+              {isTech ? '💼 Submit Request' : '🎫 Open Support Ticket'}
+            </button>
             <button className="btn btn-ghost" onClick={() => { const chatbot = document.querySelector('.chatbot-toggle'); chatbot?.click(); }}>Chat with Support</button>
           </div>
         </div>
