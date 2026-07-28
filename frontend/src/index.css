@@ -358,6 +358,32 @@ textarea {
   font-weight: 600;
 }
 
+/* Subject/Topic Input */
+.subject-input-wrapper {
+  position: relative;
+}
+
+.subject-input-wrapper input {
+  width: 100%;
+  background: var(--bg-alt);
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: var(--text);
+  transition: all 0.2s ease;
+}
+
+.subject-input-wrapper input:focus {
+  border-color: var(--amber);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.2);
+}
+
+.subject-input-wrapper input::placeholder {
+  color: var(--muted);
+}
+
 /* Tech Dropdown */
 .tech-dropdown-container {
   position: relative;

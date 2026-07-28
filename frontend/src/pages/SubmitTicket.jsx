@@ -452,7 +452,7 @@ export default function SubmitTicket() {
 
           <div className="field">
             <label>Subject / Topic</label>
-            <div style={{ position: 'relative' }}>
+            <div className="subject-input-wrapper">
               <input
                 type="text"
                 value={form.subject}
