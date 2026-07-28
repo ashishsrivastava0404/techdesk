@@ -24,7 +24,7 @@ export function AppProvider({ children }) {
         setUser(response.user);
       }
     } catch (error) {
-      // Token is invalid or expired
+      // Token is invalid, expired, or server unreachable
       localStorage.removeItem('auth_token');
       setUser(null);
     } finally {

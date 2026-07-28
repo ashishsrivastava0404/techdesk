@@ -6,7 +6,7 @@ function getAuthHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-// Wrapper for authenticated fetch
+  // Wrapper for authenticated fetch
 async function fetchJSON(url, options = {}, requiresAuth = true) {
   const headers = {
     'Content-Type': 'application/json',
@@ -14,39 +14,48 @@ async function fetchJSON(url, options = {}, requiresAuth = true) {
     ...options.headers
   };
 
-  const response = await fetch(`${API_BASE}${url}`, {
-    ...options,
-    headers
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE}${url}`, {
+      ...options,
+      headers
+    });
+  } catch (networkError) {
+    // Network error (backend not running) - don't redirect, just throw
+    throw new Error('Unable to connect to server');
+  }
 
   // Handle token expiration
   if (response.status === 401) {
-    const data = await response.json().catch(() => ({}));
-    if (data.expired) {
-      // Try to refresh the token
-      const refreshed = await refreshToken();
-      if (refreshed) {
-        // Retry the request with new token
-        const newHeaders = {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(),
-          ...options.headers
-        };
-        const retryResponse = await fetch(`${API_BASE}${url}`, {
-          ...options,
-          headers: newHeaders
-        });
-        
-        if (!retryResponse.ok) {
-          const error = await retryResponse.json().catch(() => ({ error: 'Request failed' }));
-          throw new Error(error.error || 'Request failed');
+    // Only redirect if we actually have a token
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      const data = await response.json().catch(() => ({}));
+      if (data.expired) {
+        // Try to refresh the token
+        const refreshed = await refreshToken();
+        if (refreshed) {
+          // Retry the request with new token
+          const newHeaders = {
+            'Content-Type': 'application/json',
+            ...getAuthHeaders(),
+            ...options.headers
+          };
+          const retryResponse = await fetch(`${API_BASE}${url}`, {
+            ...options,
+            headers: newHeaders
+          });
+          
+          if (!retryResponse.ok) {
+            const error = await retryResponse.json().catch(() => ({ error: 'Request failed' }));
+            throw new Error(error.error || 'Request failed');
+          }
+          return retryResponse.json();
         }
-        return retryResponse.json();
       }
+      // Token is invalid, clear it (don't redirect, let the app handle auth state)
+      localStorage.removeItem('auth_token');
     }
-    // Token is invalid, clear and redirect
-    localStorage.removeItem('auth_token');
-    window.location.href = '/login';
     throw new Error('Session expired. Please login again.');
   }
 
