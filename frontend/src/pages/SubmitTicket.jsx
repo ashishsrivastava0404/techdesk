@@ -65,7 +65,6 @@ export default function SubmitTicket() {
     try {
       const response = await fetch(`/api/tickets/draft/${draftId}`, { headers: getAuthHeaders() });
       if (!response.ok) {
-        // Draft not found is expected - ignore 404
         return;
       }
       const draft = await response.json();
@@ -81,13 +80,12 @@ export default function SubmitTicket() {
         subcategory: draft.subcategory || '',
         topic: draft.topic || '',
         tags: Array.isArray(draft.tags) ? draft.tags.join(', ') : (draft.tags || ''),
-          estimated_hours: ''
-        });
-        if (draft.tags && Array.isArray(draft.tags)) {
-          // Could restore selected techs from tags if needed
-        }
-        showToast('Draft restored');
+        estimated_hours: draft.estimated_hours || ''
+      });
+      if (draft.tags && Array.isArray(draft.tags)) {
+        // Could restore selected techs from tags if needed
       }
+      showToast('Draft restored');
     } catch (error) {
       console.error('Error loading draft:', error);
     }
