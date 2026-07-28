@@ -1,12 +1,19 @@
 import { Router } from 'express';
+import { authenticate } from '../middleware/auth.js';
 import pool from '../db/index.js';
 
 const router = Router();
 
 // Get notifications for user
-router.get('/:userName', async (req, res) => {
+// Users can only see their own notifications, admins can see all
+router.get('/:userName', authenticate, async (req, res) => {
   const { userName } = req.params;
   const { unread_only, limit = 50 } = req.query;
+
+  // Verify ownership or admin access
+  if (req.user.role !== 'admin' && req.user.name !== userName) {
+    return res.status(403).json({ error: 'Not authorized to view these notifications' });
+  }
 
   let query = 'SELECT * FROM notifications WHERE user_name = ?';
   const params = [userName];
@@ -28,8 +35,13 @@ router.get('/:userName', async (req, res) => {
 });
 
 // Get unread count
-router.get('/:userName/count', async (req, res) => {
+router.get('/:userName/count', authenticate, async (req, res) => {
   const { userName } = req.params;
+
+  // Verify ownership or admin access
+  if (req.user.role !== 'admin' && req.user.name !== userName) {
+    return res.status(403).json({ error: 'Not authorized' });
+  }
   try {
     const [rows] = await pool.query(
       'SELECT COUNT(*) as count FROM notifications WHERE user_name = ? AND is_read = FALSE',

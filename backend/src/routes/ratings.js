@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { authenticate } from '../middleware/auth.js';
 import pool from '../db/index.js';
 
 const router = Router();
@@ -17,7 +18,7 @@ router.get('/tech/:name', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', authenticate, async (req, res) => {
   const { ticket_id, tech_name, rating, comment } = req.body;
   
   if (!ticket_id || !tech_name || !rating) {

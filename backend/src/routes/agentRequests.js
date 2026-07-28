@@ -9,7 +9,7 @@ const router = Router();
  * POST /api/agents/request-customer
  * Agent sends a request to a customer for a specific ticket
  */
-router.post('/request-customer', async (req, res) => {
+router.post('/request-customer', authenticate, async (req, res) => {
   const { ticket_id, tech_name, customer_name, message, proposed_rate, estimated_days } = req.body;
 
   if (!ticket_id || !tech_name || !customer_name) {
@@ -93,8 +93,13 @@ router.post('/request-customer', async (req, res) => {
  * GET /api/agents/requests/pending
  * Get pending requests for a customer
  */
-router.get('/requests/pending', async (req, res) => {
+router.get('/requests/pending', authenticate, async (req, res) => {
   const { customer_name } = req.query;
+
+  // Users can only view their own pending requests, admins can view any
+  if (req.user.role !== 'admin' && req.user.name !== customer_name) {
+    return res.status(403).json({ error: 'Not authorized to view these requests' });
+  }
 
   if (!customer_name) {
     return res.status(400).json({ error: 'customer_name is required' });
@@ -132,8 +137,13 @@ router.get('/requests/pending', async (req, res) => {
  * GET /api/agents/requests/sent
  * Get requests sent by an agent
  */
-router.get('/requests/sent', async (req, res) => {
+router.get('/requests/sent', authenticate, async (req, res) => {
   const { tech_name } = req.query;
+
+  // Users can only view their own sent requests, admins can view any
+  if (req.user.role !== 'admin' && req.user.name !== tech_name) {
+    return res.status(403).json({ error: 'Not authorized to view these requests' });
+  }
 
   if (!tech_name) {
     return res.status(400).json({ error: 'tech_name is required' });
@@ -160,7 +170,7 @@ router.get('/requests/sent', async (req, res) => {
  * PATCH /api/agents/requests/:id/approve
  * Customer approves an agent request
  */
-router.patch('/requests/:id/approve', async (req, res) => {
+router.patch('/requests/:id/approve', authenticate, async (req, res) => {
   const { id } = req.params;
   const { customer_name, response_message } = req.body;
 
@@ -243,7 +253,7 @@ router.patch('/requests/:id/approve', async (req, res) => {
  * PATCH /api/agents/requests/:id/reject
  * Customer rejects an agent request
  */
-router.patch('/requests/:id/reject', async (req, res) => {
+router.patch('/requests/:id/reject', authenticate, async (req, res) => {
   const { id } = req.params;
   const { customer_name, response_message } = req.body;
 

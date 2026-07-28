@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { authenticate } from '../middleware/auth.js';
 import pool from '../db/index.js';
 import { stripeService } from '../services/stripe.js';
 import { paypalService } from '../services/paypal.js';

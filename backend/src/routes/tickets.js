@@ -2,15 +2,27 @@ import { Router } from 'express';
 import pool from '../db/index.js';
 import { routingService } from '../services/routing.js';
 import { validateCategoryPath, getFullPath } from '../constants/ticketCategories.js';
+import { authenticate, requireAdmin } from '../middleware/auth.js';
 
 const router = Router();
 
 // Get tickets with filters
-router.get('/', async (req, res) => {
+router.get('/', authenticate, async (req, res) => {
   const { status, tech_name, customer_name, environment, priority, category, subcategory, search } = req.query;
   
   let query = 'SELECT * FROM tickets WHERE 1=1';
   const params = [];
+  
+  // Role-based filtering
+  if (req.user.role === 'customer') {
+    query += ' AND customer_name = ?';
+    params.push(req.user.name);
+  } else if (req.user.role === 'tech') {
+    if (!tech_name && !customer_name) {
+      query += ' AND (tech_name = ? OR status IN ("open", "pending_assignment"))';
+      params.push(req.user.name);
+    }
+  }
   
   if (status) {
     if (status === 'open') {
@@ -220,6 +232,17 @@ router.patch('/:id', async (req, res) => {
 
     const updates = [];
     const params = [];
+  
+  // Role-based filtering
+  if (req.user.role === 'customer') {
+    query += ' AND customer_name = ?';
+    params.push(req.user.name);
+  } else if (req.user.role === 'tech') {
+    if (!tech_name && !customer_name) {
+      query += ' AND (tech_name = ? OR status IN ("open", "pending_assignment"))';
+      params.push(req.user.name);
+    }
+  }
     const historyEntries = [];
     
     // Validate word counts if provided
@@ -515,6 +538,17 @@ router.get('/export', async (req, res) => {
   try {
     let query = 'SELECT id, title, description, environment, priority, status, customer_name, tech_name, category, subcategory, created_at, resolved_at FROM tickets WHERE 1=1';
     const params = [];
+  
+  // Role-based filtering
+  if (req.user.role === 'customer') {
+    query += ' AND customer_name = ?';
+    params.push(req.user.name);
+  } else if (req.user.role === 'tech') {
+    if (!tech_name && !customer_name) {
+      query += ' AND (tech_name = ? OR status IN ("open", "pending_assignment"))';
+      params.push(req.user.name);
+    }
+  }
     
     if (status) {
       if (status === 'open') {

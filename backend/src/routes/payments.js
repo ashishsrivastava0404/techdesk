@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { authenticate, requireAdmin } from '../middleware/auth.js';
 import pool from '../db/index.js';
 import { stripeService } from '../services/stripe.js';
 import { notificationService } from '../services/notifications.js';
@@ -192,11 +193,22 @@ router.post('/webhook/stripe', async (req, res) => {
 });
 
 // Get all payments (admin)
-router.get('/', async (req, res) => {
+// Get payments - filtered by role
+router.get('/', authenticate, async (req, res) => {
   const { status, tech_name, customer_name } = req.query;
 
   let query = 'SELECT * FROM payments WHERE 1=1';
   const params = [];
+
+  // Role-based filtering
+  if (req.user.role === 'customer') {
+    query += ' AND customer_name = ?';
+    params.push(req.user.name);
+  } else if (req.user.role === 'tech') {
+    query += ' AND tech_name = ?';
+    params.push(req.user.name);
+  }
+  // Admins see all
 
   if (status) {
     query += ' AND status = ?';
