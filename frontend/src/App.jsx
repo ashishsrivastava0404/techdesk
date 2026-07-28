@@ -82,19 +82,19 @@ function AppRoutes() {
 
         {/* Protected Routes - All authenticated users */}
         <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/submit" element={<SubmitTicket />} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/submit" element={<ProtectedRoute><SubmitTicket /></ProtectedRoute>} />
           <Route path="/available" element={<TechRoute><AvailableTickets /></TechRoute>} />
-          <Route path="/mytickets" element={<MyTickets />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route path="/requests" element={<CustomerBilling />} />
+          <Route path="/mytickets" element={<ProtectedRoute><MyTickets /></ProtectedRoute>} />
+          <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+          <Route path="/requests" element={<ProtectedRoute><CustomerBilling /></ProtectedRoute>} />
           <Route path="/leads" element={<TechRoute><MyLeads /></TechRoute>} />
           <Route path="/earnings" element={<TechRoute><Earnings /></TechRoute>} />
-          <Route path="/billing" element={<CustomerBilling />} />
-          <Route path="/crm" element={<CRM />} />
-          <Route path="/notifications" element={<Notifications />} />
-          <Route path="/ticket/:id" element={<TicketDetail />} />
-          <Route path="/help" element={<HelpCenter />} />
+          <Route path="/billing" element={<ProtectedRoute><CustomerBilling /></ProtectedRoute>} />
+          <Route path="/crm" element={<AdminRoute><CRM /></AdminRoute>} />
+          <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+          <Route path="/ticket/:id" element={<ProtectedRoute><TicketDetail /></ProtectedRoute>} />
+          <Route path="/help" element={<ProtectedRoute><HelpCenter /></ProtectedRoute>} />
           
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

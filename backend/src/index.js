@@ -84,7 +84,7 @@ app.use('/api/ticket-hierarchy', ticketHierarchyRouter);  // Public - cached, no
 app.use('/api/notifications', authenticate, apiLimiter, notificationsRouter);
 app.use('/api/ticket-history', authenticate, ticketHistoryRouter);
 app.use('/api/surveys', authenticate, apiLimiter, surveysRouter);
-app.use('/api/chatbot', optionalAuth, apiLimiter, chatbotRouter);
+app.use('/api/chatbot', apiLimiter, chatbotRouter);
 app.use('/api/support-reports', supportReportsRouter);  // Public - anyone can submit reports
 app.use('/api/uploads', authenticate, apiLimiter, uploadsRouter);
 app.use('/api/topics', optionalAuth, apiLimiter, topicsRouter);

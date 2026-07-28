@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { creditService } from '../services/credits.js';
 import { stripeService } from '../services/stripe.js';
+import { authenticate, requireAdmin, checkOwnership } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -11,10 +12,14 @@ function isStripeConfigured() {
 
 /**
  * GET /api/credits/balance/:userName
- * Get user's credit balance
+ * Get user's credit balance (own balance or admin)
  */
-router.get('/balance/:userName', async (req, res) => {
+router.get('/balance/:userName', authenticate, async (req, res) => {
   const { userName } = req.params;
+  // Users can only view their own balance, admins can view any
+  if (req.user.role !== 'admin' && req.user.name !== userName) {
+    return res.status(403).json({ error: 'Not authorized to view this balance' });
+  }
   try {
     const balance = await creditService.getBalance(userName);
     res.json({ userName, balance });
@@ -26,11 +31,15 @@ router.get('/balance/:userName', async (req, res) => {
 
 /**
  * GET /api/credits/history/:userName
- * Get credit transaction history
+ * Get credit transaction history (own history or admin)
  */
-router.get('/history/:userName', async (req, res) => {
+router.get('/history/:userName', authenticate, async (req, res) => {
   const { userName } = req.params;
   const { limit } = req.query;
+  // Users can only view their own history, admins can view any
+  if (req.user.role !== 'admin' && req.user.name !== userName) {
+    return res.status(403).json({ error: 'Not authorized to view this history' });
+  }
   try {
     const transactions = await creditService.getTransactionHistory(userName, parseInt(limit) || 50);
     res.json(transactions);
@@ -44,7 +53,7 @@ router.get('/history/:userName', async (req, res) => {
  * POST /api/credits/add
  * Add credits to user account (admin only)
  */
-router.post('/add', async (req, res) => {
+router.post('/add', authenticate, requireAdmin, async (req, res) => {
   const { user_name, amount, reason } = req.body;
   if (!user_name || !amount) {
     return res.status(400).json({ error: 'user_name and amount are required' });
@@ -62,7 +71,7 @@ router.post('/add', async (req, res) => {
  * POST /api/credits/deduct
  * Deduct credits from user account (admin only)
  */
-router.post('/deduct', async (req, res) => {
+router.post('/deduct', authenticate, requireAdmin, async (req, res) => {
   const { user_name, amount, reason } = req.body;
   if (!user_name || !amount) {
     return res.status(400).json({ error: 'user_name and amount are required' });
@@ -80,8 +89,12 @@ router.post('/deduct', async (req, res) => {
  * POST /api/credits/transfer
  * Transfer credits between users (donations)
  */
-router.post('/transfer', async (req, res) => {
+router.post('/transfer', authenticate, async (req, res) => {
   const { from_user, to_user, amount, note } = req.body;
+  // Users can only transfer from their own account
+  if (req.user.role !== 'admin' && req.user.name !== from_user) {
+    return res.status(403).json({ error: 'Not authorized to transfer from this account' });
+  }
   if (!from_user || !to_user || !amount) {
     return res.status(400).json({ error: 'from_user, to_user, and amount are required' });
   }
@@ -105,8 +118,12 @@ router.post('/transfer', async (req, res) => {
  * POST /api/credits/donate
  * Donate credits to a tech (tip/bonus after ticket resolution)
  */
-router.post('/donate', async (req, res) => {
+router.post('/donate', authenticate, async (req, res) => {
   const { customer_name, tech_name, ticket_id, amount, note } = req.body;
+  // Users can only donate from their own account
+  if (req.user.role !== 'admin' && req.user.name !== customer_name) {
+    return res.status(403).json({ error: 'Not authorized to donate from this account' });
+  }
   if (!customer_name || !tech_name || !amount) {
     return res.status(400).json({ error: 'customer_name, tech_name, and amount are required' });
   }
@@ -136,7 +153,7 @@ router.post('/donate', async (req, res) => {
  * GET /api/credits/packages
  * Get available credit purchase packages
  */
-router.get('/packages', async (req, res) => {
+router.get('/packages', authenticate, async (req, res) => {
   const packages = [
     { id: 'starter', credits: 100, price: 10, label: 'Starter Pack' },
     { id: 'basic', credits: 250, price: 20, label: 'Basic Pack' },
@@ -150,7 +167,7 @@ router.get('/packages', async (req, res) => {
  * POST /api/credits/purchase
  * Purchase credits with real money
  */
-router.post('/purchase', async (req, res) => {
+router.post('/purchase', authenticate, async (req, res) => {
   const { user_name, package_id, amount } = req.body;
   if (!user_name) {
     return res.status(400).json({ error: 'user_name is required' });
@@ -218,7 +235,7 @@ router.post('/purchase', async (req, res) => {
  * GET /api/credits/cost
  * Calculate ticket cost in credits
  */
-router.get('/cost', async (req, res) => {
+router.get('/cost', authenticate, async (req, res) => {
   const { priority, base_pay } = req.query;
   if (!priority || !base_pay) {
     return res.status(400).json({ error: 'priority and base_pay are required' });
@@ -236,7 +253,7 @@ router.get('/cost', async (req, res) => {
  * GET /api/credits/check
  * Check if user has enough credits
  */
-router.get('/check', async (req, res) => {
+router.get('/check', authenticate, async (req, res) => {
   const { user_name, priority, base_pay } = req.query;
   if (!user_name || !priority || !base_pay) {
     return res.status(400).json({ error: 'user_name, priority, and base_pay are required' });
@@ -256,7 +273,7 @@ router.get('/check', async (req, res) => {
  * GET /api/credits/settings
  * Get credit system settings
  */
-router.get('/settings', async (req, res) => {
+router.get('/settings', authenticate, async (req, res) => {
   try {
     const settings = await creditService.getCreditSettings();
     res.json(settings);
@@ -270,7 +287,7 @@ router.get('/settings', async (req, res) => {
  * PATCH /api/credits/settings
  * Update credit system settings (admin only)
  */
-router.patch('/settings', async (req, res) => {
+router.patch('/settings', authenticate, async (req, res) => {
   try {
     const settings = await creditService.updateCreditSettings(req.body);
     res.json(settings);

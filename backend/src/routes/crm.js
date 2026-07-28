@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import pool from '../db/index.js';
+import { requireAdmin } from '../middleware/auth.js';
 
 const router = Router();
 
 // Get all contacts
-router.get('/contacts', async (req, res) => {
+router.get('/contacts', requireAdmin, async (req, res) => {
   const { type, search } = req.query;
 
   let query = 'SELECT * FROM crm_contacts WHERE 1=1';

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import pool from '../db/index.js';
+import { requireAdmin } from '../middleware/auth.js';
 import { maskSettingsForFrontend, loadApiKeysFromDatabase, isMasked, syncToAWS } from '../services/settingsLoader.js';
 import { 
   logFinancialTransaction,
@@ -11,7 +12,7 @@ import {
 const router = Router();
 
 // Admin dashboard stats
-router.get('/dashboard', async (req, res) => {
+router.get('/dashboard', requireAdmin, async (req, res) => {
   try {
     // Total users
     const [userRows] = await pool.query('SELECT COUNT(*) as count FROM users');
@@ -77,7 +78,7 @@ router.get('/dashboard', async (req, res) => {
 });
 
 // Get all users
-router.get('/users', async (req, res) => {
+router.get('/users', requireAdmin, async (req, res) => {
   const { role, status, search } = req.query;
 
   let query = 'SELECT * FROM users WHERE 1=1';
@@ -109,7 +110,7 @@ router.get('/users', async (req, res) => {
 });
 
 // Update user (admin action)
-router.patch('/users/:id', async (req, res) => {
+router.patch('/users/:id', requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { role, status, admin_name } = req.body;
 
@@ -153,7 +154,7 @@ router.patch('/users/:id', async (req, res) => {
 });
 
 // Get all payments (admin)
-router.get('/payments', async (req, res) => {
+router.get('/payments', requireAdmin, async (req, res) => {
   const { status } = req.query;
 
   let query = 'SELECT * FROM payments';
@@ -176,7 +177,7 @@ router.get('/payments', async (req, res) => {
 });
 
 // Get all payouts
-router.get('/payouts', async (req, res) => {
+router.get('/payouts', requireAdmin, async (req, res) => {
   const { status } = req.query;
 
   let query = 'SELECT * FROM tech_payouts';
@@ -199,7 +200,7 @@ router.get('/payouts', async (req, res) => {
 });
 
 // Update payout status
-router.patch('/payouts/:id', async (req, res) => {
+router.patch('/payouts/:id', requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { status, admin_name } = req.body;
 
@@ -269,7 +270,7 @@ router.patch('/payouts/:id', async (req, res) => {
 });
 
 // Get audit logs
-router.get('/logs', async (req, res) => {
+router.get('/logs', requireAdmin, async (req, res) => {
   const { action, target_type, admin_name, limit = 100 } = req.query;
 
   let query = 'SELECT * FROM admin_logs WHERE 1=1';
@@ -301,7 +302,7 @@ router.get('/logs', async (req, res) => {
 });
 
 // Get financial audit logs
-router.get('/financial-logs', async (req, res) => {
+router.get('/financial-logs', requireAdmin, async (req, res) => {
   const { 
     transaction_type, 
     tech_id, 
@@ -330,7 +331,7 @@ router.get('/financial-logs', async (req, res) => {
 });
 
 // Get financial summary
-router.get('/financial-summary', async (req, res) => {
+router.get('/financial-summary', requireAdmin, async (req, res) => {
   const { start_date, end_date } = req.query;
   
   const startDate = start_date || new Date(new Date().setDate(new Date().getDate() - 30)).toISOString();
@@ -346,7 +347,7 @@ router.get('/financial-summary', async (req, res) => {
 });
 
 // Get support reports (admin)
-router.get('/support-reports', async (req, res) => {
+router.get('/support-reports', requireAdmin, async (req, res) => {
   const { status, report_type, priority, limit = 100 } = req.query;
 
   let query = 'SELECT * FROM support_reports WHERE 1=1';
@@ -378,7 +379,7 @@ router.get('/support-reports', async (req, res) => {
 });
 
 // Update support report (admin)
-router.patch('/support-reports/:id', async (req, res) => {
+router.patch('/support-reports/:id', requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { status, assigned_to, resolution_notes, admin_name, priority } = req.body;
 
@@ -441,7 +442,7 @@ router.patch('/support-reports/:id', async (req, res) => {
 });
 
 // Get support report stats (admin)
-router.get('/support-stats', async (req, res) => {
+router.get('/support-stats', requireAdmin, async (req, res) => {
   try {
     const [open] = await pool.query(
       "SELECT COUNT(*) as count FROM support_reports WHERE status = 'open'"
@@ -469,7 +470,7 @@ router.get('/support-stats', async (req, res) => {
 });
 
 // Get platform settings
-router.get('/settings', async (req, res) => {
+router.get('/settings', requireAdmin, async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM platform_settings');
     const settings = rows.reduce((acc, row) => {
@@ -487,7 +488,7 @@ router.get('/settings', async (req, res) => {
 });
 
 // Update platform settings
-router.patch('/settings', async (req, res) => {
+router.patch('/settings', requireAdmin, async (req, res) => {
   const { settings, admin_name } = req.body;
 
   if (!settings || typeof settings !== 'object') {
@@ -542,7 +543,7 @@ router.patch('/settings', async (req, res) => {
 });
 
 // Revenue chart data
-router.get('/revenue-chart', async (req, res) => {
+router.get('/revenue-chart', requireAdmin, async (req, res) => {
   const { months = 12 } = req.query;
 
   try {

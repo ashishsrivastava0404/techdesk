@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import pool from '../db/index.js';
+import { authenticate, requireRole } from '../middleware/auth.js';
 
 const router = Router();
 
 // Get available filters for search
-router.get('/filters', async (req, res) => {
+router.get('/filters', authenticate, async (req, res) => {
   try {
     const filters = {
       categories: [],
@@ -93,7 +94,7 @@ router.get('/filters', async (req, res) => {
 });
 
 // Advanced search endpoint
-router.get('/tickets', async (req, res) => {
+router.get('/tickets', authenticate, async (req, res) => {
   try {
     const {
       q, // General search query

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import pool from '../db/index.js';
-import { optionalAuth } from '../middleware/auth.js';
+import { authenticate } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -131,7 +131,7 @@ function isReportIntent(message) {
 }
 
 // Chat endpoint
-router.post('/chat', async (req, res) => {
+router.post('/chat', authenticate, async (req, res) => {
   const { message, user_name, session_id } = req.body;
 
   if (!message) {
@@ -248,7 +248,7 @@ router.get('/topics', (req, res) => {
 });
 
 // Get conversation history
-router.get('/history/:sessionId', async (req, res) => {
+router.get('/history/:sessionId', authenticate, async (req, res) => {
   const { sessionId } = req.params;
   try {
     const [rows] = await pool.query(
