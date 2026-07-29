@@ -182,6 +182,13 @@ async function runMigrations() {
       await addColumn('tickets', 'topic', 'VARCHAR(255) DEFAULT NULL');
       await addColumn('tickets', 'customer_id', 'INT');
       await addColumn('tickets', 'tech_id', 'INT');
+      await addColumn('tickets', 'ticket_type', "ENUM('business', 'technical') DEFAULT 'technical'");
+      await addColumn('tickets', 'assigned_to_admin', 'VARCHAR(255) DEFAULT NULL');
+      await addColumn('tickets', 'estimated_hours', 'DECIMAL(10,2) DEFAULT NULL');
+      await addColumn('tickets', 'actual_hours', 'DECIMAL(10,2) DEFAULT NULL');
+      await addColumn('tickets', 'time_remaining_hours', 'DECIMAL(10,2) DEFAULT NULL');
+      await addColumn('tickets', 'sla_due_at', 'TIMESTAMP NULL DEFAULT NULL');
+      await addColumn('tickets', 'sla_status', "ENUM('on_track', 'at_risk', 'breached') DEFAULT NULL');
     }
 
     const [crmExists] = await connection.query(`SHOW TABLES LIKE 'crm_contacts'`);

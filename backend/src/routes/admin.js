@@ -529,6 +529,7 @@ router.get('/settings', requireAdmin, async (req, res) => {
 // Update platform settings
 router.patch('/settings', requireAdmin, async (req, res) => {
   const { settings, admin_name } = req.body;
+  const adminName = admin_name || req.user?.name;
 
   if (!settings || typeof settings !== 'object') {
     return res.status(400).json({ error: 'Settings object required' });
@@ -557,7 +558,7 @@ router.patch('/settings', requireAdmin, async (req, res) => {
     await pool.query(
       `INSERT INTO admin_logs (admin_name, action, target_type, details)
        VALUES (?, 'update_settings', 'settings', ?)`,
-      [admin_name || 'system', JSON.stringify(safeSettings)]
+      [adminName || 'system', JSON.stringify(safeSettings)]
     );
 
     // Reload API keys into environment if any were updated

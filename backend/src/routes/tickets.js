@@ -550,7 +550,7 @@ router.delete('/draft/:draft_id', authenticate, async (req, res) => {
 });
 
 // Export tickets to CSV
-router.get('/export', async (req, res) => {
+router.get('/export', authenticate, async (req, res) => {
   const { status, category, priority, date_from, date_to, customer_name } = req.query;
   
   try {
