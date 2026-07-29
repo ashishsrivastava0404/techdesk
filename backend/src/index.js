@@ -87,8 +87,8 @@ app.use('/api/auth', apiLimiter, authRouter);
 // Protected API Routes (authentication required)
 // Apply authenticate middleware + rate limiter to all protected routes
 app.use('/api/users', authenticate, usersRouter);
-app.use('/api/tickets', authenticate, apiLimiter, ticketsRouter);
 app.use('/api/tickets', authenticate, ticketCommentsRouter);
+app.use('/api/tickets', authenticate, apiLimiter, ticketsRouter);
 app.use('/api/ratings', authenticate, apiLimiter, ratingsRouter);
 app.use('/api/hire-requests', authenticate, apiLimiter, hireRequestsRouter);
 app.use('/api/stats', authenticate, statsRouter);
