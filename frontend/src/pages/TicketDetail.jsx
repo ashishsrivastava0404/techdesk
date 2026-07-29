@@ -18,10 +18,13 @@ export default function TicketDetail({ ticket, onClose, onUpdate }) {
   const [replyingTo, setReplyingTo] = useState(null);
   const messagesEndRef = useRef(null);
 
-  const isCustomer = user?.name === ticket.customer_name;
-  const isTech = user?.name === ticket.tech_name;
+  const isCustomer = user?.role === 'customer' && user?.name === ticket.customer_name;
+  const isTech = (user?.role === 'tech' || user?.role === 'admin') && user?.name === ticket.tech_name;
   const isAdmin = user?.role === 'admin';
+  // Techs and admins can view discussions
   const canViewDiscussion = isCustomer || isTech || isAdmin;
+  // Admins can do everything techs can
+  const canManageTicket = user?.role === 'tech' || user?.role === 'admin';
 
   useEffect(() => {
     if (canViewDiscussion && ticket.id) {
@@ -206,7 +209,7 @@ export default function TicketDetail({ ticket, onClose, onUpdate }) {
     try {
       await api.tickets.update(ticket.id, {
         status: newStatus,
-        tech_name: user.role === 'tech' ? user.name : ticket.tech_name,
+        tech_name: (user.role === 'tech' || user.role === 'admin') ? user.name : ticket.tech_name,
         actor_name: user.name,
         actor_role: user.role
       });
@@ -337,22 +340,22 @@ export default function TicketDetail({ ticket, onClose, onUpdate }) {
 
           {/* Action Buttons */}
           <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-            {isTech && ticket.status === 'open' && (
+            {canManageTicket && ticket.status === 'open' && (
               <button className="btn btn-primary" onClick={() => handleStatusChange('claimed')}>
                 Claim Ticket
               </button>
             )}
-            {isTech && ticket.status === 'claimed' && (
+            {canManageTicket && ticket.status === 'claimed' && (
               <button className="btn btn-primary" onClick={() => handleStatusChange('in_progress')}>
                 Start Work
               </button>
             )}
-            {isTech && ticket.status === 'in_progress' && (
+            {canManageTicket && ticket.status === 'in_progress' && (
               <button className="btn btn-primary" onClick={() => handleStatusChange('resolved')}>
                 Mark Resolved
               </button>
             )}
-            {(isCustomer || isTech) && ticket.status === 'resolved' && (
+            {(isCustomer || canManageTicket) && ticket.status === 'resolved' && (
               <button className="btn btn-ghost" onClick={() => handleStatusChange('closed')}>
                 Close Ticket
               </button>

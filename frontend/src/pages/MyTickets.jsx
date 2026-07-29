@@ -67,7 +67,8 @@ export default function MyTickets() {
       // Build query params
       const params = {};
       
-      if (user.role === 'tech') {
+      if (user.role === 'tech' || user.role === 'admin') {
+        // Techs and admins can view their assigned tickets
         params.tech_name = user.name;
       } else {
         params.customer_name = user.name;
@@ -165,7 +166,7 @@ export default function MyTickets() {
     <div className="view-container">
       <h2 className="view-title">My Tickets</h2>
       <p className="view-sub">
-        {user.role === 'tech' 
+        {user.role === 'tech' || user.role === 'admin' 
           ? 'Tickets you\'ve claimed and resolved.'
           : 'Your submitted tickets and their status.'}
       </p>
@@ -277,7 +278,7 @@ export default function MyTickets() {
           <div className="empty-title">No tickets</div>
           <p>
             {filter === 'all' 
-              ? (user.role === 'tech' 
+              ? (user.role === 'tech' || user.role === 'admin' 
                   ? 'You haven\'t claimed any tickets yet.' 
                   : 'You haven\'t submitted any tickets yet.')
               : `No ${filter} tickets.`}
@@ -289,10 +290,10 @@ export default function MyTickets() {
             key={ticket.id}
             ticket={ticket}
             showTech={user.role === 'customer'}
-            onResolve={user.role === 'tech' ? handleResolve : undefined}
+            onResolve={user.role === 'tech' || user.role === 'admin' ? handleResolve : undefined}
             onRate={user.role === 'customer' ? handleRate : undefined}
             actions={
-              ticket.status === 'open' && user.role === 'tech' && (
+              (ticket.status === 'open' && (user.role === 'tech' || user.role === 'admin')) && (
                 <button
                   className="btn btn-primary btn-sm"
                   onClick={() => handleClaim(ticket.id)}

@@ -49,7 +49,7 @@ export default function Dashboard() {
       const params = new URLSearchParams();
       
       // Export based on user role
-      if (user.role === 'tech') {
+      if (user.role === 'tech' || user.role === 'admin') {
         params.append('tech_name', user.name);
       } else {
         params.append('customer_name', user.name);
@@ -91,7 +91,7 @@ export default function Dashboard() {
     );
   }
 
-  const isTech = user.role === 'tech';
+  const isTech = user.role === 'tech' || user.role === 'admin';
 
   return (
     <div className="view-container">
