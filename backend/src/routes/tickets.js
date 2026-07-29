@@ -186,7 +186,26 @@ router.get('/:id', authenticate, async (req, res) => {
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Ticket not found' });
     }
-    res.json(rows[0]);
+    
+    const ticket = rows[0];
+    
+    // Authorization check
+    const { role, name } = req.user;
+    const isOwner = ticket.customer_name === userName;
+    const isAssignedTech = ticket.tech_name === userName;
+    const isAdmin = role === 'admin';
+    
+    // Techs can only see technical tickets
+    const isTechnicalTicket = ticket.ticket_type === 'technical';
+    
+    if (role === 'customer' && !isOwner) {
+      return res.status(403).json({ error: 'Not authorized to view this ticket' });
+    }
+    if (role === 'tech' && !isAssignedTech && !isTechnicalTicket) {
+      return res.status(403).json({ error: 'Not authorized to view this ticket' });
+    }
+    
+    res.json(ticket);
   } catch (error) {
     console.error('Error fetching ticket:', error);
     res.status(500).json({ error: 'Failed to fetch ticket' });
@@ -331,7 +350,7 @@ router.post('/', authenticate, async (req, res) => {
 });
 
 // Update ticket
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', authenticate, async (req, res) => {
   const { id } = req.params;
   const { status, tech_name, assigned_to_admin, priority, category, subcategory, tags, estimated_hours, actual_hours, actor_name, actor_role, subject, short_description, long_description } = req.body;
   
@@ -342,6 +361,46 @@ router.patch('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Ticket not found' });
     }
     const ticket = current[0];
+    
+    // Authorization check for updates
+    const userRole = req.user.role;
+    const userName = req.user.name;
+    const isOwner = ticket.customer_name === userName;
+    const isAssignedTech = ticket.tech_name === userName;
+    const isAdmin = userRole === 'admin';
+    
+    // Techs can only modify technical tickets
+    const isTechnicalTicket = ticket.ticket_type === 'technical';
+    
+    // Status changes - who can do what
+    if (status && !isAdmin) {
+      // Customers can only close their own tickets
+      if (userRole === 'customer' && !isOwner) {
+        return res.status(403).json({ error: 'Not authorized to update this ticket' });
+      }
+      // Techs can claim/start/resolve technical tickets or their assigned tickets
+      if (userRole === 'tech') {
+        if (!isAssignedTech && !isTechnicalTicket) {
+          return res.status(403).json({ error: 'Not authorized to update this ticket' });
+        }
+        // Techs can only move forward in workflow
+        const validTransitions = {
+          'open': ['claimed', 'pending_assignment'],
+          'claimed': ['in_progress', 'open'],
+          'in_progress': ['resolved', 'in_progress'],
+          'resolved': ['closed', 'open'],
+          'closed': []
+        };
+        if (!validTransitions[ticket.status]?.includes(status)) {
+          return res.status(400).json({ error: 'Invalid status transition' });
+        }
+      }
+    }
+    
+    // Other field updates - admins and techs can update, customers can only update description
+    if (!isAdmin && !isAssignedTech && !isOwner) {
+      return res.status(403).json({ error: 'Not authorized to update this ticket' });
+    }
 
     const updates = [];
     const params = [];
@@ -464,7 +523,7 @@ router.patch('/:id', async (req, res) => {
     // Log history
     const actor = actor_name || tech_name || 'System';
     const role = actor_role || 'tech';
-    const userName = req.user.name || 'System';
+    const actorName = req.user.name || 'System';
     for (const entry of historyEntries) {
       await pool.query(
         `INSERT INTO ticket_history (ticket_id, action, user_name, actor_name, actor_role, field_changed, old_value, new_value)
