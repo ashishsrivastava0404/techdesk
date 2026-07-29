@@ -252,19 +252,6 @@ router.patch('/:id', async (req, res) => {
 
     const updates = [];
     const params = [];
-  
-  // Role-based filtering
-  if (req.user.role === 'customer') {
-    query += ' AND customer_name = ?';
-    params.push(req.user.name);
-  } else if (req.user.role === 'tech') {
-    // Techs can ONLY see technical tickets
-    query += " AND ticket_type = 'technical'";
-    if (!tech_name && !customer_name) {
-      query += ' AND (tech_name = ? OR status IN ("open", "pending_assignment"))';
-      params.push(req.user.name);
-    }
-  }
     const historyEntries = [];
     
     // Validate word counts if provided
@@ -384,11 +371,12 @@ router.patch('/:id', async (req, res) => {
     // Log history
     const actor = actor_name || tech_name || 'System';
     const role = actor_role || 'tech';
+    const userName = req.user.name || 'System';
     for (const entry of historyEntries) {
       await pool.query(
-        `INSERT INTO ticket_history (ticket_id, action, actor_name, actor_role, field_changed, old_value, new_value)
-         VALUES (?, 'updated', ?, ?, ?, ?, ?)`,
-        [id, actor, role, entry.field, entry.old || '', entry.new || '']
+        `INSERT INTO ticket_history (ticket_id, action, user_name, actor_name, actor_role, field_changed, old_value, new_value)
+         VALUES (?, 'updated', ?, ?, ?, ?, ?, ?)`,
+        [id, userName, actor, role, entry.field, entry.old || '', entry.new || '']
       );
     }
 
