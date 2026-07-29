@@ -55,7 +55,7 @@ router.get('/:userName/count', authenticate, async (req, res) => {
 });
 
 // Mark as read
-router.patch('/:id/read', async (req, res) => {
+router.patch('/:id/read', authenticate, async (req, res) => {
   const { id } = req.params;
   try {
     await pool.query('UPDATE notifications SET is_read = TRUE WHERE id = ?', [id]);
@@ -67,7 +67,7 @@ router.patch('/:id/read', async (req, res) => {
 });
 
 // Mark all as read
-router.patch('/:userName/read-all', async (req, res) => {
+router.patch('/:userName/read-all', authenticate, async (req, res) => {
   const { userName } = req.params;
   try {
     await pool.query('UPDATE notifications SET is_read = TRUE WHERE user_name = ?', [userName]);
@@ -79,7 +79,7 @@ router.patch('/:userName/read-all', async (req, res) => {
 });
 
 // Delete notification
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authenticate, async (req, res) => {
   const { id } = req.params;
   try {
     await pool.query('DELETE FROM notifications WHERE id = ?', [id]);

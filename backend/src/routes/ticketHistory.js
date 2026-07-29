@@ -1,10 +1,11 @@
 import { Router } from 'express';
+import { authenticate } from '../middleware/auth.js';
 import pool from '../db/index.js';
 
 const router = Router();
 
 // Get all history (paginated)
-router.get('/', async (req, res) => {
+router.get('/', authenticate, async (req, res) => {
   const { limit = 100, offset = 0 } = req.query;
 
   try {
@@ -20,7 +21,7 @@ router.get('/', async (req, res) => {
 });
 
 // Get history for a ticket
-router.get('/:ticketId', async (req, res) => {
+router.get('/:ticketId', authenticate, async (req, res) => {
   const { ticketId } = req.params;
   const { limit = 100 } = req.query;
 
@@ -37,7 +38,7 @@ router.get('/:ticketId', async (req, res) => {
 });
 
 // Add history entry
-router.post('/', async (req, res) => {
+router.post('/', authenticate, async (req, res) => {
   const { ticket_id, action, actor_name, actor_role, field_changed, old_value, new_value, metadata } = req.body;
 
   if (!ticket_id || !action || !actor_name) {
@@ -60,7 +61,7 @@ router.post('/', async (req, res) => {
 });
 
 // Get activity summary for user
-router.get('/user/:userName', async (req, res) => {
+router.get('/user/:userName', authenticate, async (req, res) => {
   const { userName } = req.params;
   const { days = 7 } = req.query;
 

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { authenticate } from '../middleware/auth.js';
 import pool from '../db/index.js';
 
 const router = Router();
@@ -61,7 +62,7 @@ router.get('/templates/:id', async (req, res) => {
 });
 
 // Use template (increments use count)
-router.post('/templates/:id/use', async (req, res) => {
+router.post('/templates/:id/use', authenticate, async (req, res) => {
   const { id } = req.params;
   try {
     await pool.query(
@@ -77,7 +78,7 @@ router.post('/templates/:id/use', async (req, res) => {
 });
 
 // Create category (admin only)
-router.post('/', async (req, res) => {
+router.post('/', authenticate, async (req, res) => {
   const { name, description, icon, color, sort_order } = req.body;
 
   if (!name) {
@@ -100,7 +101,7 @@ router.post('/', async (req, res) => {
 });
 
 // Create template (admin only)
-router.post('/templates', async (req, res) => {
+router.post('/templates', authenticate, async (req, res) => {
   const { name, category, description, template_content, variables } = req.body;
 
   if (!name || !template_content) {
@@ -123,7 +124,7 @@ router.post('/templates', async (req, res) => {
 });
 
 // Update category
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', authenticate, async (req, res) => {
   const { id } = req.params;
   const { name, description, icon, color, sort_order, is_active } = req.body;
 

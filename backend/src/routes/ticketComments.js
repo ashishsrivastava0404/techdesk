@@ -15,7 +15,7 @@ const router = Router();
  * GET /api/tickets/:ticketId/comments
  * Get all comments for a ticket (threaded)
  */
-router.get('/:ticketId/comments', async (req, res) => {
+router.get('/:ticketId/comments', authenticate, async (req, res) => {
   const { ticketId } = req.params;
   const { includeInternal = 'false' } = req.query;
   const userRole = req.user?.role;
@@ -63,7 +63,7 @@ router.get('/:ticketId/comments', async (req, res) => {
  * POST /api/tickets/:ticketId/comments
  * Add a comment to a ticket
  */
-router.post('/:ticketId/comments', async (req, res) => {
+router.post('/:ticketId/comments', authenticate, async (req, res) => {
   const { ticketId } = req.params;
   const { 
     message, 
@@ -178,7 +178,7 @@ router.post('/:ticketId/comments', async (req, res) => {
  * PATCH /api/tickets/:ticketId/comments/:commentId
  * Update a comment
  */
-router.patch('/:ticketId/comments/:commentId', async (req, res) => {
+router.patch('/:ticketId/comments/:commentId', authenticate, async (req, res) => {
   const { ticketId, commentId } = req.params;
   const { message, is_internal } = req.body;
   
@@ -272,7 +272,7 @@ router.patch('/:ticketId/comments/:commentId', async (req, res) => {
  * DELETE /api/tickets/:ticketId/comments/:commentId
  * Delete a comment
  */
-router.delete('/:ticketId/comments/:commentId', async (req, res) => {
+router.delete('/:ticketId/comments/:commentId', authenticate, async (req, res) => {
   const { ticketId, commentId } = req.params;
   
   const userId = req.user?.id;
