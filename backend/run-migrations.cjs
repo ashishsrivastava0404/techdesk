@@ -52,6 +52,7 @@ async function runMigrations() {
     await addColumn('tickets', 'tech_id', 'INT');
     await addColumn('conversations', 'customer_name', 'VARCHAR(255)');
     await addColumn('conversations', 'tech_name', 'VARCHAR(255)');
+    await addColumn('notifications', 'related_ticket_id', 'INT DEFAULT NULL');
 
     try {
       const [cols] = await connection.query("DESCRIBE tech_earnings");
