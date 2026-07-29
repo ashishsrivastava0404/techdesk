@@ -87,8 +87,99 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
+// Export tickets to CSV (must be before /:id to avoid matching)
+router.get('/export', authenticate, async (req, res) => {
+  const { status, category, priority, date_from, date_to, customer_name } = req.query;
+  
+  try {
+    let query = 'SELECT id, title, description, environment, priority, status, customer_name, tech_name, category, subcategory, ticket_type, assigned_to_admin, created_at, resolved_at FROM tickets WHERE 1=1';
+    const params = [];
+
+  // Role-based filtering
+  if (req.user.role === 'customer') {
+    query += ' AND customer_name = ?';
+    params.push(req.user.name);
+  } else if (req.user.role === 'tech') {
+    // Techs can ONLY see technical tickets
+    query += " AND ticket_type = 'technical'";
+    if (!tech_name && !customer_name) {
+      query += ' AND (tech_name = ? OR status IN ("open", "pending_assignment"))';
+      params.push(req.user.name);
+    }
+  }
+
+    if (status) {
+      if (status === 'open') {
+        query += " AND status IN ('open', 'claimed', 'in_progress', 'pending_assignment')";
+      } else {
+        query += ' AND status = ?';
+        params.push(status);
+      }
+    }
+
+    if (category) {
+      query += ' AND category = ?';
+      params.push(category);
+    }
+
+    if (priority) {
+      query += ' AND priority = ?';
+      params.push(priority);
+    }
+
+    if (customer_name) {
+      query += ' AND customer_name = ?';
+      params.push(customer_name);
+    }
+
+    if (date_from) {
+      query += ' AND created_at >= ?';
+      params.push(date_from);
+    }
+
+    if (date_to) {
+      query += ' AND created_at <= ?';
+      params.push(date_to);
+    }
+
+    query += ' ORDER BY created_at DESC';
+
+    const [rows] = await pool.query(query, params);
+
+    // If no tickets found, return empty CSV
+    if (rows.length === 0) {
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=tickets_export.csv');
+      return res.send('id,title,description,environment,priority,status,customer_name,tech_name,category,subcategory,ticket_type,assigned_to_admin,created_at,resolved_at\n');
+    }
+
+    // Build CSV
+    const headers = ['id', 'title', 'description', 'environment', 'priority', 'status', 'customer_name', 'tech_name', 'category', 'subcategory', 'ticket_type', 'assigned_to_admin', 'created_at', 'resolved_at'];
+    let csv = headers.join(',') + '\n';
+
+    for (const ticket of rows) {
+      const row = headers.map(h => {
+        const val = ticket[h] || '';
+        // Escape quotes and wrap in quotes if contains comma
+        if (typeof val === 'string' && (val.includes(',') || val.includes('"') || val.includes('\n'))) {
+          return '"' + val.replace(/"/g, '""') + '"';
+        }
+        return val;
+      });
+      csv += row.join(',') + '\n';
+    }
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=tickets_export_${new Date().toISOString().split('T')[0]}.csv`);
+    res.send(csv);
+  } catch (error) {
+    console.error('Error exporting tickets:', error);
+    res.status(500).json({ error: 'Failed to export tickets' });
+  }
+});
+
 // Get single ticket
-router.get('/:id', async (req, res) => {
+router.get('/:id', authenticate, async (req, res) => {
   const { id } = req.params;
   try {
     const [rows] = await pool.query('SELECT * FROM tickets WHERE id = ?', [id]);
@@ -549,96 +640,5 @@ router.delete('/draft/:draft_id', authenticate, async (req, res) => {
   }
 });
 
-// Export tickets to CSV
-router.get('/export', authenticate, async (req, res) => {
-  const { status, category, priority, date_from, date_to, customer_name } = req.query;
-  
-  try {
-    let query = 'SELECT id, title, description, environment, priority, status, customer_name, tech_name, category, subcategory, ticket_type, assigned_to_admin, created_at, resolved_at FROM tickets WHERE 1=1';
-    const params = [];
-  
-  // Role-based filtering
-  if (req.user.role === 'customer') {
-    query += ' AND customer_name = ?';
-    params.push(req.user.name);
-  } else if (req.user.role === 'tech') {
-    // Techs can ONLY see technical tickets
-    query += " AND ticket_type = 'technical'";
-    if (!tech_name && !customer_name) {
-      query += ' AND (tech_name = ? OR status IN ("open", "pending_assignment"))';
-      params.push(req.user.name);
-    }
-  }
-    
-    if (status) {
-      if (status === 'open') {
-        query += " AND status IN ('open', 'claimed', 'in_progress', 'pending_assignment')";
-      } else {
-        query += ' AND status = ?';
-        params.push(status);
-      }
-    }
-    
-    if (category) {
-      query += ' AND category = ?';
-      params.push(category);
-    }
-    
-    if (priority) {
-      query += ' AND priority = ?';
-      params.push(priority);
-    }
-    
-    if (customer_name) {
-      query += ' AND customer_name = ?';
-      params.push(customer_name);
-    }
-    
-    if (date_from) {
-      query += ' AND created_at >= ?';
-      params.push(date_from);
-    }
-    
-    if (date_to) {
-      query += ' AND created_at <= ?';
-      params.push(date_to);
-    }
-    
-    query += ' ORDER BY created_at DESC';
-    
-    const [rows] = await pool.query(query, params);
-    
-    // Generate CSV
-    const headers = ['ID', 'Title', 'Description', 'Environment', 'Priority', 'Status', 'Customer', 'Tech', 'Category', 'Subcategory', 'Created', 'Resolved'];
-    const csvRows = [headers.join(',')];
-    
-    for (const row of rows) {
-      const values = [
-        row.id,
-        `"${(row.title || '').replace(/"/g, '""')}"`,
-        `"${(row.description || '').replace(/"/g, '""')}"`,
-        row.environment,
-        row.priority,
-        row.status,
-        `"${(row.customer_name || '').replace(/"/g, '""')}"`,
-        `"${(row.tech_name || '').replace(/"/g, '""')}"`,
-        row.category,
-        row.subcategory || '',
-        row.created_at ? new Date(row.created_at).toISOString() : '',
-        row.resolved_at ? new Date(row.resolved_at).toISOString() : ''
-      ];
-      csvRows.push(values.join(','));
-    }
-    
-    const csv = csvRows.join('\n');
-    
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename=tickets_export_${new Date().toISOString().split('T')[0]}.csv`);
-    res.send(csv);
-  } catch (error) {
-    console.error('Error exporting tickets:', error);
-    res.status(500).json({ error: 'Failed to export tickets' });
-  }
-});
 
 export default router;
