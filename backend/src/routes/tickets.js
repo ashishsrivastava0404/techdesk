@@ -103,7 +103,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create ticket with enhanced fields
-router.post('/', async (req, res) => {
+router.post('/', authenticate, async (req, res) => {
   const { 
     title, 
     description, 
@@ -112,18 +112,20 @@ router.post('/', async (req, res) => {
     long_description,
     environment, 
     priority, 
-    customer_name, 
     category, 
     subcategory,
     topic,
     tags, 
     estimated_hours,
     ticket_type = 'technical',
-    auto_route = true // Whether to auto-route to agents
+    auto_route = true
   } = req.body;
   
-  if (!title || !description || !customer_name) {
-    return res.status(400).json({ error: 'Missing required fields' });
+  // Get customer_name from authenticated user
+  const customer_name = req.user.name;
+  
+  if (!title || !description) {
+    return res.status(400).json({ error: 'Missing required fields: title and description' });
   }
 
   // Validate ticket_type

@@ -3,6 +3,22 @@ import pool from '../db/index.js';
 
 const router = Router();
 
+// Get all history (paginated)
+router.get('/', async (req, res) => {
+  const { limit = 100, offset = 0 } = req.query;
+
+  try {
+    const [rows] = await pool.query(
+      'SELECT h.*, t.title as ticket_title FROM ticket_history h LEFT JOIN tickets t ON h.ticket_id = t.id ORDER BY h.created_at DESC LIMIT ? OFFSET ?',
+      [parseInt(limit), parseInt(offset)]
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching history:', error);
+    res.status(500).json({ error: 'Failed to fetch history' });
+  }
+});
+
 // Get history for a ticket
 router.get('/:ticketId', async (req, res) => {
   const { ticketId } = req.params;

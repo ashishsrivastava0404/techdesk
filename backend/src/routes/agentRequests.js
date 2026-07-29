@@ -17,7 +17,6 @@ router.post('/request-customer', authenticate, async (req, res) => {
   }
 
   try {
-    // Verify ticket exists
     const [tickets] = await pool.query(
       'SELECT * FROM tickets WHERE id = ? AND customer_name = ?',
       [ticket_id, customer_name]
@@ -29,17 +28,15 @@ router.post('/request-customer', authenticate, async (req, res) => {
 
     const ticket = tickets[0];
 
-    // Check if ticket is in valid state for requests
     if (ticket.status === 'pending_assignment' || ticket.status === 'open') {
       // Continue
     } else if (ticket.tech_name) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'This ticket already has an assigned agent',
         currentTech: ticket.tech_name
       });
     }
 
-    // Check for existing pending request from same tech
     const [existing] = await pool.query(
       `SELECT * FROM agent_requests 
        WHERE ticket_id = ? AND tech_name = ? AND status = 'pending'`,
@@ -50,7 +47,6 @@ router.post('/request-customer', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'You already have a pending request for this ticket' });
     }
 
-    // Create the request
     const [result] = await pool.query(
       `INSERT INTO agent_requests 
        (ticket_id, tech_name, customer_name, message, proposed_rate, estimated_days)
@@ -58,10 +54,8 @@ router.post('/request-customer', authenticate, async (req, res) => {
       [ticket_id, tech_name, customer_name, message || null, proposed_rate || null, estimated_days || null]
     );
 
-    // Get agent profile for notification
     const agentProfile = await routingService.getAgentProfile(tech_name);
 
-    // Notify customer
     await pool.query(
       `INSERT INTO notifications 
        (user_name, type, title, message, related_ticket_id, related_user)
@@ -94,15 +88,10 @@ router.post('/request-customer', authenticate, async (req, res) => {
  * Get pending requests for a customer
  */
 router.get('/requests/pending', authenticate, async (req, res) => {
-  const { customer_name } = req.query;
+  const customer_name = req.query.customer_name || req.user.name;
 
-  // Users can only view their own pending requests, admins can view any
   if (req.user.role !== 'admin' && req.user.name !== customer_name) {
     return res.status(403).json({ error: 'Not authorized to view these requests' });
-  }
-
-  if (!customer_name) {
-    return res.status(400).json({ error: 'customer_name is required' });
   }
 
   try {
@@ -115,7 +104,6 @@ router.get('/requests/pending', authenticate, async (req, res) => {
       [customer_name]
     );
 
-    // Get agent profiles for each request
     const requestsWithProfiles = await Promise.all(
       requests.map(async (request) => {
         const agentProfile = await routingService.getAgentProfile(request.tech_name);
@@ -138,15 +126,10 @@ router.get('/requests/pending', authenticate, async (req, res) => {
  * Get requests sent by an agent
  */
 router.get('/requests/sent', authenticate, async (req, res) => {
-  const { tech_name } = req.query;
+  const tech_name = req.query.tech_name || req.user.name;
 
-  // Users can only view their own sent requests, admins can view any
   if (req.user.role !== 'admin' && req.user.name !== tech_name) {
     return res.status(403).json({ error: 'Not authorized to view these requests' });
-  }
-
-  if (!tech_name) {
-    return res.status(400).json({ error: 'tech_name is required' });
   }
 
   try {
@@ -172,14 +155,9 @@ router.get('/requests/sent', authenticate, async (req, res) => {
  */
 router.patch('/requests/:id/approve', authenticate, async (req, res) => {
   const { id } = req.params;
-  const { customer_name, response_message } = req.body;
-
-  if (!customer_name) {
-    return res.status(400).json({ error: 'customer_name is required' });
-  }
+  const customer_name = req.body.customer_name || req.user.name;
 
   try {
-    // Get the request
     const [requests] = await pool.query(
       'SELECT * FROM agent_requests WHERE id = ?',
       [id]
@@ -191,25 +169,21 @@ router.patch('/requests/:id/approve', authenticate, async (req, res) => {
 
     const request = requests[0];
 
-    // Verify ownership
-    if (request.customer_name !== customer_name) {
+    if (request.customer_name !== customer_name && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'You are not authorized to approve this request' });
     }
 
-    // Check status
     if (request.status !== 'pending') {
       return res.status(400).json({ error: 'Request is no longer pending' });
     }
 
-    // Update request status
     await pool.query(
       `UPDATE agent_requests 
        SET status = 'approved', response_message = ?, responded_at = NOW() 
        WHERE id = ?`,
-      [response_message || null, id]
+      [req.body.response_message || null, id]
     );
 
-    // Update ticket - assign tech and set status to claimed
     await pool.query(
       `UPDATE tickets 
        SET tech_name = ?, status = 'claimed', assigned_at = NOW() 
@@ -217,7 +191,6 @@ router.patch('/requests/:id/approve', authenticate, async (req, res) => {
       [request.tech_name, request.ticket_id]
     );
 
-    // Reject other pending requests for this ticket
     await pool.query(
       `UPDATE agent_requests 
        SET status = 'rejected', response_message = 'Another agent was selected', responded_at = NOW() 
@@ -225,7 +198,6 @@ router.patch('/requests/:id/approve', authenticate, async (req, res) => {
       [request.ticket_id, id]
     );
 
-    // Notify agent
     await pool.query(
       `INSERT INTO notifications 
        (user_name, type, title, message, related_ticket_id)
@@ -255,11 +227,7 @@ router.patch('/requests/:id/approve', authenticate, async (req, res) => {
  */
 router.patch('/requests/:id/reject', authenticate, async (req, res) => {
   const { id } = req.params;
-  const { customer_name, response_message } = req.body;
-
-  if (!customer_name) {
-    return res.status(400).json({ error: 'customer_name is required' });
-  }
+  const customer_name = req.body.customer_name || req.user.name;
 
   try {
     const [requests] = await pool.query(
@@ -273,7 +241,7 @@ router.patch('/requests/:id/reject', authenticate, async (req, res) => {
 
     const request = requests[0];
 
-    if (request.customer_name !== customer_name) {
+    if (request.customer_name !== customer_name && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'You are not authorized to reject this request' });
     }
 
@@ -285,10 +253,9 @@ router.patch('/requests/:id/reject', authenticate, async (req, res) => {
       `UPDATE agent_requests 
        SET status = 'rejected', response_message = ?, responded_at = NOW() 
        WHERE id = ?`,
-      [response_message || null, id]
+      [req.body.response_message || null, id]
     );
 
-    // Notify agent
     await pool.query(
       `INSERT INTO notifications 
        (user_name, type, title, message, related_ticket_id)

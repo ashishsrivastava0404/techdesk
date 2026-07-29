@@ -11,7 +11,9 @@ const decryptMessage = (encrypted) => Buffer.from(encrypted, 'base64').toString(
 // Get messages for a ticket (encrypted)
 router.get('/:ticketId', async (req, res) => {
   const { ticketId } = req.params;
-  const { user_name, user_role } = req.query;
+  // Use authenticated user for authorization
+  const userName = req.user.name;
+  const userRole = req.user.role;
 
   try {
     // First verify the user has access to this ticket
@@ -25,12 +27,12 @@ router.get('/:ticketId', async (req, res) => {
     }
 
     const ticket = ticketRows[0];
-    
+
     // Check if user is authorized (customer who created, tech assigned, or admin)
-    const isAuthorized = 
-      ticket.customer_name === user_name || 
-      ticket.tech_name === user_name || 
-      user_role === 'admin';
+    const isAuthorized =
+      ticket.customer_name === userName ||
+      ticket.tech_name === userName ||
+      userRole === 'admin';
 
     if (!isAuthorized) {
       return res.status(403).json({ error: 'Not authorized to view this discussion' });
@@ -56,10 +58,13 @@ router.get('/:ticketId', async (req, res) => {
 
 // Send message (encrypted)
 router.post('/', async (req, res) => {
-  const { ticket_id, sender_name, sender_role, content, message_type = 'text' } = req.body;
+  const { ticket_id, content, message_type = 'text' } = req.body;
+  // Use authenticated user for authorization
+  const sender_name = req.user.name;
+  const sender_role = req.user.role;
 
-  if (!ticket_id || !sender_name || !content) {
-    return res.status(400).json({ error: 'Missing required fields' });
+  if (!ticket_id || !content) {
+    return res.status(400).json({ error: 'Missing required fields: ticket_id and content' });
   }
 
   try {
@@ -74,9 +79,9 @@ router.post('/', async (req, res) => {
     }
 
     const ticket = ticketRows[0];
-    const isAuthorized = 
-      ticket.customer_name === sender_name || 
-      ticket.tech_name === sender_name || 
+    const isAuthorized =
+      ticket.customer_name === sender_name ||
+      ticket.tech_name === sender_name ||
       sender_role === 'admin';
 
     if (!isAuthorized) {
@@ -104,7 +109,7 @@ router.post('/', async (req, res) => {
 
     const [rows] = await pool.query('SELECT * FROM ticket_messages WHERE id = ?', [result.insertId]);
     const msg = rows[0];
-    
+
     res.status(201).json({
       ...msg,
       content: decryptMessage(msg.content)
@@ -117,7 +122,7 @@ router.post('/', async (req, res) => {
 
 // Add system message
 router.post('/system', async (req, res) => {
-  const { ticket_id, action, actor_name, actor_role } = req.body;
+  const { ticket_id, action } = req.body;
 
   try {
     const [result] = await pool.query(
