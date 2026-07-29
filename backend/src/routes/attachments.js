@@ -20,6 +20,29 @@ const storage = multer.diskStorage({
   }
 });
 
+// Import pool at module level for GET endpoint
+let pool = null;
+const getPool = async () => {
+  if (!pool) {
+    pool = (await import('../db/index.js')).default;
+  }
+  return pool;
+};
+
+// Get all attachments
+router.get('/', async (req, res) => {
+  try {
+    const db = await getPool();
+    const [rows] = await db.query(
+      'SELECT * FROM attachments ORDER BY uploaded_at DESC LIMIT 100'
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching attachments:', error);
+    res.status(500).json({ error: 'Failed to fetch attachments' });
+  }
+});
+
 const fileFilter = (req, file, cb) => {
   const allowedTypes = [
     'image/jpeg',

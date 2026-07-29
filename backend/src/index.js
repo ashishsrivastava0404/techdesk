@@ -49,6 +49,8 @@ import creditsRouter from './routes/credits.js';
 import expertRouter from './routes/expert.js';
 import attachmentsRouter from './routes/attachments.js';
 import searchRouter from './routes/search.js';
+import currencyRouter from './routes/currency.js';
+import i18nRouter from './routes/i18n.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 // Initialize Sentry if configured
@@ -109,6 +111,8 @@ app.use('/api/credits', authenticate, apiLimiter, creditsRouter);
 app.use('/api/expert', expertRouter);  // Expert profile & skills routes (auth handled in route)
 app.use('/api/attachments', authenticate, apiLimiter, attachmentsRouter);
 app.use('/api/search', searchRouter);  // Search & filters (auth handled per endpoint)
+app.use('/api/currency', currencyRouter);  // Currency conversion and formatting
+app.use('/api/i18n', i18nRouter);  // Internationalization and translations
 
 app.get('/api/health', (req, res) => {
   res.json({ 

@@ -338,7 +338,46 @@ router.get('/financial-summary', requireAdmin, async (req, res) => {
   const endDate = end_date || new Date().toISOString();
 
   try {
-    const summary = await getFinancialSummary({ startDate, endDate });
+    // Get total revenue from payments
+    const [paymentRows] = await pool.query(
+      `SELECT COALESCE(SUM(amount), 0) as total_revenue, COUNT(*) as transaction_count
+       FROM payments
+       WHERE created_at >= ? AND created_at <= ? AND status = 'completed'`,
+      [startDate, endDate]
+    );
+
+    // Get total earnings paid to techs
+    const [techEarningsRows] = await pool.query(
+      `SELECT COALESCE(SUM(amount), 0) as total_payouts, COUNT(*) as payout_count
+       FROM tech_earnings
+       WHERE created_at >= ? AND created_at <= ? AND status = 'paid'`,
+      [startDate, endDate]
+    );
+
+    // Get pending payouts
+    const [pendingPayoutsRows] = await pool.query(
+      `SELECT COALESCE(SUM(amount), 0) as pending_total, COUNT(*) as pending_count
+       FROM tech_earnings
+       WHERE created_at >= ? AND created_at <= ? AND status = 'pending'`,
+      [startDate, endDate]
+    );
+
+    // Get platform commission (assuming 10% platform fee)
+    const totalRevenue = paymentRows[0].total_revenue || 0;
+    const platformCommission = totalRevenue * 0.1; // 10% platform fee
+
+    const summary = {
+      totalRevenue: totalRevenue,
+      platformRevenue: platformCommission,
+      totalPayouts: techEarningsRows[0].total_payouts || 0,
+      pendingPayouts: pendingPayoutsRows[0].pending_total || 0,
+      transactionCount: paymentRows[0].transaction_count || 0,
+      payoutCount: techEarningsRows[0].payout_count || 0,
+      pendingCount: pendingPayoutsRows[0].pending_count || 0,
+      startDate,
+      endDate
+    };
+
     res.json(summary);
   } catch (error) {
     console.error('Error fetching financial summary:', error);
