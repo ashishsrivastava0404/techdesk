@@ -1,5 +1,11 @@
 /**
  * Run database migrations manually
+ * 
+ * IMPORTANT: Run the full migrate.js first to create all base tables:
+ *   node src/db/migrate.js
+ * 
+ * Then run this file for additional migrations:
+ *   node run-migrations.cjs
  */
 require('dotenv').config();
 const mysql = require('mysql2/promise');
@@ -9,10 +15,10 @@ async function runMigrations() {
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'techdesk'
+    database: process.env.DB_NAME || 'promote'
   });
 
-  console.log('Running migrations...\n');
+  console.log('Running additional migrations...\n');
 
   const addColumn = async (table, column, definition) => {
     try {
@@ -41,18 +47,165 @@ async function runMigrations() {
   };
 
   try {
-    await addColumn('topic_suggestions', 'last_used_at', 'TIMESTAMP NULL DEFAULT NULL');
-    await addColumn('tickets', 'first_response_at', 'TIMESTAMP NULL DEFAULT NULL');
-    await addColumn('tickets', 'subcategory', 'VARCHAR(255) DEFAULT NULL');
-    await addColumn('tickets', 'topic', 'VARCHAR(255) DEFAULT NULL');
-    await addColumn('crm_contacts', 'user_type', "ENUM('customer', 'tech', 'other') DEFAULT 'customer'");
-    await addColumn('conversations', 'customer_id', 'INT');
-    await addColumn('conversations', 'tech_id', 'INT');
-    await addColumn('tickets', 'customer_id', 'INT');
-    await addColumn('tickets', 'tech_id', 'INT');
-    await addColumn('conversations', 'customer_name', 'VARCHAR(255)');
-    await addColumn('conversations', 'tech_name', 'VARCHAR(255)');
-    await addColumn('notifications', 'related_ticket_id', 'INT DEFAULT NULL');
+    // ============================================
+    // STEP 1: Create new tables first
+    // ============================================
+    console.log('📦 Creating new tables...');
+    
+    await createTable('expert_skills', `CREATE TABLE IF NOT EXISTS expert_skills (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      tech_id VARCHAR(100) NOT NULL,
+      expertise_level ENUM('beginner', 'intermediate', 'advanced', 'expert', 'certified') DEFAULT 'beginner',
+      years_experience INT DEFAULT 0,
+      certification_proof TEXT,
+      is_verified BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY unique_user_tech (user_id, tech_id)
+    )`);
+
+    await createTable('expert_stats', `CREATE TABLE IF NOT EXISTS expert_stats (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL UNIQUE,
+      total_tickets_resolved INT DEFAULT 0,
+      total_rating DECIMAL(10,2) DEFAULT 0,
+      avg_rating DECIMAL(3,2) DEFAULT 0,
+      avg_resolution_time INT DEFAULT 0,
+      last_active TIMESTAMP NULL DEFAULT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )`);
+
+    await createTable('tech_stack', `CREATE TABLE IF NOT EXISTS tech_stack (
+      id VARCHAR(100) PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      category VARCHAR(100) NOT NULL,
+      certified BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    await createTable('currencies', `CREATE TABLE IF NOT EXISTS currencies (
+      code VARCHAR(3) PRIMARY KEY,
+      symbol VARCHAR(10) NOT NULL,
+      name VARCHAR(100) NOT NULL,
+      decimal_places INT DEFAULT 2,
+      exchange_rate_to_usd DECIMAL(15,6) DEFAULT 1,
+      is_active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )`);
+
+    // ============================================
+    // STEP 2: Create tables with FK dependencies
+    // ============================================
+    console.log('\n🔗 Creating tables with dependencies...');
+
+    // Check if tickets table exists before creating FK tables
+    const [ticketsExist] = await connection.query(`SHOW TABLES LIKE 'tickets'`);
+    if (ticketsExist.length > 0) {
+      await createTable('ticket_comments', `CREATE TABLE IF NOT EXISTS ticket_comments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        ticket_id INT NOT NULL,
+        user_id INT NOT NULL,
+        user_display_name VARCHAR(255),
+        parent_id INT DEFAULT NULL,
+        message TEXT NOT NULL,
+        message_type ENUM('comment', 'reply', 'note', 'status_change', 'system') DEFAULT 'comment',
+        is_internal BOOLEAN DEFAULT FALSE,
+        is_read BOOLEAN DEFAULT FALSE,
+        attachments JSON,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
+        FOREIGN KEY (parent_id) REFERENCES ticket_comments(id) ON DELETE SET NULL
+      )`);
+
+      await createTable('attachments', `CREATE TABLE IF NOT EXISTS attachments (
+        id VARCHAR(20) PRIMARY KEY,
+        ticket_id INT NOT NULL,
+        filename VARCHAR(255) NOT NULL,
+        stored_filename VARCHAR(255) NOT NULL,
+        file_path VARCHAR(500) NOT NULL,
+        file_size INT NOT NULL,
+        mime_type VARCHAR(100) NOT NULL,
+        uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
+      )`);
+
+      await createTable('conversations', `CREATE TABLE IF NOT EXISTS conversations (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        ticket_id INT NOT NULL,
+        customer_id INT NOT NULL,
+        tech_id INT DEFAULT NULL,
+        customer_name VARCHAR(255),
+        tech_name VARCHAR(255),
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
+      )`);
+    } else {
+      console.log('⚠ tickets table not found - skipping FK tables');
+    }
+
+    // Check if conversations table exists
+    const [convExist] = await connection.query(`SHOW TABLES LIKE 'conversations'`);
+    if (convExist.length > 0) {
+      await createTable('messages', `CREATE TABLE IF NOT EXISTS messages (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        conversation_id INT NOT NULL,
+        sender_id INT NOT NULL,
+        message_type ENUM('text', 'file', 'system') DEFAULT 'text',
+        content TEXT NOT NULL,
+        attachment_url VARCHAR(500),
+        is_read BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+      )`);
+    }
+
+    // ============================================
+    // STEP 3: Add columns to existing tables
+    // ============================================
+    console.log('\n📝 Adding columns to existing tables...');
+
+    // Check which tables exist before adding columns
+    const [topicExists] = await connection.query(`SHOW TABLES LIKE 'topic_suggestions'`);
+    if (topicExists.length > 0) {
+      await addColumn('topic_suggestions', 'last_used_at', 'TIMESTAMP NULL DEFAULT NULL');
+    }
+
+    const [ticketCols] = await connection.query(`SHOW TABLES LIKE 'tickets'`);
+    if (ticketCols.length > 0) {
+      await addColumn('tickets', 'first_response_at', 'TIMESTAMP NULL DEFAULT NULL');
+      await addColumn('tickets', 'subcategory', 'VARCHAR(255) DEFAULT NULL');
+      await addColumn('tickets', 'topic', 'VARCHAR(255) DEFAULT NULL');
+      await addColumn('tickets', 'customer_id', 'INT');
+      await addColumn('tickets', 'tech_id', 'INT');
+    }
+
+    const [crmExists] = await connection.query(`SHOW TABLES LIKE 'crm_contacts'`);
+    if (crmExists.length > 0) {
+      await addColumn('crm_contacts', 'user_type', "ENUM('customer', 'tech', 'other') DEFAULT 'customer'");
+    }
+
+    const [convCols] = await connection.query(`SHOW TABLES LIKE 'conversations'`);
+    if (convCols.length > 0) {
+      await addColumn('conversations', 'customer_id', 'INT');
+      await addColumn('conversations', 'tech_id', 'INT');
+      await addColumn('conversations', 'customer_name', 'VARCHAR(255)');
+      await addColumn('conversations', 'tech_name', 'VARCHAR(255)');
+    }
+
+    const [notifExists] = await connection.query(`SHOW TABLES LIKE 'notifications'`);
+    if (notifExists.length > 0) {
+      await addColumn('notifications', 'related_ticket_id', 'INT DEFAULT NULL');
+    }
+
+    // ============================================
+    // STEP 4: Rename columns if needed
+    // ============================================
+    console.log('\n🔄 Checking column renames...');
 
     try {
       const [cols] = await connection.query("DESCRIBE tech_earnings");
@@ -64,7 +217,9 @@ async function runMigrations() {
       } else if (hasTechName) {
         console.log('✓ tech_name exists in tech_earnings');
       }
-    } catch (err) { console.log(`⚠ tech_earnings: ${err.code}`); }
+    } catch (err) { 
+      if (err.code !== 'ER_NO_SUCH_TABLE') console.log(`⚠ tech_earnings: ${err.code}`); 
+    }
 
     try {
       const [cols] = await connection.query("DESCRIBE tech_payouts");
@@ -76,24 +231,35 @@ async function runMigrations() {
       } else if (hasTechName) {
         console.log('✓ tech_name exists in tech_payouts');
       }
-    } catch (err) { console.log(`⚠ tech_payouts: ${err.code}`); }
+    } catch (err) { 
+      if (err.code !== 'ER_NO_SUCH_TABLE') console.log(`⚠ tech_payouts: ${err.code}`); 
+    }
 
-    await createTable('expert_skills', `CREATE TABLE IF NOT EXISTS expert_skills (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, tech_id VARCHAR(100) NOT NULL, expertise_level ENUM('beginner', 'intermediate', 'advanced', 'expert', 'certified') DEFAULT 'beginner', years_experience INT DEFAULT 0, certification_proof TEXT, is_verified BOOLEAN DEFAULT FALSE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, UNIQUE KEY unique_user_tech (user_id, tech_id))`);
-    await createTable('expert_stats', `CREATE TABLE IF NOT EXISTS expert_stats (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL UNIQUE, total_tickets_resolved INT DEFAULT 0, total_rating DECIMAL(10,2) DEFAULT 0, avg_rating DECIMAL(3,2) DEFAULT 0, avg_resolution_time INT DEFAULT 0, last_active TIMESTAMP NULL DEFAULT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)`);
-    await createTable('tech_stack', `CREATE TABLE IF NOT EXISTS tech_stack (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255) NOT NULL, category VARCHAR(100) NOT NULL, certified BOOLEAN DEFAULT FALSE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
-    await createTable('currencies', `CREATE TABLE IF NOT EXISTS currencies (code VARCHAR(3) PRIMARY KEY, symbol VARCHAR(10) NOT NULL, name VARCHAR(100) NOT NULL, decimal_places INT DEFAULT 2, exchange_rate_to_usd DECIMAL(15,6) DEFAULT 1, is_active BOOLEAN DEFAULT TRUE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)`);
-    await createTable('conversations', `CREATE TABLE IF NOT EXISTS conversations (id INT AUTO_INCREMENT PRIMARY KEY, ticket_id INT NOT NULL, customer_id INT NOT NULL, tech_id INT DEFAULT NULL, customer_name VARCHAR(255), tech_name VARCHAR(255), updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE)`);
-    await createTable('messages', `CREATE TABLE IF NOT EXISTS messages (id INT AUTO_INCREMENT PRIMARY KEY, conversation_id INT NOT NULL, sender_id INT NOT NULL, message_type ENUM('text', 'file', 'system') DEFAULT 'text', content TEXT NOT NULL, attachment_url VARCHAR(500), is_read BOOLEAN DEFAULT FALSE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE)`);
-    await createTable('ticket_comments', `CREATE TABLE IF NOT EXISTS ticket_comments (id INT AUTO_INCREMENT PRIMARY KEY, ticket_id INT NOT NULL, user_id INT NOT NULL, user_display_name VARCHAR(255), parent_id INT DEFAULT NULL, message TEXT NOT NULL, message_type ENUM('comment', 'reply', 'note', 'status_change', 'system') DEFAULT 'comment', is_internal BOOLEAN DEFAULT FALSE, is_read BOOLEAN DEFAULT FALSE, attachments JSON, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE, FOREIGN KEY (parent_id) REFERENCES ticket_comments(id) ON DELETE SET NULL)`);
-    await createTable('attachments', `CREATE TABLE IF NOT EXISTS attachments (id VARCHAR(20) PRIMARY KEY, ticket_id INT NOT NULL, filename VARCHAR(255) NOT NULL, stored_filename VARCHAR(255) NOT NULL, file_path VARCHAR(500) NOT NULL, file_size INT NOT NULL, mime_type VARCHAR(100) NOT NULL, uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE)`);
+    // ============================================
+    // STEP 5: Insert seed data
+    // ============================================
+    console.log('\n🌱 Inserting seed data...');
 
     try {
       const [rows] = await connection.query('SELECT COUNT(*) as count FROM currencies');
       if (rows[0].count === 0) {
-        await connection.query(`INSERT INTO currencies (code, symbol, name, decimal_places, exchange_rate_to_usd) VALUES ('USD', '$', 'US Dollar', 2, 1.000000), ('EUR', '€', 'Euro', 2, 0.850000), ('GBP', '£', 'British Pound', 2, 0.730000), ('INR', '₹', 'Indian Rupee', 2, 74.500000), ('JPY', '¥', 'Japanese Yen', 0, 110.000000)`);
+        await connection.query(`INSERT INTO currencies (code, symbol, name, decimal_places, exchange_rate_to_usd) VALUES 
+          ('USD', '$', 'US Dollar', 2, 1.000000), 
+          ('EUR', '€', 'Euro', 2, 0.850000), 
+          ('GBP', '£', 'British Pound', 2, 0.730000), 
+          ('INR', '₹', 'Indian Rupee', 2, 74.500000), 
+          ('JPY', '¥', 'Japanese Yen', 0, 110.000000),
+          ('AUD', 'A$', 'Australian Dollar', 2, 1.35),
+          ('CAD', 'C$', 'Canadian Dollar', 2, 1.25),
+          ('CHF', 'Fr', 'Swiss Franc', 2, 0.92),
+          ('CNY', '¥', 'Chinese Yuan', 2, 6.45)`);
         console.log('✓ Inserted default currencies');
+      } else {
+        console.log('✓ Currencies already seeded');
       }
-    } catch (err) { console.log(`⚠ currencies insert: ${err.code}`); }
+    } catch (err) { 
+      if (err.code !== 'ER_DUP_ENTRY') console.log(`⚠ currencies insert: ${err.code}`); 
+    }
 
     console.log('\n✅ Migrations complete!');
   } finally {
